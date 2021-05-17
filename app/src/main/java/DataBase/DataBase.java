@@ -41,7 +41,14 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME + " TEXT)";
+                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_IMAGE_PATH + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_LONGITUDE + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_LATITUDE + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_ADDRESS + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_LINK + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_LINK_TITLE + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_LINK_CONTENT + " TEXT)";
 
 
     private static final String SQL_CREATE_USER_TABLE =

@@ -92,7 +92,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         void onEditMessageClick(Message message);
 
-        void onImageDownloaded(Bitmap bitmap);
+        String onImageDownloaded(Bitmap bitmap,Message message);
     }
 
     private MessageInfoListener callback;
@@ -201,7 +201,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                     ChatAdapter.this.bitmap = bitmap;
                   //  holder.previewImage.setImageBitmap(bitmap);
-                    callback.onImageDownloaded(bitmap);
+                   String path =  callback.onImageDownloaded(bitmap,message);
+                   if (path!=null)
+                   {
+                       Bitmap bitmap1 = BitmapFactory.decodeFile(path);
+                       holder.previewImage.setImageBitmap(bitmap1);
+                       //Picasso.get().load(path).into(holder.previewImage);
+                   }
                 }
 
                 @Override
@@ -215,7 +221,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 }
             };
             Picasso.get().load(message.getImagePath()).into(target);
-            Picasso.get().load(message.getImagePath()).into(holder.previewImage);
+
+            //Picasso.get().load(message.getImagePath()).into(holder.previewImage);
             holder.playRecordingLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.VoiceMessage.ordinal()) {
 
@@ -652,5 +659,4 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
         return searchQueryIndexes;
     }
-
 }

@@ -32,6 +32,13 @@ public final class DataBaseContract {
         public static final String MESSAGE_CONTENT_COLUMN_NAME = "content";
         public static final String MESSAGE_TYPE_COLUMN_NAME = "type";
         public static final String MESSAGE_STATUS_COLUMN_NAME = "status";
+        public static final String MESSAGE_IMAGE_PATH = "image_path";
+        public static final String MESSAGE_LATITUDE = "latitude";
+        public static final String MESSAGE_LONGITUDE = "longitude";
+        public static final String MESSAGE_ADDRESS = "address";
+        public static final String MESSAGE_LINK = "link";
+        public static final String MESSAGE_LINK_TITLE = "link_title";
+        public static final String MESSAGE_LINK_CONTENT = "link_content";
     }
 
     public static class User implements BaseColumns{

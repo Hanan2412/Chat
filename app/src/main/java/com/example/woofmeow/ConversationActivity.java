@@ -1235,7 +1235,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void stopRecording() {
         if (recorder != null) {
-            recorder.stop();
+            try {
+                recorder.stop();
+            }catch (RuntimeException ex)
+            {
+                Log.e("RECORDER ERROR","failed to stop");
+            }
+            //recorder.stop();
             recorder.release();
             recorder = null;
             recordingON = false;
@@ -1432,8 +1438,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     //saves image to local storage
     @Override
-    public void onImageDownloaded(Bitmap bitmap) {
+    public String onImageDownloaded(Bitmap bitmap,Message message) {
 
+        String path = null;
         String fileName = "image_" + System.currentTimeMillis() + ".jpg";
         OutputStream out = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -1446,7 +1453,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             try {
                 if (imageUri != null) {
                     out = resolver.openOutputStream(imageUri);
-
+                    path = imageUri.getPath();
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -1456,6 +1463,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             File imageFile = new File(imageDirectory, fileName);
             try {
                 out = new FileOutputStream(imageFile);
+                message.setImagePath(imageFile.getAbsolutePath());
+                UpdateDataBase(message,0);
+               path = imageFile.getAbsolutePath();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -1473,7 +1483,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
         }
 
-
+        return path;
     }
 
     @Override
@@ -2581,7 +2591,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             values.put(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME, message.getMessageTime());
             values.put(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
             values.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, message.getMessageStatus());
-
+            values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH,message.getImagePath());
+            values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE,message.getLongitude());
+            values.put(DataBaseContract.Messages.MESSAGE_LATITUDE,message.getLatitude());
+            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS,message.getLocationAddress());
+            if (message.getMessageType() == MessageType.webMessage.ordinal())
+                values.put(DataBaseContract.Messages.MESSAGE_LINK,message.getMessage());
             long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
             if (newRowId == -1)
                 Log.e(DATABASE_ERROR, "inserted more than 1 row");
@@ -2600,6 +2615,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         values.put(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME, message.getMessageTime());
         values.put(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
         values.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, message.getMessageStatus());
+        values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH,message.getImagePath());
+        values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE,message.getLongitude());
+        values.put(DataBaseContract.Messages.MESSAGE_LATITUDE,message.getLatitude());
+        values.put(DataBaseContract.Messages.MESSAGE_ADDRESS,message.getLocationAddress());
+        if (message.getMessageType() == MessageType.webMessage.ordinal())
+            values.put(DataBaseContract.Messages.MESSAGE_LINK,message.getMessage());
         String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
         String[] selectionArgs = {message.getMessageID()};
         int count = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
@@ -2709,7 +2730,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME,
-                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME
+                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_IMAGE_PATH,
+                    DataBaseContract.Messages.MESSAGE_LONGITUDE,
+                    DataBaseContract.Messages.MESSAGE_LATITUDE,
+                    DataBaseContract.Messages.MESSAGE_ADDRESS,
+
             };
             String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
             String[] selectionArgs = {conversationID};
@@ -2725,6 +2751,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 String messageTimeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME));
                 int messageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME));
                 String messageStatus = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME));
+                String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_IMAGE_PATH));
+                String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
+                String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LATITUDE));
+                String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
                 Message message = new Message();
                 message.setMessageID(messageID);
                 message.setMessage(messageContent);
@@ -2735,6 +2765,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 message.setMessageTime(messageTimeSent);
                 message.setReadAt(messageTimeDelivered);
                 message.setMessageStatus(messageStatus);
+                message.setImagePath(imagePath);
+                message.setLongitude(longitude);
+                message.setLatitude(latitude);
+                message.setLocationAddress(address);
                 chatAdapter.addNewMessage(message);
                 chatAdapter.notifyItemInserted(chatAdapter.getItemCount() - 1);
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
