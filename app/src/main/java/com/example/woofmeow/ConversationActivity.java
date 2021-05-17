@@ -315,7 +315,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private String DATABASE_ERROR = "database error";
     private String STATUS_INFO = "status";
     private String ERROR_CASE = "Error in switch case";
-
+    private String ERROR_WRITE = "write error";
 
     private LinearLayout searchLayout;
     private EditText searchText;
@@ -1472,9 +1472,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
         if (out != null) {
             if (bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out))
-                System.out.println("Bitmap successfully written");
+                Log.i("good","Bitmap successfully written");
             else
-                System.out.println("Bitmap save have failed");
+                Log.e(ERROR_WRITE,"Bitmap save have failed");
             try {
                 out.flush();
                 out.close();

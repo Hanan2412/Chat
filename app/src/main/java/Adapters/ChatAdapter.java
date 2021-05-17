@@ -219,7 +219,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                 }
             };
-            Picasso.get().load(message.getImagePath()).into(target);
+            if (message.getImagePath().contains("firebase"))
+                Picasso.get().load(message.getImagePath()).into(target);
+            else
+            {
+                Bitmap bitmap = BitmapFactory.decodeFile(message.getImagePath());
+                holder.previewImage.setImageBitmap(bitmap);
+            }
 
             //Picasso.get().load(message.getImagePath()).into(holder.previewImage);
             holder.playRecordingLayout.setVisibility(View.GONE);

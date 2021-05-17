@@ -567,7 +567,7 @@ public class TabFragment extends Fragment implements MainGUI {
             db = dbHelper.getWritableDatabase();
             // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
             // db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
-            db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
+           // db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
           /*  db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);*/
             // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
             dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
