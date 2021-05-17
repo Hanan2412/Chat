@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Looks And Feel">
+        <ListPreference
+            android:entries="@array/tabStartPreferenceListName"
+            android:entryValues="@array/tabStartPreferenceListValue"
+            android:key="TabStart"
+            android:summary="choose the tab that will be loaded first on app start"
+            android:title="Start from page" />
+        <SwitchPreferenceCompat
+            android:key="darkView"
+            android:summaryOff="you are a Jedi, Harry"
+            android:summaryOn="The dark side welcomes you, we have cookies!"
+            android:title="Lights off" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="standBy"
+            android:summary="in standby mode, you will get notifications but up until you enter the app, you will look offline to other users"
+            android:title="StandBy Mode" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Communication">
+        <Preference
+            android:icon="@drawable/ic_baseline_message_24"
+            android:key="ChatPreference"
+            android:summary="all the settings for the chat capabilities of the app"
+            android:title="Chat"
+            app:fragment="Fragments.SecondPagePreferenceFragment" />
+        <Preference
+            android:icon="@drawable/ic_baseline_account_circle_black"
+            android:key="AccountPreference"
+            android:summary="decide how your profile will look to others"
+            android:title="Account preferences"
+            app:fragment="Fragments.SecondPagePreferenceFragment" />
+
+        <Preference android:key="NotificationsPreferences"
+            android:icon="@drawable/ic_baseline_notifications_black"
+            android:title="notifications"
+            android:summary="define how your notifications work"
+            app:fragment="Fragments.SecondPagePreferenceFragment"/>
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory android:title="App">
+
+        <Preference
+            android:key="AboutPreference"
+            android:title="About"
+            app:fragment="Fragments.SecondPagePreferenceFragment" />
+        <Preference
+            android:key="updateLog"
+            android:title="Update Log"
+            app:fragment="Fragments.SecondPagePreferenceFragment" />
+        <Preference
+            android:key="version"
+            android:summary="version 29/04/21  \ndeveloped by Hanan Dorfman"
+            android:title="Version" />
+    </PreferenceCategory>
+
+
+</PreferenceScreen>

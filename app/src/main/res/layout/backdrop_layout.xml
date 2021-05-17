@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?><!--This is the backdrop's content with a BottomSheetBehaviour applied to it-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinator"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:elevation="0dp">
+
+
+    <!--This is the backdrop's content with a BottomSheetBehaviour applied to it-->
+    <LinearLayout
+        android:id="@+id/contentLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:behavior_peekHeight="56dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+        <!--This is the backdrop's header with a title and icon-->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/header_background"
+            android:clickable="true"
+            android:elevation="4dp"
+            android:orientation="horizontal"
+            android:padding="15dp">
+
+            <TextView
+                style="@style/TextAppearance.Compat.Notification.Info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Message Info" />
+
+            <TextView
+                android:id="@+id/conversationID"
+                style="@style/TextAppearance.Compat.Notification.Info"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:layout_weight="8"
+                android:text="conversationID" />
+
+            <ImageView
+                android:id="@+id/reportMessageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:contentDescription="button"
+                android:src="@drawable/ic_baseline_settings_applications_24" />
+
+        </LinearLayout>
+
+        <!--And finally this is the body of the backdrop's content. You can add here whatever you need inside a view group (LinearLayout, RelativeLayout, SwipeRefreshLayout, ConstraintLayout, etc.)-->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorAccent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="message"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:id="@+id/messageSender"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="sender"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:id="@+id/messageTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="messageTime"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:id="@+id/messageType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="messageType"
+                    android:textSize="30sp" />
+
+                <TextView
+                    android:id="@+id/messageSeen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="messageSeen"
+                    android:textSize="30sp" />
+
+            </LinearLayout>
+
+            <!--The content's body goes here-->
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

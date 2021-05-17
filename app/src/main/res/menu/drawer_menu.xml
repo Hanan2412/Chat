@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="user">
+        <menu>
+            <group>
+                <item android:contentDescription="my profile"
+                    android:id="@+id/profile"
+                    android:title="Profile"
+                    android:icon="@drawable/ic_baseline_account_circle_24"
+                    />
+
+                <item android:title="disconnect"
+                    android:id="@+id/disconnect"
+                    android:icon="@drawable/ic_baseline_link_off_24"
+                    />
+            </group>
+        </menu>
+    </item>
+    <item android:title="application">
+        <menu>
+            <group>
+                <item android:title="Settings"
+                    android:id="@+id/settings"
+                    android:icon="@drawable/ic_baseline_settings_24"
+                    />
+            </group>
+        </menu>
+    </item>
+</menu>

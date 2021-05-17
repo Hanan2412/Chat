@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+
+    <LinearLayout
+        android:id="@+id/pictureLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="vertical"
+
+        >
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="center"
+            style="@style/circleImageView"
+            >
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/profileImage"
+                style="@style/circleImageView"
+                app:shapeAppearanceOverlay="@style/circleImageView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/circle_green"
+                android:contentDescription="show user profile image"
+                android:src="@drawable/ic_launcher_foreground"
+                />
+        </LinearLayout>
+
+
+
+        <LinearLayout
+            android:id="@+id/extraOptions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="20dp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            >
+
+            <ImageButton
+                android:id="@+id/mute"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="mute this user"
+                android:src="@drawable/ic_baseline_volume_off_black"
+                />
+
+            <ImageButton
+                android:id="@+id/block"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_block_black"
+                android:contentDescription="block this user"/>
+
+            <ImageButton
+                android:id="@+id/favorBtn"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_stars_black"
+                android:contentDescription="favorite this user - will also appear in a saperate ta"/>
+
+            <ImageButton
+                android:id="@+id/deleteBtn"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_delete_black"
+                android:contentDescription="delete this user"/>
+
+            <ImageButton
+                android:id="@+id/notificationBtn"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_notifications_black"
+                android:contentDescription="allow notifications even if mute all selected in settings"
+                />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/countLayout"
+        android:padding="20dp"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:visibility="gone"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/messagesNumber"
+            android:text="sent x amount of messages"
+            android:textSize="25sp"
+            android:padding="20dp"
+            />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/picturesNumber"
+            android:textSize="25sp"
+            android:text="sent x amount of pictures"
+            android:padding="20dp"
+
+            />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/userInformation"
+        android:orientation="vertical"
+        >
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@android:id/list"
+            />
+
+    </LinearLayout>
+</LinearLayout>

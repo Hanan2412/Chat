@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <group
+        android:id="@+id/standBy"
+        android:visible="true">
+        <item app:showAsAction="ifRoom"
+            android:id="@+id/searchConversation"
+            android:title="search"
+            android:icon="@drawable/ic_baseline_search_black"
+            />
+        <item
+            android:id="@+id/status"
+            android:icon="@drawable/circle_green"
+            android:title="status"
+            app:showAsAction="ifRoom" />
+
+    </group>
+    <group
+        android:id="@+id/active"
+        android:visible="false">
+        <item
+            android:id="@+id/pinConversation"
+            android:icon="@drawable/ic_baseline_bookmark_24"
+            android:title="pin"
+            app:showAsAction="ifRoom" />
+        <item
+            android:id="@+id/callBtn"
+            android:icon="@drawable/ic_baseline_call_24"
+            android:title="Call"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/block"
+            android:icon="@drawable/ic_baseline_block_white"
+            android:title="Block"
+            app:showAsAction="never" />
+    </group>
+
+</menu>

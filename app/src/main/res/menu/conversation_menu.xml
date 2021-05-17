@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/copy"
+        android:title="Copy message"
+        android:icon="@drawable/ic_baseline_file_copy_black"
+        />
+    <item android:id="@+id/starMessage"
+        android:title="Star message"
+        android:icon="@android:drawable/star_big_on"
+        />
+
+    <item
+        android:id="@+id/addPhoneNumber"
+        android:enabled="true"
+        android:icon="@drawable/common_full_open_on_phone"
+        android:title="add phone number"
+        android:visible="true"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/addAsContact"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_contacts_24"
+        android:title="add as contact"
+        android:visible="true"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/callBtn"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_call_24"
+        android:title="Call"
+        android:visible="true"
+        app:showAsAction="never" />
+
+    <item android:id="@+id/searchMessage"
+        android:title="Search"
+        android:icon="@drawable/ic_baseline_search_black"
+        app:showAsAction="ifRoom"
+        />
+    <item android:id="@+id/messageInfo"
+        android:title="message Information"
+        android:icon="@drawable/ic_baseline_info_white"
+        app:showAsAction="ifRoom"
+        android:enabled="true"
+        android:visible="true"
+        />
+
+    <item android:id="@+id/share"
+        android:enabled="true"
+        android:visible="true"
+        android:title="Share"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_baseline_share_white"
+        />
+
+
+    <item
+        android:id="@+id/block"
+        android:icon="@drawable/ic_baseline_block_white"
+        android:title="block this user"
+        android:visible="true"
+        app:showAsAction="never" />
+    <item android:title="meetUp!"
+        android:visible="false"
+        app:showAsAction="never"
+        android:id="@+id/meetUp"
+        />
+
+</menu>

@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ConversationActivity"
+    >
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar1"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark"
+            app:layout_scrollFlags="noScroll">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/goBack"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/circle"
+                    android:contentDescription="back to main"
+                    android:src="@drawable/ic_baseline_arrow_back_24" />
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/toolbarProfileImage"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_marginStart="20dp"
+                        android:background="@drawable/ic_launcher_background"
+                        android:src="@drawable/ic_launcher_foreground"
+                        app:shapeAppearanceOverlay="@style/circleImageView" />
+
+                    <ImageView
+                        android:id="@+id/statusView"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_alignParentBottom="true"
+                        android:layout_marginStart="-8dp"
+                        android:layout_toEndOf="@id/toolbarProfileImage"
+                        android:background="@drawable/circle_green"
+                        android:contentDescription="UserStatus" />
+
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="5dp"
+                    android:orientation="vertical">
+
+                    <TextSwitcher
+                        android:id="@+id/toolbarTextSwitch"
+                        android:layout_width="150dp"
+                        android:layout_height="30dp"
+                        android:layout_weight="2" />
+
+                    <LinearLayout
+                        android:layout_width="150dp"
+                        android:layout_height="30dp"
+                        android:layout_weight="3"
+                        android:orientation="horizontal"
+                        >
+                        <TextSwitcher
+                            android:id="@+id/toolbarStatusTextSwitch"
+                            android:layout_width="50dp"
+                            android:layout_height="match_parent"
+                            />
+
+                        <TextSwitcher
+                            android:id="@+id/typingIndicator"
+                            android:layout_width="50dp"
+                            android:layout_height="match_parent"
+                            />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+
+            </LinearLayout>
+        </androidx.appcompat.widget.Toolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+
+    <LinearLayout
+        android:id="@+id/searchLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_below="@id/appbarLayout">
+
+        <EditText
+            android:id="@+id/searchText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints=""
+            android:hint="search"
+            android:inputType="textMultiLine"
+            android:visibility="visible"
+            android:gravity="center"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/searchBtn"
+                android:text="Search"
+                android:layout_gravity="center"
+                />
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="scroll to next search result"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_baseline_arrow_forward_24"
+                android:background="@drawable/circle"
+                android:layout_marginStart="20dp"
+                android:id="@+id/scrollToNext"
+                />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/searchLayout"
+        android:id="@+id/contentContainer"
+       >
+
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycle_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/extraMessageLayout"
+            android:layout_alignParentTop="true"
+            android:layout_marginBottom="10dp"
+            />
+
+        <RelativeLayout
+            android:id="@+id/extraMessageLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/userInputLayout">
+
+
+            <ImageView
+                android:id="@+id/imagePreview"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:contentDescription="preview image"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_launcher_foreground"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/quoteText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/imagePreview"
+                android:background="@color/lightBlue"
+                android:gravity="start"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:text="this is quote"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="20sp"
+                android:visibility="gone" />
+
+            <RelativeLayout
+                android:id="@+id/linkMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/quoteText"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/linkImage"
+                    android:layout_width="110dp"
+                    android:layout_height="110dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentTop="true"
+                    android:background="@drawable/ic_launcher_background"
+                    android:contentDescription="link image preview"
+                    android:src="@drawable/ic_launcher_foreground" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="110dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginStart="10dp"
+                    android:layout_toEndOf="@+id/linkImage"
+                    android:background="@drawable/outgoing_message_look"
+                    android:orientation="vertical"
+                    android:padding="10dp"
+                    android:weightSum="2">
+
+                    <TextView
+                        android:id="@+id/linkTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:textColor="@android:color/white" />
+
+                    <TextView
+                        android:id="@+id/linkContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:textColor="@android:color/white" />
+                </LinearLayout>
+            </RelativeLayout>
+
+
+            <LinearLayout
+                android:id="@+id/voiceLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/linkMessage"
+                android:orientation="horizontal"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:visibility="gone"
+                android:weightSum="7">
+
+
+                <ImageButton
+                    android:id="@+id/play_pause_btn"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="0"
+                    android:contentDescription="play audio recording"
+                    android:src="@drawable/ic_baseline_play_circle_outline_24"
+                    android:visibility="visible" />
+
+                <SeekBar
+                    android:id="@+id/voiceSeek"
+                    android:layout_width="300dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="6"
+                    android:progress="0"
+                    android:visibility="visible" />
+
+                <ImageView
+                    android:id="@+id/closeBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:contentDescription="remove recording view"
+                    android:src="@drawable/ic_baseline_close_24"
+                    android:visibility="visible" />
+
+
+            </LinearLayout>
+
+
+        </RelativeLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/userInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+
+
+            android:gravity="center">
+
+            <EditText
+                android:id="@+id/MessageToSend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="15dp"
+                android:layout_toStartOf="@id/ActionBtn"
+                android:autofillHints=""
+                android:gravity="center"
+                android:hint="@string/message_hint"
+                android:inputType="textMultiLine"
+                android:textSize="15sp"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/recordingTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="15dp"
+                android:layout_toStartOf="@id/ActionBtn"
+                android:gravity="center"
+                android:text="time"
+                android:textSize="30sp"
+                android:visibility="gone" />
+
+
+            <ImageButton
+                android:id="@+id/ActionBtn"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="15dp"
+                android:layout_toStartOf="@+id/sendImageSwitch"
+                android:background="@android:color/transparent"
+                android:contentDescription="send your location"
+                android:src="@drawable/ic_baseline_location_on_24" />
+
+
+            <ImageSwitcher
+                android:id="@+id/sendImageSwitch"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="4dp"
+                android:foregroundGravity="center"
+
+                />
+            <!--
+                        <Button
+                            android:id="@+id/sendMessageBtn"
+                            style="?android:attr/buttonBarButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="record"
+                            android:visibility="gone"/>
+            -->
+
+        </RelativeLayout>
+    </RelativeLayout>
+</RelativeLayout>
+
+
+

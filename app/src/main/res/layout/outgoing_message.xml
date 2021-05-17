@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="5dp">
+
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/right_guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent=".75" />
+
+
+    <LinearLayout
+        android:id="@+id/bigPictureLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="300dp"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/bigPicture"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:background="@drawable/ic_launcher_background"
+            android:contentDescription="big image"
+            android:src="@drawable/ic_launcher_foreground"
+            android:visibility="visible" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/extraOptions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="15dp"
+        android:gravity="start"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:weightSum="2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/right_guideline"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/deleteBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/on_off_button"
+            android:gravity="center"
+            android:text="delete"
+            android:textColor="@color/colorAccent"
+            app:drawableTopCompat="@drawable/ic_baseline_delete_24" />
+
+        <TextView
+            android:id="@+id/editBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/on_off_button"
+            android:gravity="center"
+            android:text="edit"
+            android:textColor="@color/colorAccent"
+            app:drawableTopCompat="@drawable/ic_baseline_edit_24" />
+
+
+    </LinearLayout>
+
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:layout_constraintEnd_toStartOf="@+id/right_guideline"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/messageTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/outgoing_message_look"
+            android:gravity="start"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="messageTime"
+            android:textAlignment="viewStart"
+            android:textColor="@android:color/white"
+            android:textSize="12sp" />
+        <!--
+               <io.github.ponnamkarthik.richlinkpreview.RichLinkView
+                   android:id="@+id/richLinkView"
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                    android:layout_below="@id/messageTime"
+                   />
+        -->
+        <RelativeLayout
+            android:id="@+id/linkMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_below="@+id/messageTime"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/linkImage"
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/ic_launcher_background"
+                android:contentDescription="link image preview"
+                android:src="@drawable/ic_launcher_foreground" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="110dp"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_toEndOf="@+id/linkImage"
+                android:orientation="vertical"
+                android:weightSum="2"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/outgoing_message_look"
+                android:padding="10dp"
+                >
+
+                <TextView
+                    android:id="@+id/linkTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"/>
+
+                <TextView
+                    android:id="@+id/linkContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"/>
+            </LinearLayout>
+        </RelativeLayout>
+
+        <ImageView
+            android:id="@+id/previewImage"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_below="@id/linkMessage"
+            android:layout_marginBottom="10dp"
+            android:background="@color/red"
+            android:contentDescription="the preview of an active message"
+            android:src="@drawable/ic_baseline_location_on_24"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/playRecordingLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/previewImage"
+            android:background="@drawable/outgoing_message_look"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/play_pause_btn"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="play recording"
+                android:src="@drawable/ic_baseline_play_circle_outline_white" />
+
+            <SeekBar
+                android:id="@+id/voiceSeek"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="10dp"
+                android:layout_weight="6"
+                android:elevation="15dp"
+                android:progress="0"
+                android:visibility="visible" />
+        </LinearLayout>
+
+
+        <RelativeLayout
+            android:id="@+id/messageTextLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/playRecordingLayout"
+            android:visibility="visible">
+
+            <RelativeLayout
+                android:id="@+id/quoteLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/messageStatus"
+                android:background="@color/colorAccent">
+
+                <TextView
+                    android:id="@+id/quoteText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="this is a quote"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:visibility="gone" />
+
+
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/quoteLayout"
+                android:layout_toEndOf="@id/messageStatus"
+                android:background="@drawable/outgoing_message_look"
+                android:gravity="start|bottom"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:text="outgoing message"
+                android:textAlignment="viewStart"
+                android:textColor="@android:color/white"
+                android:textSize="30sp" />
+
+            <ImageView
+                android:id="@+id/messageStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:contentDescription="message status"
+                android:gravity="center"
+                android:src="@drawable/ic_baseline_cast_connected_24" />
+        </RelativeLayout>
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/conversationCell"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/conversation_cell_not_selected"
+    android:layout_marginTop="1dp">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/conversationImages"
+        android:layout_alignParentStart="true">
+
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/conversationImage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerInParent="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/ic_launcher_background"
+        android:scaleType="fitXY"
+        android:src="@drawable/ic_launcher_foreground"
+        app:shapeAppearanceOverlay="@style/circleImageView" />
+
+
+    <ImageView
+        android:id="@+id/statusView"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        android:layout_alignBottom="@id/conversationImage"
+        android:layout_marginStart="-12dp"
+        android:layout_marginBottom="8dp"
+        android:layout_toEndOf="@id/conversationImage"
+        android:background="@drawable/circle_green"
+        android:contentDescription="UserStatus" />
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/textInfoLayout"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginStart="20dp"
+        android:layout_toEndOf="@id/conversationImages"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/recipientName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="you are talking with me"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/lastMessageSent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxWidth="200dp"
+            android:text="daasdasdasdasdadasd"
+            android:textColor="@android:color/white"
+            android:visibility="visible"
+            android:maxLines="2"/>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerInParent="true"
+        android:layout_marginStart="20dp"
+        android:layout_toEndOf="@+id/textInfoLayout">
+
+        <TextView
+            android:id="@+id/timeLastMessage"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginEnd="20dp"
+            android:gravity="center|start"
+            android:maxWidth="100dp"
+            android:text="time last message sent"
+            android:textColor="@android:color/white" />
+
+
+        <ImageView
+            android:id="@+id/conversationStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginEnd="20dp"
+            android:contentDescription="mute icon"
+            android:src="@drawable/ic_baseline_volume_off_24"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+
+</RelativeLayout>

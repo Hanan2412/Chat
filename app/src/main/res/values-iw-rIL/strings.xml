@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">צ\'אט</string>
+    <string name="send">שלח</string>
+    <string name="edit">ערוך</string>
+    <string name="message_hint">כתוב את הודעתך כאן</string>
+    <string name="recording">מקליט</string>
+    <string name="record">הקלט</string>
+    <string name="zero_time">00:00</string>
+    <string name="voice_message">הודעה קולית</string>
+</resources>

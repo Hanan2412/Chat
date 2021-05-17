@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">Chat</string>
+
+    <string-array name="tabStartPreferenceListName">
+        <item>Feed</item>
+        <item>Shop</item>
+        <item>Chat</item>
+    </string-array>
+    <string-array name="tabStartPreferenceListValue">
+        <item>Feed</item>
+        <item>Shop</item>
+        <item>Chat</item>
+    </string-array>
+
+    <string-array name="numberOfMessagesToLoad">
+        <item>20</item>
+        <item>40</item>
+        <item>60</item>
+    </string-array>
+
+    <string-array name="chatPreferenceListName">
+        <item>Location</item>
+        <item>Camera</item>
+        <item>Gallery</item>
+    </string-array>
+    <string-array name="chatPreferenceListValues">
+        <item>Location</item>
+        <item>Camera</item>
+        <item>Gallery</item>
+    </string-array>
+    <string name="send">Send</string>
+    <string name="edit">Edit</string>
+    <string name="message_hint">type your message here</string>
+    <string name="recording">Recording</string>
+    <string name="record">Record</string>
+    <string name="zero_time">00:00</string>
+    <string name="voice_message">Voice message</string>
+</resources>
