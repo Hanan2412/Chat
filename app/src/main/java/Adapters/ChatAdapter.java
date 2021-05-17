@@ -200,7 +200,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                     ChatAdapter.this.bitmap = bitmap;
-                  //  holder.previewImage.setImageBitmap(bitmap);
                    String path =  callback.onImageDownloaded(bitmap,message);
                    if (path!=null)
                    {
