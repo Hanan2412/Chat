@@ -48,6 +48,7 @@ public class VideoFragment extends Fragment {
         ImageButton closeBtn = view.findViewById(R.id.closeVideoBtn);
         ImageButton sendVideo = view.findViewById(R.id.sendVideo);
         Bundle arguments = getArguments();
+
         if (arguments!=null) {
             Uri uri = arguments.getParcelable(URI);
             if (uri!=null)
