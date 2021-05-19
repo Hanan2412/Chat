@@ -5,8 +5,7 @@
     android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ConversationActivity"
-    >
+    tools:context=".ConversationActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbarLayout"
@@ -74,19 +73,17 @@
                         android:layout_width="150dp"
                         android:layout_height="30dp"
                         android:layout_weight="3"
-                        android:orientation="horizontal"
-                        >
+                        android:orientation="horizontal">
+
                         <TextSwitcher
                             android:id="@+id/toolbarStatusTextSwitch"
                             android:layout_width="50dp"
-                            android:layout_height="match_parent"
-                            />
+                            android:layout_height="match_parent" />
 
                         <TextSwitcher
                             android:id="@+id/typingIndicator"
                             android:layout_width="50dp"
-                            android:layout_height="match_parent"
-                            />
+                            android:layout_height="match_parent" />
                     </LinearLayout>
 
                 </LinearLayout>
@@ -102,56 +99,53 @@
         android:id="@+id/searchLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/appbarLayout"
         android:orientation="vertical"
         android:visibility="gone"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:layout_below="@id/appbarLayout">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <EditText
             android:id="@+id/searchText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints=""
+            android:gravity="center"
             android:hint="search"
             android:inputType="textMultiLine"
             android:visibility="visible"
-            android:gravity="center"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:gravity="center"
-            >
+            android:orientation="horizontal">
+
             <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:id="@+id/searchBtn"
-                android:text="Search"
-                android:layout_gravity="center"
-                />
-            <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:contentDescription="scroll to next search result"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_baseline_arrow_forward_24"
-                android:background="@drawable/circle"
-                android:layout_marginStart="20dp"
+                android:text="Search" />
+
+            <ImageButton
                 android:id="@+id/scrollToNext"
-                />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="20dp"
+                android:background="@drawable/circle"
+                android:contentDescription="scroll to next search result"
+                android:src="@drawable/ic_baseline_arrow_forward_24" />
         </LinearLayout>
 
     </LinearLayout>
 
     <RelativeLayout
+        android:id="@+id/contentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/searchLayout"
-        android:id="@+id/contentContainer"
-       >
-
+        android:layout_below="@id/searchLayout">
 
 
         <androidx.recyclerview.widget.RecyclerView
@@ -160,8 +154,7 @@
             android:layout_height="match_parent"
             android:layout_above="@id/extraMessageLayout"
             android:layout_alignParentTop="true"
-            android:layout_marginBottom="10dp"
-            />
+            android:layout_marginBottom="10dp" />
 
         <RelativeLayout
             android:id="@+id/extraMessageLayout"
@@ -286,8 +279,6 @@
 
 
             </LinearLayout>
-
-
         </RelativeLayout>
 
 
@@ -311,7 +302,8 @@
                 android:hint="@string/message_hint"
                 android:inputType="textMultiLine"
                 android:textSize="15sp"
-                android:visibility="visible" />
+                android:visibility="visible"
+                android:focusable="true"/>
 
             <TextView
                 android:id="@+id/recordingTime"

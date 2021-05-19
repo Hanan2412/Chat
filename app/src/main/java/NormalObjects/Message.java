@@ -23,6 +23,8 @@ public class Message implements Serializable {
     private int quotedMessagePosition = -1;
     private String quotedMessageID;
     private long readAt=-1;
+    private boolean star = false;
+    private String starTime;
 
     public String getMessage() {
         return message;
@@ -184,5 +186,21 @@ public class Message implements Serializable {
 
     public void setReadAt(long readAt) {
         this.readAt = readAt;
+    }
+
+    public boolean isStar() {
+        return star;
+    }
+
+    public void setStar(boolean star) {
+        this.star = star;
+    }
+
+    public String getStarTime() {
+        return starTime;
+    }
+
+    public void setStarTime(String starTime) {
+        this.starTime = starTime;
     }
 }

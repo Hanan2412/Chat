@@ -5,5 +5,6 @@ public enum ButtonType {
     attachFile,
     camera,
     gallery,
-    delay
+    delay,
+    video
 }

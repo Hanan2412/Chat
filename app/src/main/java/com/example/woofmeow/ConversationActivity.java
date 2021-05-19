@@ -72,12 +72,14 @@ import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 
 import android.widget.LinearLayout;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.widget.VideoView;
 import android.widget.ViewSwitcher;
 
 import androidx.annotation.NonNull;
@@ -126,15 +128,19 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.URI;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -165,6 +171,7 @@ import Fragments.PickerFragment;
 import DataBase.DataBase;
 import DataBase.DataBaseContract;
 import Fragments.TimePickerFragment;
+import Fragments.VideoFragment;
 import NormalObjects.Message;
 import NormalObjects.Network;
 import NormalObjects.NetworkChange;
@@ -276,7 +283,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private int buttonState = 1;
     private final int RECORD_VOICE = 1;
     private final int SEND_MESSAGE = 0;
-
+    private final int SEND_VIDEO = 2;
     private boolean startRecording = true;
     private boolean startPlaying = true;
     private boolean startPlaying1 = true;
@@ -323,8 +330,17 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private ImageButton scrollToNext;
     private ArrayList<Integer> indices;
     private int indicesIndex = 0;
-
+    private long startedTyping = 0;
     private boolean networkConnection = true;
+   /* private VideoView videoView;
+    private ImageButton cancelVideoBtn;
+    private RelativeLayout videoLayout;
+    private String videoPath;
+    private Uri videoUri;
+    private MediaController videoController;*/
+    private final int REQUEST_VIDEO_CAPTURE = 8;
+    private Uri videoUri;
+    private final String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -384,12 +400,23 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
         DataBaseSetUp();
 
-
+        /*videoView = findViewById(R.id.videoMessage);
+        videoController = new MediaController(this);
+        videoView.setMediaController(videoController);
+        cancelVideoBtn = findViewById(R.id.closeVideoBtn);
+        videoLayout = findViewById(R.id.videoLayout);
+        cancelVideoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                videoView.pause();
+                videoLayout.setVisibility(View.GONE);
+            }
+        });*/
         controller = CController.getController();
         controller.setConversationGUI(this);
         if (user == null) {
             controller.onDownloadUser(this, currentUser);
-            System.out.println("downloading user");
+            Log.i(USER_SERVICE,"downloading user");
         }
 
         voiceLayout = findViewById(R.id.voiceLayout);
@@ -464,6 +491,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String recipientConversationID = RecipientConversationID(conversationID);
                 controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/",true);
+
             }
 
             @Override
@@ -614,7 +642,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         LongPressToRecordVoice();
                     }
 
-
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (buttonState == RECORD_VOICE) {
                         //DECIDE IF TO SEND VOICE MESSAGE
@@ -630,64 +657,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
 
 
-        /*sendMessageButton.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                //press DOWN on the button
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
-                    //SEND TEXT MESSAGE
-
-                    if (buttonState == SEND_MESSAGE) {
-                        messageToSend = messageSent.getText().toString();
-                        if (editMode) {//distinction between editing a message and sending a new message
-                            SendEditedMessage();
-                        } else {
-                            if (!messageToSend.equals("")) {//cant send empty message
-                                PrepareSendMessage();
-                            } else if (recorded) {
-                                //send the recorded file
-                                SendRecording();
-                                ResetToText();
-
-                            }
-                        }
-                    } else if (buttonState == RECORD_VOICE) {//start recording
-                        RecordingSoundStart();
-                        LongPressToRecordVoice();
-                    }
-
-
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (buttonState == RECORD_VOICE) {
-                        //DECIDE IF TO SEND VOICE MESSAGE
-                        if (recorded) {
-                            RecordingSoundStopped();
-                            ShowVoiceControl();
-                        }
-                    }
-                }
-                return true;
-            }
-        });*/
 
         playAudioRecordingBtn = findViewById(R.id.play_pause_btn);
-        /*playAudioRecordingBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!playingON)
-                    PlayOrNot();
-                else {
-                    if (player.isPlaying()) {
-                        player.pause();
-                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
-                    } else {
-                        player.start();
-                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
-                    }
-                }
-            }
-        });*/
         playAudioRecordingBtn.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -706,19 +678,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     Thread playBackThread = new Thread(ConversationActivity.this);
                     playBackThread.setName("playBackThread");
                     playBackThread.start();
-                    /*if(!startPlaying1)
-                    {
-                        player.start();
-                        startPlaying1 = !startPlaying1;
-                        Thread playBackThread = new Thread(ConversationActivity.this);
-                        playBackThread.setName("playBackThread");
-                        playBackThread.start();
-                    }
-                    else
-                    {
-                        startPlaying1 = !startPlaying1;
-                        player.start();
-                    }*/
                     if (!darkMode)
                         playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
                     else
@@ -759,43 +718,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     Toast.makeText(ConversationActivity.this, "start the player, pause it and move the time indicator", Toast.LENGTH_SHORT).show();
             }
         });
-        //playbackTime = findViewById(R.id.playBackTime);
-           /* sendMessageButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    messageToSend = messageSent.getText().toString();
-                    if (editMode) {
-                        HashMap<String, Object> editMessageMap = new HashMap<>();
-                        editMessageMap.put("message", messageToSend);
-                        controller.onUpdateData("users/" + currentUser + "/conversations/" + editMessage.getConversationID() + "/" + editMessage.getMessageID() + "/", editMessageMap);
-                        controller.onUpdateData("users/" + recipient + "/conversations/" + editMessage.getConversationID() + "/" + editMessage.getMessageID() + "/", editMessageMap);
-                        messageSent.setText("");
-                        editMode = false;
-                    } else {
-                        if (!messageToSend.equals(""))
-                            if (imageView.getVisibility() == View.VISIBLE)
-                                sendMessage(MessageType.photoMessage.ordinal(), recipient);
-                            else if (imageView.getVisibility() == View.GONE)
-                                sendMessage(MessageType.textMessage.ordinal(), recipient);
-                    }
-                }
-            });*/
-
-        /*sendMessageButton.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                if (sendBtnLP_Preference) {
-                    //opens time picker to send message at a set time
-                    PickerFragment pickerFragment = PickerFragment.newInstance();
-                    FragmentManager fragmentManager = getSupportFragmentManager();
-                    FragmentTransaction transaction = fragmentManager.beginTransaction();
-                    transaction.add(R.id.root_container, pickerFragment, PICKER_FRAGMENT_TAG);
-                    transaction.addToBackStack(null);
-                    transaction.commit();
-                }
-                return true;
-            }
-        });*/
 
         switch (defaultActionBtn_Preference) {
             case "Location":
@@ -864,19 +786,18 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 //opens file picker to send a file
+
                             }
                         }).setMessage("Are you sure you want to send a file");
-                        builder.show();
+                        builder.create().show();
                         break;
                     }
                     case camera: {
                         AskPermission(MessageType.photoMessage);
-                        Toast.makeText(ConversationActivity.this, "opening camera", Toast.LENGTH_SHORT).show();
                         requestCamera();
                         break;
                     }
                     case gallery: {
-                        Toast.makeText(ConversationActivity.this, "gallery", Toast.LENGTH_SHORT).show();
                         openGallery();
                         break;
                     }
@@ -887,6 +808,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         transaction.add(R.id.contentContainer, pickerFragment, PICKER_FRAGMENT_TAG);
                         transaction.addToBackStack(null);
                         transaction.commit();
+                        break;
+                    }
+                    case video:{
+                        if(AskPermission(MessageType.photoMessage))
+                            RecordVideo();
                         break;
                     }
                     default:
@@ -1136,6 +1062,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void ResetToText() {
         messageSent.setVisibility(View.VISIBLE);
+        messageSent.requestFocus();
         recordingTimeText.setVisibility(View.GONE);
         voiceLayout.setVisibility(View.GONE);
         // sendMessageButton.setText(getResources().getString(R.string.record));
@@ -1363,7 +1290,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 } else
                     Toast.makeText(this, "couldn't fine this quoted message", Toast.LENGTH_SHORT).show();
             }
-        } else if (Patterns.WEB_URL.matcher(message.getMessage()).matches()) {
+        } else if (message.getMessage()!= null && Patterns.WEB_URL.matcher(message.getMessage()).matches()) {
             Intent openWebSite = new Intent(Intent.ACTION_VIEW);
             openWebSite.setData(Uri.parse(message.getMessage()));
             startActivity(openWebSite);
@@ -1487,6 +1414,89 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     @Override
+    public String onVideoDownloaded(File file,Message message){
+        String path = null;
+        String fileName = file.getName();
+        OutputStream out = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentResolver resolver = ConversationActivity.this.getApplicationContext().getContentResolver();
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Video.Media.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Video.Media.MIME_TYPE, "video/*");
+            values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES);
+            Uri videoUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            try {
+                if (videoUri != null) {
+                    out = resolver.openOutputStream(videoUri);
+                    path = videoUri.getPath();
+                    message.setRecordingPath(path);
+                    UpdateDataBase(message,0);
+                    File imageDirectory = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+                    File videoFile = new File(imageDirectory, fileName);
+                    try {
+                        out = new FileOutputStream(videoFile);
+                        message.setRecordingPath(videoFile.getAbsolutePath());
+                        UpdateDataBase(message,0);
+                        path = videoFile.getAbsolutePath();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            File imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
+            File videoFile = new File(imageDirectory, fileName);
+            try {
+                out = new FileOutputStream(videoFile);
+                message.setRecordingPath(videoFile.getAbsolutePath());
+                UpdateDataBase(message,0);
+                path = videoFile.getAbsolutePath();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (out != null) {
+            int size = (int)file.length();
+            byte[] bytes = new byte[size];
+            try{
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+                bufferedInputStream.read(bytes,0,bytes.length);
+                bufferedInputStream.close();
+                out.write(bytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return path;
+    }
+
+    @Override
+    public void onVideoClicked(Uri uri){
+        VideoFragment videoFragment = VideoFragment.getInstance(uri,false);
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        transaction.addToBackStack(null);
+        if(manager.findFragmentByTag(VIDEO_FRAGMENT_TAG)==null) {
+            transaction.add(R.id.contentContainer, videoFragment, VIDEO_FRAGMENT_TAG);
+        }
+        else
+        {
+            transaction.replace(R.id.contentContainer,videoFragment,VIDEO_FRAGMENT_TAG);
+        }
+        transaction.commit();
+    }
+
+    @Override
     public void onDeleteMessageClick(Message message) {
         //Server.deleteMessage(true);
         controller.onRemoveData("users/" + currentUser + "/conversations/" + message.getConversationID() + "/conversationInfo/conversationMessages" + message.getMessageID());
@@ -1506,7 +1516,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         editor.putString("liveConversation", conversationID);
         editor.apply();
 
-        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("disableNotifications").putExtra("ConversationID", conversationID));
+       // LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("disableNotifications").putExtra("ConversationID", conversationID));
 
         controller.setConversationGUI(this);
         controller.onUpdateData("users/" + currentUser + "/status", MainActivity.ONLINE_S);
@@ -1729,6 +1739,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 }
                 case fileMessage:
                     break;
+                case videoMessage:
+                {
+                    message.setMessage(messageToSend);
+                    controller.onSecondPath("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages/" + time);
+                    controller.onUploadFile("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/conversationMessages/" + time,videoUri.toString(),ConversationActivity.this);
+                    break;
+                }
                 default:
                     Toast.makeText(this, "Error while sending message", Toast.LENGTH_SHORT).show();
                     return;
@@ -1910,6 +1927,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
             @Override
             public void onChangedNetworkType() {
+                networkConnection = true;
                 //Toast.makeText(ConversationActivity.this, "network changed", Toast.LENGTH_SHORT).show();
             }
         });
@@ -2023,6 +2041,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_white);
                 break;
             }
+            case video:{
+                if (!darkMode)
+                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_black);
+                else
+                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_white);
+            }
             default:
                 Log.e(ERROR_CASE, "bottom sheet error " + new Throwable().getStackTrace()[0].getLineNumber());
         }
@@ -2079,6 +2103,37 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     }
                 }
             }
+        } else if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK)
+        {
+            if (data != null) {
+
+                Uri videoUri = data.getData();
+                if (videoUri!=null) {
+                    File videoFile = new File(videoUri.toString());
+                    VideoFragment videoFragment = VideoFragment.getInstance(videoUri,true);
+                    videoFragment.setListener(new VideoFragment.onVideo() {
+                        @Override
+                        public void onSendVideo() {
+                            ConversationActivity.this.videoUri = videoUri;
+                            sendMessage(MessageType.videoMessage.ordinal(),recipientUID);
+                            ConversationActivity.this.videoUri = null;
+                            FragmentManager manager = getSupportFragmentManager();
+                            Fragment fragment = manager.findFragmentByTag(VIDEO_FRAGMENT_TAG);
+                            FragmentTransaction transaction = manager.beginTransaction();
+                            if (fragment!=null)
+                                 transaction.remove(fragment).commit();
+                        }
+                    });
+                    FragmentManager manager = getSupportFragmentManager();
+                    FragmentTransaction transaction = manager.beginTransaction();
+                    transaction.add(R.id.contentContainer,videoFragment,VIDEO_FRAGMENT_TAG).addToBackStack(null).commit();
+                    if (!darkMode)
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
+                    else
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
+                }
+            }
+
         }
     }
 
@@ -2303,7 +2358,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 break;
             }
             case R.id.starMessage: {
-                Toast.makeText(this, "pressed star", Toast.LENGTH_SHORT).show();
+                controller.onUpdateData("user/" + currentUser + "/conversations/" + selectedMessage.getConversationID() + "/conversationInfo/conversationMessages/" + selectedMessage.getMessageID() + "star",true);
+                controller.onUpdateData("user/" + currentUser + "/conversations/" + selectedMessage.getConversationID() + "/conversationInfo/conversationMessages/" + selectedMessage.getMessageID() + "starTime",System.currentTimeMillis()+"");
                 break;
             }
             default:
@@ -2403,6 +2459,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
             }
             InsertToDataBase(message);
+            messageSent.requestFocus();
             // }
         }
     }
@@ -2595,6 +2652,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE,message.getLongitude());
             values.put(DataBaseContract.Messages.MESSAGE_LATITUDE,message.getLatitude());
             values.put(DataBaseContract.Messages.MESSAGE_ADDRESS,message.getLocationAddress());
+            values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH,message.getRecordingPath());
             if (message.getMessageType() == MessageType.webMessage.ordinal())
                 values.put(DataBaseContract.Messages.MESSAGE_LINK,message.getMessage());
             long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
@@ -2619,6 +2677,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE,message.getLongitude());
         values.put(DataBaseContract.Messages.MESSAGE_LATITUDE,message.getLatitude());
         values.put(DataBaseContract.Messages.MESSAGE_ADDRESS,message.getLocationAddress());
+        values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH,message.getRecordingPath());
         if (message.getMessageType() == MessageType.webMessage.ordinal())
             values.put(DataBaseContract.Messages.MESSAGE_LINK,message.getMessage());
         String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
@@ -2735,7 +2794,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     DataBaseContract.Messages.MESSAGE_LONGITUDE,
                     DataBaseContract.Messages.MESSAGE_LATITUDE,
                     DataBaseContract.Messages.MESSAGE_ADDRESS,
-
+                    DataBaseContract.Messages.MESSAGE_RECORDING_PATH
             };
             String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
             String[] selectionArgs = {conversationID};
@@ -2755,6 +2814,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
                 String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LATITUDE));
                 String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
+                String recordingPath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECORDING_PATH));
                 Message message = new Message();
                 message.setMessageID(messageID);
                 message.setMessage(messageContent);
@@ -2769,6 +2829,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 message.setLongitude(longitude);
                 message.setLatitude(latitude);
                 message.setLocationAddress(address);
+                message.setRecordingPath(recordingPath);
                 chatAdapter.addNewMessage(message);
                 chatAdapter.notifyItemInserted(chatAdapter.getItemCount() - 1);
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
@@ -2799,4 +2860,22 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             fragmentManager.beginTransaction().remove(fragment).commit();
     }
 
+    private void RecordVideo()
+    {
+        File videoFile = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+        String videoFileName = "video_" + System.currentTimeMillis();
+        try {
+            File video = File.createTempFile(videoFileName, ".mp4", videoFile);
+            Uri videoURI = FileProvider.getUriForFile(ConversationActivity.this,
+                    "com.example.woofmeow.provider", video);
+            Intent recordVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+            recordVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoURI);
+            if (recordVideoIntent.resolveActivity(getPackageManager())!= null)
+                startActivityForResult(recordVideoIntent,REQUEST_VIDEO_CAPTURE);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }

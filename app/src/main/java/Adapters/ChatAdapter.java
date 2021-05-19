@@ -1,16 +1,24 @@
 package Adapters;
 
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfDocument;
 import android.media.MediaPlayer;
 
+import android.media.ThumbnailUtils;
+import android.net.Uri;
+import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Size;
 import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,11 +29,17 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.woofmeow.ConversationActivity;
@@ -56,9 +70,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 import Consts.MessageType;
 import Consts.Messaging;
+import Fragments.VideoFragment;
 import NormalObjects.Message;
-
-
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -71,14 +84,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private boolean playing = false;
     private MediaPlayer player = null;
     private String ERROR = "CHAT_ADAPTER_ERROR";
-    private HashMap<Integer,String>paths = new HashMap<>();
+    private HashMap<Integer, String> paths = new HashMap<>();
 
 
     private ArrayList<Integer> voiceMessagesIndex = new ArrayList<>();
-    private HashMap<Integer,MediaPlayer>players = new HashMap<>();
-    private HashMap<Integer,SeekBar>seeks = new HashMap<>();
-    private HashMap<Integer,TextView>playBackTimes = new HashMap<>();
-
+    private HashMap<Integer, MediaPlayer> players = new HashMap<>();
+    private HashMap<Integer, SeekBar> seeks = new HashMap<>();
+    private HashMap<Integer, TextView> playBackTimes = new HashMap<>();
 
 
     public interface MessageInfoListener {
@@ -92,7 +104,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         void onEditMessageClick(Message message);
 
-        String onImageDownloaded(Bitmap bitmap,Message message);
+        String onImageDownloaded(Bitmap bitmap, Message message);
+
+        String onVideoDownloaded(File file, Message message);
+
+        void onVideoClicked(Uri uri);
     }
 
     private MessageInfoListener callback;
@@ -105,44 +121,37 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         this.messages = messages;
     }
 
-    public void addNewMessage(Message message){
-        if(messages==null)
+    public void addNewMessage(Message message) {
+        if (messages == null)
             messages = new ArrayList<>();
         messages.add(message);
 
     }
 
 
-    public void changeExistingMessage(Message message,int position)
-    {
-        if(messages!=null)
-        {
-            int messageIndex = findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(message.getMessageID()));
-            if (messageIndex!=-1)
-            {
-                messages.set(messageIndex,message);
+    public void changeExistingMessage(Message message, int position) {
+        if (messages != null) {
+            int messageIndex = findCorrectMessage(messages, 0, messages.size() - 1, Long.parseLong(message.getMessageID()));
+            if (messageIndex != -1) {
+                messages.set(messageIndex, message);
                 notifyItemChanged(messageIndex);
-            }
-            else Log.e(ERROR,"messageIndex is -1");
+            } else Log.e(ERROR, "messageIndex is -1");
         }
     }
 
-    private int findCorrectMessage(ArrayList<Message> messages, int min, int max, long key)
-    {
+    private int findCorrectMessage(ArrayList<Message> messages, int min, int max, long key) {
 
         int mid = (max + min) / 2;
         long midKey = Long.parseLong(messages.get(mid).getMessageID());
         if (midKey > key) {
-            if (max == mid)
-            {
+            if (max == mid) {
                 if (key == Long.parseLong(messages.get(min).getMessageID()))
                     return min;
             }
             max = mid;
             mid = findCorrectMessage(messages, min, max, key);
         } else if (midKey < key) {
-            if (min == mid)
-            {
+            if (min == mid) {
                 if (key == Long.parseLong(messages.get(max).getMessageID()))
                     return max;
             }
@@ -183,30 +192,29 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         final Message message = messages.get(position);
+
         holder.message.setText(message.getMessage());
-        if (message.getMessageType() == MessageType.textMessage.ordinal())
-        {
+            /*if (message.isStar()) {
+                holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
+            }*/
+        if (message.getMessageType() == MessageType.textMessage.ordinal()) {
             holder.previewImage.setVisibility(View.GONE);
             holder.playRecordingLayout.setVisibility(View.GONE);
-        }
-        else if (message.getMessageType() == MessageType.gpsMessage.ordinal())
-        {
+        } else if (message.getMessageType() == MessageType.gpsMessage.ordinal()) {
             holder.previewImage.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.GONE);
-        }
-        else if (message.getMessageType() == MessageType.photoMessage.ordinal()) {
+        } else if (message.getMessageType() == MessageType.photoMessage.ordinal()) {
             holder.previewImage.setVisibility(View.VISIBLE);
             Target target = new Target() {
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                     ChatAdapter.this.bitmap = bitmap;
-                   String path =  callback.onImageDownloaded(bitmap,message);
-                   if (path!=null)
-                   {
-                       Bitmap bitmap1 = BitmapFactory.decodeFile(path);
-                       holder.previewImage.setImageBitmap(bitmap1);
-                       //Picasso.get().load(path).into(holder.previewImage);
-                   }
+                    String path = callback.onImageDownloaded(bitmap, message);
+                    if (path != null) {
+                        Bitmap bitmap1 = BitmapFactory.decodeFile(path);
+                        holder.previewImage.setImageBitmap(bitmap1);
+                        //Picasso.get().load(path).into(holder.previewImage);
+                    }
                 }
 
                 @Override
@@ -221,8 +229,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             };
             if (message.getImagePath().contains("firebase"))
                 Picasso.get().load(message.getImagePath()).into(target);
-            else
-            {
+            else {
                 Bitmap bitmap = BitmapFactory.decodeFile(message.getImagePath());
                 holder.previewImage.setImageBitmap(bitmap);
             }
@@ -234,8 +241,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.messageTextLayout.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.VISIBLE);
             holder.previewImage.setVisibility(View.GONE);
-            if(holder.statusTv!=null)
-                 holder.statusTv.setVisibility(View.GONE);
+            if (holder.statusTv != null)
+                holder.statusTv.setVisibility(View.GONE);
             voiceMessagesIndex.add(position);
             if (message.getRecordingPath() != null) {
                 StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getRecordingPath());
@@ -247,7 +254,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                             player = new MediaPlayer();
                             String path = file.getAbsolutePath();
-                            paths.put(position,path);
+                            paths.put(position, path);
                             try {
                                 player.setDataSource(path);
                                 player.prepare();
@@ -259,7 +266,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                                         holder.message.setText(R.string.zero_time);
                                     }
                                 });
-                                players.put(position,player);
+                                players.put(position, player);
                                 holder.voiceSeek.setMax(player.getDuration());
                                 holder.voiceSeek.setProgress(0);
                                 holder.voiceSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -275,23 +282,20 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                                     @Override
                                     public void onStopTrackingTouch(SeekBar seekBar) {
-                                        if(seekBar.getProgress()/1000<10)
-                                        {
-                                            String progress = "00:0" + seekBar.getProgress()/1000;
+                                        if (seekBar.getProgress() / 1000 < 10) {
+                                            String progress = "00:0" + seekBar.getProgress() / 1000;
                                             holder.message.setText(progress);
-                                        }
-                                        else
-                                        {
-                                            String progress = "00:" + seekBar.getProgress()/1000;
+                                        } else {
+                                            String progress = "00:" + seekBar.getProgress() / 1000;
                                             holder.message.setText(progress);
                                         }
                                     }
                                 });
-                                seeks.put(position,holder.voiceSeek);
+                                seeks.put(position, holder.voiceSeek);
                                 holder.message.setText(R.string.zero_time);
                                 holder.message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
                                 holder.message.setGravity(Gravity.CENTER);
-                                playBackTimes.put(position,holder.message);
+                                playBackTimes.put(position, holder.message);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -308,16 +312,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 }
             }
 
-        }else if(message.getMessageType() == MessageType.webMessage.ordinal())
-        {
-            Thread downloadWeb = new Thread()
-            {
+        } else if (message.getMessageType() == MessageType.webMessage.ordinal()) {
+            Thread downloadWeb = new Thread() {
                 @Override
                 public void run() {
                     super.run();
 
-                    try{
-                        if(holder.linkMessage!=null){
+                    try {
+                        if (holder.linkMessage != null) {
 
                             Document doc = Jsoup.connect(message.getMessage()).userAgent("Mozilla").get();
                             String title = doc.title();
@@ -330,8 +332,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                             HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
                             httpsURLConnection.connect();
                             int responseCode = httpsURLConnection.getResponseCode();
-                            if(responseCode == 200)
-                            {
+                            if (responseCode == 200) {
                                 InputStream inputStream = httpsURLConnection.getInputStream();
                                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                                 Handler handler = new Handler(Looper.getMainLooper());
@@ -346,7 +347,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                                         holder.linkMessage.setOnClickListener(new View.OnClickListener() {
                                             @Override
                                             public void onClick(View v) {
-                                                callback.onMessageClick(message,v,message.getMessageType());
+                                                callback.onMessageClick(message, v, message.getMessageType());
                                             }
                                         });
                                         holder.message.setVisibility(View.GONE);
@@ -361,13 +362,85 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         }
 
 
-                    }catch (IOException  | IllegalArgumentException e){
+                    } catch (IOException | IllegalArgumentException e) {
                         System.out.println("error in getting link image");
                     }
                 }
             };
             downloadWeb.setName("linkMessage");
             downloadWeb.start();
+        } else if (message.getMessageType() == MessageType.videoMessage.ordinal()) {
+            if (message.getRecordingPath() != null) {
+                if (message.getRecordingPath().contains("firebase")) {
+                    StorageReference downloadVideoFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getRecordingPath());
+                    try {
+                        File file = File.createTempFile("recording" + message.getMessageID(), ".mp4");
+                        downloadVideoFile.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                Uri videoUri = Uri.fromFile(file);
+                                holder.playVideoBtn.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        if (videoUri != null)
+                                            callback.onVideoClicked(videoUri);
+                                        else
+                                            Toast.makeText(holder.itemView.getContext(), "something went wrong, try again later", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                holder.videoLayout.setVisibility(View.VISIBLE);
+                                callback.onVideoDownloaded(file, message);
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Toast.makeText(holder.itemView.getContext(), "error happened while downloading video message", Toast.LENGTH_SHORT).show();
+                                Log.e("DOWNLOAD_ERROR", "error happened while downloading video file");
+                                e.printStackTrace();
+                            }
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Uri videoUri = Uri.parse(message.getRecordingPath());
+                    File file = new File(message.getRecordingPath());
+                    holder.videoLayout.setVisibility(View.VISIBLE);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        holder.itemView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Size size = new Size(holder.playVideoBtn.getWidth(),holder.playVideoBtn.getHeight());
+                                    Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(file, size, new CancellationSignal());
+                                    BitmapDrawable bitmapDrawable = new BitmapDrawable(holder.itemView.getResources(),thumbnail);
+                                    holder.playVideoBtn.setBackground(bitmapDrawable);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+
+                    }
+                    else
+                    {
+                        Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(file.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
+                        BitmapDrawable bitmapDrawable = new BitmapDrawable(holder.itemView.getResources(),thumbnail);
+                        holder.playVideoBtn.setBackground(bitmapDrawable);
+                    }
+                    holder.playVideoBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (!file.exists())
+                                Toast.makeText(holder.itemView.getContext(), "file doesn't exists! can't play video", Toast.LENGTH_SHORT).show();
+                           else if (videoUri != null)
+                                callback.onVideoClicked(videoUri);
+                            else
+                                Toast.makeText(holder.itemView.getContext(), "something went wrong, try again later", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
         }
 
         Calendar calendar = Calendar.getInstance();
@@ -426,7 +499,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.quote.setVisibility(View.GONE);
 
 
-
         if (holder.playPauseBtn != null) {
             holder.playPauseBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -434,7 +506,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     if (playing) {
                         System.out.println("in playing is true");
                         holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
-                         onPlay(false, position);
+                        onPlay(false, position);
                     } else {
                         System.out.println("in playing is false");
                         holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
@@ -445,13 +517,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
 
 
-
     }
 
-   public String getMessageID(int position)
-   {
-       return messages.get(position).getMessageID();
-   }
+    public String getMessageID(int position) {
+        return messages.get(position).getMessageID();
+    }
 
     @Override
     public int getItemCount() {
@@ -461,14 +531,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @SuppressWarnings("Convert2Lambda")
     public class ChatViewHolder extends RecyclerView.ViewHolder {
 
-        TextView message, timeReceived, edit, delete, quote, linkTitle,linkContent;
-        ImageView previewImage,linkImage;
-        LinearLayout extraOptionsLayout, bigPictureLayout, playRecordingLayout;
-        RelativeLayout messageTextLayout,linkMessage;
+        TextView message, timeReceived, edit, delete, quote, linkTitle, linkContent;
+        ImageView previewImage, linkImage;
+        LinearLayout extraOptionsLayout, bigPictureLayout, playRecordingLayout, videoLayout;
+        RelativeLayout messageTextLayout, linkMessage;
         ImageView statusTv, bigPicture;
         SeekBar voiceSeek;
-        ImageButton playPauseBtn;
-
+        ImageButton playPauseBtn, playVideoBtn;
 
 
         @SuppressLint("SetJavaScriptEnabled")
@@ -480,14 +549,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             voiceSeek = itemView.findViewById(R.id.voiceSeek);
             playPauseBtn = itemView.findViewById(R.id.play_pause_btn);
 
+            videoLayout = itemView.findViewById(R.id.videoLayout);
+            playVideoBtn = itemView.findViewById(R.id.playVideoBtn);
 
             statusTv = itemView.findViewById(R.id.messageStatus);
 
             extraOptionsLayout = itemView.findViewById(R.id.extraOptions);
             edit = itemView.findViewById(R.id.editBtn);
             delete = itemView.findViewById(R.id.deleteBtn);
-
-
 
 
             if (edit != null && delete != null) {
@@ -548,7 +617,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             linkMessage.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    callback.onMessageLongClick(messages.get(getAdapterPosition()),v,getItemViewType());
+                    callback.onMessageLongClick(messages.get(getAdapterPosition()), v, getItemViewType());
                     return true;
                 }
             });
@@ -578,33 +647,27 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             pausePlaying(position);
     }
 
-    private void startPlaying(int position)
-    {
+    private void startPlaying(int position) {
 
         MediaPlayer player = players.get(position);
         SeekBar seek = seeks.get(position);
         TextView playback = playBackTimes.get(position);
-        if(player!=null && seek!=null && playback!=null)
-        {
+        if (player != null && seek != null && playback != null) {
             player.start();
             playback.setGravity(Gravity.CENTER);
             playback.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            Thread thread = new Thread(){
+            Thread thread = new Thread() {
                 @Override
                 public void run() {
                     super.run();
-                    while(player.isPlaying())
-                    {
+                    while (player.isPlaying()) {
                         int currentPosition = player.getCurrentPosition();
                         seek.setProgress(currentPosition);
-                        if(currentPosition/1000 < 10)
-                        {
-                            String post = "00:0" + currentPosition/1000;
+                        if (currentPosition / 1000 < 10) {
+                            String post = "00:0" + currentPosition / 1000;
                             playback.setText(post);
-                        }
-                        else
-                        {
-                            String post = "00:" + currentPosition/1000;
+                        } else {
+                            String post = "00:" + currentPosition / 1000;
                             playback.setText(post);
                         }
 
@@ -626,39 +689,32 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     }
 
-    public int findQuotedMessageLocation(ArrayList<Message>messages,int min,int max,long key)
-    {
-        if(messages == null)
+    public int findQuotedMessageLocation(ArrayList<Message> messages, int min, int max, long key) {
+        if (messages == null)
             messages = this.messages;
-        int mid = (max + min)/2;
+        int mid = (max + min) / 2;
         long midKey = Long.parseLong(messages.get(mid).getMessageID());
-        if(midKey > key)
-        {
-            if(mid == max)
+        if (midKey > key) {
+            if (mid == max)
                 return -1;
             max = mid;
-            mid = findQuotedMessageLocation(messages,min,max,key);
-        }
-        else if (midKey < key)
-        {
-            if(mid == min)
+            mid = findQuotedMessageLocation(messages, min, max, key);
+        } else if (midKey < key) {
+            if (mid == min)
                 return -1;
             min = mid;
-            mid = findQuotedMessageLocation(messages,min,max,key);
+            mid = findQuotedMessageLocation(messages, min, max, key);
         }
-        if(mid!=-1)
+        if (mid != -1)
             if (messages.get(mid).getMessageID().equals(String.valueOf(key)))
-             return mid;
+                return mid;
         return -1;
     }
 
-    public ArrayList<Integer> SearchMessage(String searchQuery)
-    {
-        ArrayList<Integer>searchQueryIndexes = new ArrayList<>();
-        for (int i = 0; i < messages.size(); i++)
-        {
-            if (messages.get(i).getMessage().contains(searchQuery))
-            {
+    public ArrayList<Integer> SearchMessage(String searchQuery) {
+        ArrayList<Integer> searchQueryIndexes = new ArrayList<>();
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).getMessage().contains(searchQuery)) {
                 searchQueryIndexes.add(i);
             }
         }

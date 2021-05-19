@@ -117,9 +117,12 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         System.out.println("new token generated - in the service: " + s);
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            HashMap<String, Object> tokenMap = new HashMap<>();
-            tokenMap.put("token", s);
-            Server.updateServer("users/" + currentUser, tokenMap);
+            //HashMap<String, Object> tokenMap = new HashMap<>();
+            //tokenMap.put("token", s);
+            controller = CController.getController();
+            controller.setNotificationsControl(this);
+            controller.onUpdateData("Tokens/" + currentUser,s);
+            //Server.updateServer("users/" + currentUser, tokenMap);
         }
     }
 
@@ -128,7 +131,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
         System.out.println("in onMessageReceived");
-        DisableNotification();
+       // DisableNotification();
         //String messageSenderUID = remoteMessage.getData().get("sender");
         //String conversationID = remoteMessage.getData().get("conversationID");
         setUp(remoteMessage);

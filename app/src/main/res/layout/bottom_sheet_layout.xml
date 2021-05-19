@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_gradient"
+    android:orientation="vertical"
     app:layout_behavior="@string/bottom_sheet_behavior">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
 
 
         <TextView
             android:id="@+id/attachLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/attachFile"
             android:layout_marginStart="20dp"
             android:gravity="center_horizontal"
             android:text="Location"
@@ -26,25 +27,10 @@
             app:drawableTopCompat="@drawable/ic_baseline_location_on_24" />
 
         <TextView
-            android:id="@+id/attachFile"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="20dp"
-            android:layout_toEndOf="@id/attachLocation"
-            android:gravity="center_horizontal"
-            android:text="attach file"
-            android:textColor="@android:color/black"
-            android:visibility="gone"
-            app:drawableTopCompat="@drawable/ic_baseline_attach_file_24" />
-
-        <TextView
             android:id="@+id/attachCamera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/attachFile"
             android:layout_marginStart="20dp"
-            android:layout_toEndOf="@+id/attachFile"
             android:gravity="center_horizontal"
             android:text="attach photo"
             android:textColor="@android:color/black"
@@ -54,9 +40,7 @@
             android:id="@+id/attachGallery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/attachLocation"
             android:layout_marginStart="20dp"
-            android:layout_toEndOf="@id/attachCamera"
             android:text="gallery photo"
             android:textColor="@android:color/black"
             app:drawableTopCompat="@drawable/ic_baseline_photo_24" />
@@ -65,13 +49,38 @@
             android:id="@+id/delayMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/attachLocation"
             android:layout_marginStart="20dp"
-            android:layout_toEndOf="@id/attachGallery"
-            app:drawableTopCompat="@drawable/ic_baseline_access_time_white"
             android:text="Timed Message"
-            android:textColor="@android:color/white"
-            />
-    </RelativeLayout>
+            android:textColor="@color/black"
+            app:drawableTopCompat="@drawable/ic_baseline_access_time_black" />
+    </LinearLayout>
 
-</RelativeLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/videoMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:gravity="center_horizontal"
+            android:text="Video Message"
+            android:textColor="@color/black"
+            app:drawableTopCompat="@drawable/ic_baseline_videocam_black"
+            android:visibility="visible"/>
+
+        <TextView
+            android:id="@+id/attachFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:gravity="center_horizontal"
+            android:text="attach file"
+            android:visibility="visible"
+            android:textColor="@android:color/black"
+            app:drawableTopCompat="@drawable/ic_baseline_attach_file_24" />
+    </LinearLayout>
+</LinearLayout>

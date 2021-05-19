@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_marginTop="5dp">
+    android:layout_marginTop="5dp"
+    android:id="@+id/messageLayout">
 
 
     <androidx.constraintlayout.widget.Guideline
@@ -139,10 +140,27 @@
                 android:elevation="15dp"
                 />
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:id="@+id/videoLayout"
+            android:orientation="vertical"
+            android:layout_below="@id/playRecordingLayout"
+            android:visibility="gone"
+            >
+            <ImageButton
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="play video"
+                android:src="@drawable/ic_baseline_play_arrow_24"
+                android:id="@+id/playVideoBtn"
+                />
+        </LinearLayout>
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/playRecordingLayout"
+            android:layout_below="@id/videoLayout"
             android:id="@+id/messageTextLayout"
             >
             <TextView

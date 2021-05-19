@@ -566,8 +566,8 @@ public class TabFragment extends Fragment implements MainGUI {
             DataBase dbHelper = new DataBase(requireContext());
             db = dbHelper.getWritableDatabase();
             // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
-            // db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
-           // db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
+             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
+            //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
           /*  db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);*/
             // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
             dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
@@ -985,7 +985,7 @@ public class TabFragment extends Fragment implements MainGUI {
         super.onPause();
         if (!openingActivity)
             ChangeStatus();
-        //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
+        controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
         openingActivity = false;
         controller.onRemoveUserListener();
         controller.setMainGUI(null);
@@ -999,7 +999,7 @@ public class TabFragment extends Fragment implements MainGUI {
         controller.setMainGUI(this);
 
         ChangeStatus();
-        //controller.onUpdateData("users/" + currentUser + "/status", ONLINE_S);
+        controller.onUpdateData("users/" + currentUser + "/status", ONLINE_S);
     }
 
     @Override

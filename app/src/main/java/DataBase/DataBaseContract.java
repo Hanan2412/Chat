@@ -39,6 +39,7 @@ public final class DataBaseContract {
         public static final String MESSAGE_LINK = "link";
         public static final String MESSAGE_LINK_TITLE = "link_title";
         public static final String MESSAGE_LINK_CONTENT = "link_content";
+        public static final String MESSAGE_RECORDING_PATH = "recording_path";
     }
 
     public static class User implements BaseColumns{

@@ -59,6 +59,7 @@
         <activity android:name=".ProfileActivity2"/>
         <activity android:name=".ConversationActivity"
             android:launchMode="standard"
+            android:screenOrientation="portrait"
             >
 
         </activity>

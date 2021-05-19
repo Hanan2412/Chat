@@ -1,26 +1,16 @@
 package Fragments;
 
 
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.preference.PreferenceManager;
-
-import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-
 import Consts.ButtonType;
 
 @SuppressWarnings("Convert2Lambda")
@@ -64,6 +54,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
         TextView attachCameraPhoto = view.findViewById(R.id.attachCamera);
         TextView attachGalleryPhoto = view.findViewById(R.id.attachGallery);
         TextView TimedMessage = view.findViewById(R.id.delayMessage);
+        TextView videoMessage = view.findViewById(R.id.videoMessage);
         this.setCancelable(true);
         attachFile.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,7 +88,12 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
                 callback.onBottomSheetClick(ButtonType.delay);
             }
         });
-
+        videoMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.video);
+            }
+        });
         return view;
     }
 

@@ -297,7 +297,7 @@ public class Server2 implements IServer {
                         HashMap<String, Object> pictureMap = new HashMap<>();
                         pictureMap.put("recordingLink", sUri);
                         reference.updateChildren(pictureMap);
-                        Toast.makeText(context, "finished uploading voice message", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "finished uploading message", Toast.LENGTH_SHORT).show();
                         if (inConversation) {
                             DatabaseReference secondUserReference = secondUserReference(secondUserPath);
                             secondUserReference.updateChildren(pictureMap);
