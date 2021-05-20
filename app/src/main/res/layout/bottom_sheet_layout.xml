@@ -78,9 +78,20 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
             android:gravity="center_horizontal"
-            android:text="attach file"
-            android:visibility="visible"
+            android:text="Attach File"
+            android:visibility="gone"
             android:textColor="@android:color/black"
             app:drawableTopCompat="@drawable/ic_baseline_attach_file_24" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:text="Send Contact"
+            app:drawableTopCompat="@drawable/ic_baseline_contacts_24"
+            android:textColor="@android:color/black"
+            android:id="@+id/contact"
+            android:visibility="gone"
+            />
     </LinearLayout>
 </LinearLayout>

@@ -6,5 +6,10 @@ public enum ButtonType {
     camera,
     gallery,
     delay,
-    video
+    video,
+    sendMessage,
+    microphone,
+    play,
+    pause,
+    recording
 }

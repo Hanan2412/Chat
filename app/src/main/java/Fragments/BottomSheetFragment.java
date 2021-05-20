@@ -55,18 +55,17 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
         TextView attachGalleryPhoto = view.findViewById(R.id.attachGallery);
         TextView TimedMessage = view.findViewById(R.id.delayMessage);
         TextView videoMessage = view.findViewById(R.id.videoMessage);
+        TextView contact = view.findViewById(R.id.contact);
         this.setCancelable(true);
         attachFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //callback.onFileClicked();
                 callback.onBottomSheetClick(ButtonType.attachFile);
             }
         });
         attachLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               // callback.onLocationClicked();
                 callback.onBottomSheetClick(ButtonType.location);
             }
         });
@@ -92,6 +91,12 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 callback.onBottomSheetClick(ButtonType.video);
+            }
+        });
+        contact.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
             }
         });
         return view;

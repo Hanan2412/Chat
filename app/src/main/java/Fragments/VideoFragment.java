@@ -9,13 +9,10 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.MediaController;
 import android.widget.VideoView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.example.woofmeow.R;
-import com.google.android.gms.dynamic.IFragmentWrapper;
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -48,7 +45,6 @@ public class VideoFragment extends Fragment {
         ImageButton closeBtn = view.findViewById(R.id.closeVideoBtn);
         ImageButton sendVideo = view.findViewById(R.id.sendVideo);
         Bundle arguments = getArguments();
-
         if (arguments!=null) {
             Uri uri = arguments.getParcelable(URI);
             if (uri!=null)
@@ -58,6 +54,7 @@ public class VideoFragment extends Fragment {
                 video.setVideoURI(uri);
                 video.seekTo(1);//shows the first frame of the video
                 video.start();
+                mediaController.show();
             }
             boolean record = arguments.getBoolean(RECORD);
             if (!record)
@@ -86,6 +83,4 @@ public class VideoFragment extends Fragment {
         });
         return view;
     }
-
-
 }

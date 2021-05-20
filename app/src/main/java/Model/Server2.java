@@ -273,12 +273,13 @@ public class Server2 implements IServer {
         StorageReference fileReference = storageReference.child("feed/" + firebasePath);
         StorageTask<UploadTask.TaskSnapshot> uploadTask;
         DatabaseReference reference = database.getReference(path);
+        Toast.makeText(context, "Started upload", Toast.LENGTH_SHORT).show();
         uploadTask = fileReference.putFile(Uri.parse(filePath));
         uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
             @Override
             public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
                 if (task.isSuccessful())
-                    Toast.makeText(context, "Started upload", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Stage 2 upload", Toast.LENGTH_SHORT).show();
                 else {
                     Toast.makeText(context, "There was a problem while uploading, try again later", Toast.LENGTH_SHORT).show();
                     if (task.getException() != null)

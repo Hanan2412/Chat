@@ -1,15 +1,12 @@
 package Adapters;
 
 import android.annotation.SuppressLint;
-import android.content.ContentResolver;
-import android.content.Context;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.pdf.PdfDocument;
 import android.media.MediaPlayer;
-
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -19,32 +16,21 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
-
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
-
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FileDownloadTask;
@@ -52,12 +38,9 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
-
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,12 +48,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-
 import javax.net.ssl.HttpsURLConnection;
-
 import Consts.MessageType;
 import Consts.Messaging;
-import Fragments.VideoFragment;
 import NormalObjects.Message;
 
 
@@ -79,8 +59,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     private ArrayList<Message> messages = new ArrayList<>();
     private String currentUserUID;
-    private Context context;
-    private Bitmap bitmap;
     private boolean playing = false;
     private MediaPlayer player = null;
     private String ERROR = "CHAT_ADAPTER_ERROR";
@@ -125,7 +103,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         if (messages == null)
             messages = new ArrayList<>();
         messages.add(message);
-
+        notifyItemInserted(getItemCount() - 1);
     }
 
 
@@ -170,7 +148,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @NonNull
     @Override
     public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        context = parent.getContext();
         Messaging messageType = Messaging.values()[viewType];
         View view = null;
         switch (messageType) {
@@ -194,9 +171,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         final Message message = messages.get(position);
 
         holder.message.setText(message.getMessage());
-            /*if (message.isStar()) {
+            if (message.isStar()) {
                 holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
-            }*/
+            }
         if (message.getMessageType() == MessageType.textMessage.ordinal()) {
             holder.previewImage.setVisibility(View.GONE);
             holder.playRecordingLayout.setVisibility(View.GONE);
@@ -208,12 +185,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             Target target = new Target() {
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                    ChatAdapter.this.bitmap = bitmap;
                     String path = callback.onImageDownloaded(bitmap, message);
                     if (path != null) {
                         Bitmap bitmap1 = BitmapFactory.decodeFile(path);
                         holder.previewImage.setImageBitmap(bitmap1);
-                        //Picasso.get().load(path).into(holder.previewImage);
                     }
                 }
 
@@ -227,14 +202,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                 }
             };
-            if (message.getImagePath().contains("firebase"))
-                Picasso.get().load(message.getImagePath()).into(target);
-            else {
-                Bitmap bitmap = BitmapFactory.decodeFile(message.getImagePath());
-                holder.previewImage.setImageBitmap(bitmap);
-            }
-
-            //Picasso.get().load(message.getImagePath()).into(holder.previewImage);
+            if (message.getImagePath()!=null)
+                if (message.getImagePath().contains("firebase"))
+                    Picasso.get().load(message.getImagePath()).into(target);
+                else {
+                    Bitmap bitmap = BitmapFactory.decodeFile(message.getImagePath());
+                    holder.previewImage.setImageBitmap(bitmap);
+                }
             holder.playRecordingLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.VoiceMessage.ordinal()) {
 
