@@ -16,6 +16,7 @@ import androidx.fragment.app.DialogFragment;
 import com.example.woofmeow.R;
 import com.google.android.material.textfield.TextInputEditText;
 
+@SuppressWarnings("Convert2Lambda")
 public class SignFragment extends DialogFragment {
 
     public interface Sign{

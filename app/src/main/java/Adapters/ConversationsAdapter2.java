@@ -81,11 +81,31 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
     public void updateConversation(Conversation conversation) {
-        int index = FindCorrectConversationIndex(conversation.getConversationID());
-        if (index > -1) {
-            conversations.set(index, conversation);
-            notifyItemChanged(index);
-        }
+            int index = FindCorrectConversationIndex(conversation.getConversationID());
+            if (index > -1) {
+                //places the conversation at the beginning of the list
+                if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
+                    //this if prevents the update if the only update is the typing indicator
+                    if (index == 0)
+                    {
+                        conversations.set(index, conversation);
+                        notifyItemChanged(index);
+                    }
+                    else {
+                        conversations.remove(index);
+                        notifyItemRemoved(index);
+                        conversations.add(0, conversation);
+                        notifyItemInserted(0);
+                    }
+                    /*conversations.remove(index + 1);//causes flickering
+                    notifyItemRemoved(index + 1);
+                    //conversations.set(index, conversation);
+           /*if (getItemCount() > 1)
+                notifyItemRangeInserted(1,getItemCount());*/
+                    //notifyItemChanged(index);
+                }
+            }
+
     }
 
 
@@ -150,6 +170,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 File imageFile = new File(directory,conversation.getRecipient() + "_Image");
                 Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
                 holder.profileImage.setImageBitmap(imageBitmap);
+                conversation.setRecipientImagePath(imageFile.getAbsolutePath());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }

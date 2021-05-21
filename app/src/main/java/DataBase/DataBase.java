@@ -60,8 +60,10 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.User.USER_NAME + " TEXT," +
                     DataBaseContract.User.USER_LAST_NAME + " TEXT," +
                     DataBaseContract.User.USER_TIME_CREATED + " TEXT," +
-                    DataBaseContract.User.USER_PICTURE_LINK + " TEXT)";// +
-                   // DataBaseContract.User.USER_BLOCKED_USERS + " TEXT)";
+                    DataBaseContract.User.USER_PICTURE_LINK + " TEXT," +
+                    DataBaseContract.User.USER_PHONE_NUMBER + " TEXT," +
+                    DataBaseContract.User.USER_LAST_STATUS + " TEXT)";
+
 
     private static final String SQL_CREATE_BLOCKED_USERS_TABLE =
             "CREATE TABLE IF NOT EXISTS " + DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE + " (" +

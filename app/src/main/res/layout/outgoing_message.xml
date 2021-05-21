@@ -160,7 +160,7 @@
             android:layout_height="300dp"
             android:layout_below="@id/linkMessage"
             android:layout_marginBottom="10dp"
-            android:background="@color/red"
+            android:background="@drawable/outgoing_message_look"
             android:contentDescription="the preview of an active message"
             android:src="@drawable/ic_baseline_location_on_24"
             android:visibility="gone" />

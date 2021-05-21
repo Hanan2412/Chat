@@ -7,6 +7,7 @@ import com.example.woofmeow.ConversationGUI;
 import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.PreferencesUpdate;
 import com.example.woofmeow.ProfileGUI;
+import com.example.woofmeow.UserCreationGUI;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import NormalObjects.User;
 import Services.NotificationsControl;
 
 //@SuppressWarnings("unchecked")
-public class CController implements IConversationController,IMainController, Server2.ServerData, IPreferenceInterface {
+public class CController implements IConversationController,IMainController, Server2.ServerData, IPreferenceInterface,INewUser {
 
     private ConversationGUI conversationGUI;
     private  MainGUI mainGUI;
@@ -27,6 +28,7 @@ public class CController implements IConversationController,IMainController, Ser
     private NotificationsControl notificationsControl;
     private static CController cController = null;
     private PreferencesUpdate preferencesUpdate;
+    private UserCreationGUI userCreationGUI;
     private CController()
     {
         //singleton design pattern is implemented so each view won't go null when views are changed
@@ -37,6 +39,13 @@ public class CController implements IConversationController,IMainController, Ser
         if(cController==null)
             cController = new CController();
         return cController;
+    }
+
+    public void setUserCreationGUI(UserCreationGUI gui)
+    {
+        userCreationGUI = gui;
+        server2 = Server2.getServer();
+        server2.setServerData(this);
     }
 
     public void setConversationGUI(ConversationGUI conversationGUI)
@@ -258,5 +267,10 @@ public class CController implements IConversationController,IMainController, Ser
     @Override
     public void onPreferenceDelete(String path) {
         server2.removeServer(path);
+    }
+
+    @Override
+    public void onNewUser(String name, String lastName, String nickname, Bitmap userImage,Context context) {
+        server2.createNewUser(name,lastName,nickname,userImage,context);
     }
 }

@@ -84,7 +84,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private DrawerLayout drawerLayout;
     private CoordinatorLayout coordinatorLayout;
-    private BroadcastReceiver broadcastReceiver;
     private User user;
     private ImageView profileImage;
     private ShapeableImageView shapeableImageView;
@@ -95,11 +94,9 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private Toolbar toolbar;
     private ViewPager viewPager;
     private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-    //private CController controller;
     public static final String ONLINE_S = "online";
     public static final String STANDBY_S = "standby";
     public static final String OFFLINE_S = "offline";
-    public static final String UNKNOWN_S = "unknown";
     private String currentStatus = ONLINE_S;
 
     private boolean search = false;
@@ -217,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
         profileImage = headerView.findViewById(R.id.headerImage);
         shapeableImageView = findViewById(R.id.toolbarProfileImage);
+        LoadCurrentUserImage();
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -224,23 +222,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             }
         });
         createNotificationChannel();
-
-
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String tabStart = preferences.getString("TabStart", "Chat");
-        switch (tabStart) {
-            case "Chat":
-                viewPager.setCurrentItem(0, true);
-                break;
-            case "Groups":
-                viewPager.setCurrentItem(1,true);
-                break;
-            default:
-                Log.e("ERROR","tabStart error");
-
-        }
-
-
         Intent sharedDataIntent = getIntent();
         String action = sharedDataIntent.getAction();
         String type = sharedDataIntent.getType();
@@ -367,10 +348,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         return super.onPrepareOptionsMenu(menu);
     }
 
+    @Override
+    public void onLoadUserFromMemory(User user){
+        this.user = user;
+    }
 
     @Override
     public void onUserUpdate(User user) {
-        this.user = user;
         if (user != null) {
             if (user.getUserUID().equals(currentUser)) {//us
                 this.user = user;
@@ -546,7 +530,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(broadcastReceiver);
     }
 
     @Override

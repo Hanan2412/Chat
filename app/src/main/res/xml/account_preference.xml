@@ -9,44 +9,20 @@
             android:summaryOff="requires a password on each restart"
             android:title="Start immediately"
             app:summaryOn="show conversations screen without password" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:key="findMe"
-            android:summary="allow other people to find you by the information you provided (name,last name)"
-            android:title="Allow others to find me" />
         <Preference
             android:key="deleteAccount"
-            android:summary="delete my account from the app, all unsaved data will be lost"
-            android:title="delete my account" />
+            android:summary="Delete my account from the app, all unsaved data will be lost"
+            android:title="Delete my account" />
         <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="status"
-            android:summary="allow others to see your online status"
-            android:title="i can see you" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:key="readMessage"
-            android:summary="allow others to see that you have read the message"
-            android:title="i know you read that" />
-        <SwitchPreferenceCompat
-            android:key="dataSave"
-            android:summary="choose where would you like to backup your data"
-            android:title="save data"
-            android:defaultValue="true"/>
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="LocalSave"
-            android:title="save locally"
-            app:isPreferenceVisible="true"/>
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="CloudSave"
-            android:title="save in the cloud"
-            app:isPreferenceVisible="true"/>
+            android:summary="Allow others to see your online status"
+            android:title="Visible to all" />
+
         <Preference
             android:key="deleteAllConversations"
-            android:summary="delete all the conversations and the messages, start fresh"
-            android:title="delete all of my conversations" />
+            android:summary="Delete all the conversations and the messages, start fresh"
+            android:title="Delete all of my conversations" />
     </PreferenceCategory>
 
 </PreferenceScreen>

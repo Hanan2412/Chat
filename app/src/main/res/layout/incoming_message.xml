@@ -93,7 +93,7 @@
             android:contentDescription="the preview of an active message"
             android:src="@drawable/ic_baseline_location_on_24"
             android:visibility="gone"
-            android:background="@color/red"/>
+            android:background="@drawable/incoming_message_look"/>
 
         <TextView
             android:id="@+id/quoteText"

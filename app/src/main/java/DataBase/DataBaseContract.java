@@ -51,7 +51,9 @@ public final class DataBaseContract {
         public static final String USER_LAST_NAME = "lastName";
         public static final String USER_TIME_CREATED = "time_created";
         public static final String USER_PICTURE_LINK = "picture_link";
-        //public static final String USER_BLOCKED_USERS = "blocked_users";
+        public static final String USER_PHONE_NUMBER = "phone_number";
+        public static final String USER_LAST_STATUS = "status";
+
     }
 
     public static class  BlockedUsers implements BaseColumns{

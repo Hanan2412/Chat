@@ -19,9 +19,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -53,10 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TimeZone;
 
 
@@ -69,7 +64,6 @@ import NormalObjects.Conversation;
 import NormalObjects.Message;
 import NormalObjects.ObjectToSend;
 import NormalObjects.Server;
-import NormalObjects.User;
 import Retrofit.RetrofitApi;
 import Retrofit.RetrofitClient;
 import Try.TryMyResponse;
@@ -134,7 +128,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
        // DisableNotification();
         //String messageSenderUID = remoteMessage.getData().get("sender");
         //String conversationID = remoteMessage.getData().get("conversationID");
-        setUp(remoteMessage);
+        if(isNotificationsAllowed())
+            setUp(remoteMessage);
 
     }
 
@@ -325,14 +320,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         }
         return false;
     }
-    /*private boolean settingsPreferences() {
+    private boolean isNotificationsAllowed() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean allNotifications = preferences.getBoolean("all_notifications", true);
-        boolean privateNotifications = preferences.getBoolean("privateNotifications", true);
-        boolean existingConversations = preferences.getBoolean("chatNotifications", true);
-        boolean newChatNotifications = preferences.getBoolean("newChatNotifications", true);
-        return true;
-    }*/
+        return preferences.getBoolean("allowNotifications",true);
+    }
 
     private void updateServer(String recipient, String conversationID, String messageID) {
         HashMap<String, Object> statusMap = new HashMap<>();

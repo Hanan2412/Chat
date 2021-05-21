@@ -2,10 +2,12 @@ package Adapters;
 
 import android.annotation.SuppressLint;
 
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.fonts.Font;
 import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
@@ -63,7 +65,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private MediaPlayer player = null;
     private String ERROR = "CHAT_ADAPTER_ERROR";
     private HashMap<Integer, String> paths = new HashMap<>();
-
+    private float textSize = 30;
 
     private ArrayList<Integer> voiceMessagesIndex = new ArrayList<>();
     private HashMap<Integer, MediaPlayer> players = new HashMap<>();
@@ -492,7 +494,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
 
     }
-
+    public void setTextSize(float textSize){this.textSize = textSize;}
     public String getMessageID(int position) {
         return messages.get(position).getMessageID();
     }
@@ -549,6 +551,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 });
             }
             message = itemView.findViewById(R.id.message);
+            message.setTextSize(textSize);
             timeReceived = itemView.findViewById(R.id.messageTime);
             message.setOnClickListener(new View.OnClickListener() {
                 @Override

@@ -14,6 +14,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 
+import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
 
@@ -150,6 +151,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -174,6 +176,7 @@ import Fragments.TimePickerFragment;
 import Fragments.VideoFragment;
 import NormalObjects.Message;
 import NormalObjects.Network;
+import NormalObjects.Network2;
 import NormalObjects.NetworkChange;
 import NormalObjects.ObjectToSend;
 
@@ -333,13 +336,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private ImageButton scrollToNext;
     private ArrayList<Integer> indices;
     private int indicesIndex = 0;
-    private long startedTyping = 0;
     private boolean networkConnection = true;
     private final int REQUEST_VIDEO_CAPTURE = 8;
     private Uri videoUri;
     private final String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
-
+    private boolean iReadThat = true;//allows the recipient to see that we have read the message sent
     private  RelativeLayout relativeLayout;
+    private Network2 network2;
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -425,10 +428,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 ResetToText();
                 buttonState = RECORD_VOICE;
                 //sendMessageButton.setText(getResources().getString(R.string.record));
-                if (!darkMode)
+                SetCorrectColor(ButtonType.microphone);
+                /*if (!darkMode)
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
                 else
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
+                    imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);*/
             }
         });
 
@@ -439,6 +443,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         //conversation id is sent to this activity regardless of from where this activity was lunched
         conversationID = getIntent().getStringExtra("conversationID");
         recipientPhoneNumber = getIntent().getStringExtra("recipientPhone");
+        String recipientImagePath = getIntent().getStringExtra("recipientImagePath");
         title = getIntent().getStringExtra("title");
         link = getIntent().getStringExtra("link");
         isRecipientTyping();
@@ -487,19 +492,21 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", false);
                 if (s.toString().equals("")) {
                     if (buttonState != RECORD_VOICE)
-                        if (!darkMode)
+                        SetCorrectColor(ButtonType.microphone);
+                        /*if (!darkMode)
                             imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
                         else
-                            imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
+                            imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);*/
                     sendActionBtn.setVisibility(View.VISIBLE);
                     //  sendMessageButton.setText(getResources().getString(R.string.record));
                     buttonState = RECORD_VOICE;
                 } else {
                     if (buttonState != SEND_MESSAGE)
-                        if (!darkMode)
+                        SetCorrectColor(ButtonType.sendMessage);
+                        /*if (!darkMode)
                             imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
                         else
-                            imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
+                            imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);*/
                     sendActionBtn.setVisibility(View.GONE);
                     //   sendMessageButton.setText(getResources().getString(R.string.send));
                     buttonState = SEND_MESSAGE;
@@ -524,15 +531,17 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         imageSwitcher.setInAnimation(in);
         imageSwitcher.setOutAnimation(out);
         if (link == null) {
-            if (!darkMode)
+            SetCorrectColor(ButtonType.microphone);
+            /*if (!darkMode)
                 imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
             else
-                imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
+                imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);*/
         } else {
-            if (!darkMode)
+            SetCorrectColor(ButtonType.sendMessage);
+            /*if (!darkMode)
                 imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
             else
-                imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
+                imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);*/
         }
         recyclerView.setHasFixedSize(true);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
@@ -546,7 +555,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
 
         LoadMessagesFromDataBase();
-
 
         recyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
 
@@ -584,7 +592,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         };
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
         itemTouchHelper.attachToRecyclerView(recyclerView);
-
+        SetUpBySettings();
         quoteText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -652,20 +660,22 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     PlayOrNot();
                 } else if (player.isPlaying()) {
                     player.pause();
-                    if (!darkMode)
+                    SetCorrectColor(ButtonType.play);
+                    /*if (!darkMode)
                         playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
                     else
-                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);*/
                 } else {
                     player.start();
                     startPlaying1 = !startPlaying1;
                     Thread playBackThread = new Thread(ConversationActivity.this);
                     playBackThread.setName("playBackThread");
                     playBackThread.start();
-                    if (!darkMode)
+                    SetCorrectColor(ButtonType.pause);
+                   /* if (!darkMode)
                         playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
                     else
-                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);*/
                 }
             }
         });
@@ -702,39 +712,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     Toast.makeText(ConversationActivity.this, "start the player, pause it and move the time indicator", Toast.LENGTH_SHORT).show();
             }
         });
-
-        SetUpBySettings();
-        /*switch (defaultActionBtn_Preference) {
-            case "Location":
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);
-                actionState = ButtonType.location.ordinal();
-                break;
-            case "Camera":
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
-                actionState = ButtonType.camera.ordinal();
-                break;
-            case "Gallery":
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_photo_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
-                actionState = ButtonType.gallery.ordinal();
-                break;
-            default:
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);
-                actionState = ButtonType.location.ordinal();
-                System.out.println("default action preference");
-        }*/
-
         sendActionBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -742,70 +719,26 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 switch (type) {
                     case location: {
                         onLocationAction();
-                        /*AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity.this);
-                        builder.setCancelable(true);
-                        builder.setTitle("Send CurrentLocation").setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.cancel();
-                            }
-                        }).setPositiveButton("Send", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                //sends the location
-                                if (AskPermission(MessageType.gpsMessage))
-                                    findLocation();
-                            }
-                        }).setMessage("Are you sure you want to send your current location");
-                        builder.show();*/
                         break;
                     }
                     case attachFile: {
                         onFileAction();
-                        /*AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity.this);
-                        builder.setCancelable(true);
-                        builder.setTitle("Send file?").setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.cancel();
-                            }
-                        }).setPositiveButton("Send", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                //opens file picker to send a file
-                                Intent attachFileIntent = new Intent(Intent.ACTION_GET_CONTENT);*/
-                        //attachFileIntent.setType("*/*");
-                                /*startActivityForResult(Intent.createChooser(attachFileIntent,"select file"),SEND_FILE);
-                            }
-                        }).setMessage("Are you sure you want to send a file");
-                        builder.create().show();*/
                         break;
                     }
                     case camera: {
                         onCameraAction();
-                        /*AskPermission(MessageType.photoMessage);
-                        requestCamera();*/
                         break;
                     }
                     case gallery: {
                         onGalleryAction();
-                        //openGallery();
                         break;
                     }
                     case delay: {
                         onDelayAction();
-                        /*PickerFragment pickerFragment = PickerFragment.newInstance();
-                        FragmentManager fragmentManager = getSupportFragmentManager();
-                        FragmentTransaction transaction = fragmentManager.beginTransaction();
-                        transaction.add(R.id.contentContainer, pickerFragment, PICKER_FRAGMENT_TAG);
-                        transaction.addToBackStack(null);
-                        transaction.commit();*/
                         break;
                     }
                     case video: {
                         onVideoAction();
-                        /*if(AskPermission(MessageType.photoMessage))
-                            RecordVideo();*/
                         break;
                     }
                     default:
@@ -828,12 +761,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
         });
         talkingToImage = findViewById(R.id.toolbarProfileImage);
+        LoadRecipientImage();
         talkingToImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent openRecipientIntent = new Intent(ConversationActivity.this, ProfileActivity2.class);
                 openRecipientIntent.putExtra("recipient", recipient);
                 openRecipientIntent.putExtra("currentUser", user);
+                openRecipientIntent.putExtra("recipientImagePath",recipientImagePath);
                 startActivity(openRecipientIntent);
             }
         });
@@ -848,21 +783,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 finish();
             }
         });
-
-
-        /*if (darkMode) {
-            relativeLayout.setBackgroundColor(getResources().getColor(android.R.color.black, getTheme()));
-            messageSent.setBackgroundColor(getResources().getColor(android.R.color.black, getTheme()));
-            messageSent.setHintTextColor(getResources().getColor(android.R.color.white, getTheme()));
-            messageSent.setTextColor(getResources().getColor(android.R.color.white, getTheme()));
-            sendActionBtn.setImageResource(R.drawable.location_white);
-        } else {
-            relativeLayout.setBackgroundColor(getResources().getColor(android.R.color.white, getTheme()));
-            messageSent.setBackgroundColor(getResources().getColor(android.R.color.white, getTheme()));
-            messageSent.setHintTextColor(getResources().getColor(android.R.color.black, getTheme()));
-            messageSent.setTextColor(getResources().getColor(android.R.color.black, getTheme()));
-            sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-        }*/
 
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         SharedPreferences.Editor editor = conversationPreferences.edit();
@@ -988,6 +908,19 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         registerForContextMenu(recyclerView);
     }
 
+    private void LoadRecipientImage()
+    {
+        try {
+            ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
+            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
+            File imageFile = new File(directory,recipientUID + "_Image");
+            Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
+            talkingToImage.setImageBitmap(imageBitmap);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void onLocationAction() {
         AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity.this);
         builder.setCancelable(true);
@@ -1052,64 +985,39 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void SetUpBySettings()
     {
+        final String SMALL = "small";
+        final String MEDIUM = "medium";
+        final String LARGE = "large";
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String chosenActionBtn = preferences.getString("ActionButton","mega");
-     //   int  defaultActionBtn_Preference = preferences.getInt("ActionButton", 0);
         darkMode = preferences.getBoolean("darkView", false);
         directCall = preferences.getBoolean("directCall", false);
-        //int[] arrayValues = getResources().getIntArray(R.array.chatPreferenceListValues);
-       // String[] arrayNames = getResources().getStringArray(R.array.chatPreferenceListName);
-        //String chosenActionBtn = arrayNames[defaultActionBtn_Preference];
         switch (chosenActionBtn) {
             case "Location":
                 SetCorrectColor(ButtonType.location);
-                /*if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);*/
                 actionState = ButtonType.location.ordinal();
                 break;
             case "Camera":
                 SetCorrectColor(ButtonType.camera);
-             /*   if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);*/
                 actionState = ButtonType.camera.ordinal();
                 break;
             case "Gallery":
                 SetCorrectColor(ButtonType.gallery);
-               /* if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_photo_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);*/
                 actionState = ButtonType.gallery.ordinal();
                 break;
             case "Delayed Message":{
                 SetCorrectColor(ButtonType.delay);
-               /* if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_black);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_white);*/
                 actionState = ButtonType.delay.ordinal();
                 break;
             }
             case "Video Message":
             {
                 SetCorrectColor(ButtonType.video);
-              /*  if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_black);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_white);*/
                 actionState = ButtonType.video.ordinal();
                 break;
             }
             default:
                 SetCorrectColor(ButtonType.location);
-                /*if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);*/
                 actionState = ButtonType.location.ordinal();
                 Log.e(ERROR_CASE,"default action preference");
         }
@@ -1126,6 +1034,21 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             messageSent.setTextColor(getResources().getColor(android.R.color.black, getTheme()));
             //sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
         }
+        String textSize = preferences.getString("textSize","medium");
+        switch (textSize)
+        {
+            case SMALL:
+                chatAdapter.setTextSize(12);
+                break;
+            case MEDIUM:
+                chatAdapter.setTextSize(30);
+                break;
+            case LARGE:
+                chatAdapter.setTextSize(48);
+                break;
+        }
+        iReadThat = preferences.getBoolean("readMessage",true);
+
     }
 
     private void SetCorrectColor(ButtonType type)
@@ -1787,7 +1710,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     protected void onDestroy() {
         super.onDestroy();
         String recipientConversationID = RecipientConversationID(conversationID);
-        controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", false);
+        if (recipient!=null && recipient.getUserUID()!=null)
+            controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", false);
         controller.onRemoveChildEvent();
         // Server.removeMessagesChildEvent();
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
@@ -1796,6 +1720,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         editor.apply();
         controller.removeInterface(1);
         controller.setConversationGUI(null);
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (connectivityManager!=null && network2 != null)
+            connectivityManager.unregisterNetworkCallback(network2);
     }
 
     private boolean AskPermission(MessageType messageType) {
@@ -2084,8 +2011,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
                 .addTransportType(NetworkCapabilities.TRANSPORT_VPN);
         NetworkRequest request = builder.build();
-        Network network = new Network();
-        network.setListener(new NetworkChange() {
+        network2 = Network2.getInstance();
+        //Network network = new Network();
+        network2.setListener(new NetworkChange() {
             @Override
             public void onNetwork() {
                 if (!networkConnection) {
@@ -2115,7 +2043,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
         //ConnectivityManager.NetworkCallback networkCallback = network;
         if (connectivityManager != null)
-            connectivityManager.registerNetworkCallback(request, network);
+            connectivityManager.registerNetworkCallback(request, network2);
 
     }
 
@@ -2626,9 +2554,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
             //no need to update server database message status after the message is seen
             if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ConversationActivity.this);
-                boolean messageSeen = preferences.getBoolean("readMessage", true);
-                if (messageSeen) {
+               // SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ConversationActivity.this);
+               // boolean messageSeen = preferences.getBoolean("readMessage", true);
+                if (iReadThat) {
                     HashMap<String, Object> statusMap = new HashMap<>();
                     statusMap.put("messageStatus", MESSAGE_SEEN);
                     String recipientConversationID = RecipientConversationID(message.getConversationID());
@@ -3045,7 +2973,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
     }
 
-
     @Override
     public void onLetsMeet(String start, String end) {
         HashMap<String, Object> meetMap = new HashMap<>();
@@ -3082,6 +3009,5 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }

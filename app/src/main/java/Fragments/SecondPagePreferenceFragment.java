@@ -1,11 +1,14 @@
 package Fragments;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,11 +21,16 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.SeekBarPreference;
 import androidx.preference.SwitchPreferenceCompat;
 
+import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.PreferencesUpdate;
 import com.example.woofmeow.R;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.prefs.PreferenceChangeEvent;
+import java.util.prefs.PreferenceChangeListener;
 
 import Controller.CController;
 
@@ -30,11 +38,13 @@ import Controller.CController;
 public class SecondPagePreferenceFragment extends PreferenceFragmentCompat implements PreferencesUpdate {
 
     private final String CHAT_PREFERENCE = "ChatPreference";
-    private final String ABOUT_PREFERENCE = "AboutPreference";
-    private final String UPDATE_LOG = "updateLog";
     private final String ACCOUNT_PREFERENCES = "AccountPreference";
+    private final String NOTIFICATIONS_PREFERENCES = "NotificationsPreference";
+    private final int CALL_PHONE = 7;
     private CController controller;
     private final String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    private SwitchPreferenceCompat phoneCall;
+    private final String preferencePath = "users/" + currentUser + "/preferences/";
     @SuppressLint("RestrictedApi")
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -46,163 +56,47 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat imple
             switch (key) {
                 case CHAT_PREFERENCE:
                     setPreferencesFromResource(R.xml.chat_preference, rootKey);
-                    SwitchPreferenceCompat privateNotificationsSwitch = findPreference("privateNotifications");
-                    SwitchPreferenceCompat chatNotificationsSwitch = findPreference("chatNotifications");
-                    SwitchPreferenceCompat newChatNotificationsSwitch = findPreference("newChatNotifications");
-                    SwitchPreferenceCompat allNotificationsSwitch = findPreference("all_notifications");
-                    SwitchPreferenceCompat showNotificationLikeThis = findPreference("iconNotification");
-                    ListPreference actionBtnDefault = findPreference("ActionButton");
-                    SwitchPreferenceCompat longPressSwitch = findPreference("Long press");
-                    CheckBoxPreference sendButtonLP = findPreference("SendButtonLP");
-                    CheckBoxPreference actionButtonLP = findPreference("ActionButtonLP");
-                    ListPreference loadMessages = findPreference("messagesLoad");
-
-
-
-
-
-
-                    loadMessages.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    ListPreference textSize = findPreference("textSize");
+                    textSize.setSummary("Choose the text size your texts will be at.\ncurrent size: " + textSize.getValue());
+                    textSize.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                         @Override
-                        public boolean onPreferenceClick(Preference preference) {
-                            System.out.println("loadMessages changed");
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            ListPreference textSize = (ListPreference) preference;
+                            textSize.setSummary("Choose the text size your texts will be at.\ncurrent size: " + newValue);
+                            textSize.setValue((String) newValue);
                             return false;
                         }
                     });
-
-
-                    allNotificationsSwitch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    phoneCall = findPreference("PhoneCall");
+                    if (requireContext().checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED)
+                        phoneCall.setChecked(true);
+                    else
+                        phoneCall.setChecked(false);
+                    phoneCall.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                         @Override
                         public boolean onPreferenceClick(Preference preference) {
-
-                            if (!allNotificationsSwitch.isChecked()) {
-                                privateNotificationsSwitch.setChecked(false);
-                                chatNotificationsSwitch.setChecked(false);
-                                newChatNotificationsSwitch.setChecked(false);
-                            } else {
-                                privateNotificationsSwitch.setChecked(true);
-                                chatNotificationsSwitch.setChecked(true);
-                                newChatNotificationsSwitch.setChecked(true);
-                            }
+                            int hasCallPermission = requireContext().checkSelfPermission(Manifest.permission.CALL_PHONE);
+                            if (hasCallPermission != PackageManager.PERMISSION_GRANTED) {
+                                requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, CALL_PHONE);
+                            } else
+                                phoneCall.setChecked(true);
                             return false;
                         }
                     });
-
-                privateNotificationsSwitch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if (!privateNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(false);
-                        else if(chatNotificationsSwitch.isChecked() && newChatNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(true);
-                        return false;
-                    }
-                });
-
-                longPressSwitch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if (longPressSwitch.isChecked()) {
-                            {
-                                sendButtonLP.setVisible(true);
-                                actionButtonLP.setVisible(true);
-                                sendButtonLP.setChecked(true);
-                                actionButtonLP.setChecked(true);
-                            }
-                        } else {
-                            sendButtonLP.setVisible(false);
-                            actionButtonLP.setVisible(false);
-                            sendButtonLP.setChecked(false);
-                            actionButtonLP.setChecked(false);
+                    ListPreference actionList = findPreference("ActionButton");
+                    actionList.setSummary("action button set to: " + actionList.getValue());
+                    actionList.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                        @Override
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            actionList.setSummary("action button set to: " + newValue);
+                            actionList.setValue((String) newValue);
+                            return false;
                         }
-                        return false;
-                    }
-                });
-
-                sendButtonLP.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @SuppressLint("RestrictedApi")
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if (!sendButtonLP.isChecked()) {
-                            if (!actionButtonLP.isChecked()) {
-                                longPressSwitch.performClick();
-                            }
-                        }
-                        return false;
-                    }
-                });
-                actionButtonLP.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if (!actionButtonLP.isChecked()) {
-                            if (!sendButtonLP.isChecked())
-                                longPressSwitch.performClick();
-                        }
-                        return false;
-                    }
-                });
-
-                chatNotificationsSwitch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if(!chatNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(false);
-                        else if(newChatNotificationsSwitch.isChecked() && privateNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(true);
-                        return false;
-                    }
-                });
-
-                newChatNotificationsSwitch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        if(!newChatNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(false);
-                        else if(chatNotificationsSwitch.isChecked() && privateNotificationsSwitch.isChecked())
-                            allNotificationsSwitch.setChecked(true);
-                        return false;
-                    }
-                });
-
-                actionBtnDefault.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        // callback.onChatPreferenceChange(actionBtnLP,true,Integer.parseInt(actionBtnDefault.getValue()));
-                        return false;
-                    }
-                });
-                break;
-
-                case ABOUT_PREFERENCE:
-                    setPreferencesFromResource(R.xml.about_preference, rootKey);
+                    });
                     break;
-                case UPDATE_LOG:
-                    setPreferencesFromResource(R.xml.update_log,rootKey);
-                    break;
-                case ACCOUNT_PREFERENCES:
-                {
-                    setPreferencesFromResource(R.xml.account_preference,rootKey);
-                    SwitchPreferenceCompat saveData = findPreference("dataSave");
-                    CheckBoxPreference saveLocally = findPreference("LocalSave");
-                    CheckBoxPreference cloudSave = findPreference("CloudSave");
-                    saveData.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                        @Override
-                        public boolean onPreferenceClick(Preference preference) {
-                            if(saveData.isChecked()) {
-                                saveLocally.setVisible(true);
-                                cloudSave.setVisible(true);
-                            }
-                            else
-                            {
-                                cloudSave.setChecked(false);
-                                saveLocally.setVisible(false);
-                                cloudSave.setVisible(false);
-                            }
-                            return false;
-                        }
-                    });
 
+                case ACCOUNT_PREFERENCES: {
+                    setPreferencesFromResource(R.xml.account_preference, rootKey);
                     Preference deleteAllData = findPreference("deleteAllConversations");
                     deleteAllData.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                         @Override
@@ -253,23 +147,25 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat imple
                             return false;
                         }
                     });
-                    SwitchPreferenceCompat allowOthersToFindMe = findPreference("findMe");
-                    allowOthersToFindMe.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                        @Override
-                        public boolean onPreferenceClick(Preference preference) {
-                            if(allowOthersToFindMe.isChecked())
-                                 controller.onPreferenceChange("users/" + currentUser + "canBeFound",true);
-                            else
-                                controller.onPreferenceChange("users/" + currentUser + "canBeFound",false);
-                            return false;
-                        }
-                    });
+                }
+                case NOTIFICATIONS_PREFERENCES:{
+                    setPreferencesFromResource(R.xml.notification_preferences,rootKey);
                     break;
                 }
                 default:
-                    Toast.makeText(requireContext(), "Error opening settings", Toast.LENGTH_SHORT).show();
+                    Log.e("SETTINGS ERROR","error opening settings");
             }
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == CALL_PHONE) {
+            phoneCall.setChecked(true);
+        }
+        else
+            phoneCall.setChecked(false);
     }
 
     @Override
@@ -277,18 +173,19 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat imple
         View view = super.onCreateView(inflater, container, savedInstanceState);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean darkMode = preferences.getBoolean("darkView", false);
-        if (darkMode)
-        {
+        if (darkMode) {
             requireContext().setTheme(R.style.preferenceStyleDark);
             view.setBackgroundColor(getResources().getColor(R.color.black, requireContext().getTheme()));
-        }
-        else
-        {
+        } else {
             requireContext().setTheme(R.style.preferenceStyleLight);
             view.setBackgroundColor(getResources().getColor(android.R.color.white, requireContext().getTheme()));
         }
         return view;
     }
 
-
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        controller.setPreferencesInterface(null);
+    }
 }

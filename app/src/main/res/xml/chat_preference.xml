@@ -1,78 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <PreferenceCategory
-        android:icon="@drawable/ic_baseline_notifications_24"
-        android:title="Notifications">
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:icon="@drawable/ic_baseline_notifications_24"
-            android:key="all_notifications"
-            android:summary="Allow all chat notifications from all sources"
-            android:title="Allow notifications" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:icon="@drawable/ic_baseline_chat_bubble_outline_24"
-            android:key="privateNotifications"
-            android:summary="allow messages notifications from shop"
-            android:title="private chat" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:icon="@drawable/ic_baseline_chat_bubble_24"
-            android:key="chatNotifications"
-            android:summary="allow notifications from existing conversations"
-            android:title="chat notifications" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:icon="@drawable/ic_baseline_chat_24"
-            android:key="newChatNotifications"
-            android:summary="allow notifications from people you don't have an existing conversation with"
-            android:title="new chat notifications" />
-        <SwitchPreferenceCompat
-            android:defaultValue="false"
-            android:icon="@drawable/ic_baseline_notifications_empty_black"
-            android:key="iconNotification"
-            android:summaryOff="show notification normally"
-            android:summaryOn="show only notification icon"
-            android:title="show notification like this:" />
-    </PreferenceCategory>
     <PreferenceCategory android:title="Functionality">
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="directCall"
+            android:key="PhoneCall"
             android:summary="when a the call button is pressed, start a phone call immediately"
             android:title="Phone calls" />
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="readMessage"
+            android:summary="Allow others to see that you have read the message"
+            android:title="Bookworm" />
     </PreferenceCategory>
+
     <PreferenceCategory android:title="Look and feel">
         <ListPreference
             android:defaultValue="Location"
             android:entries="@array/chatPreferenceListName"
             android:entryValues="@array/chatPreferenceListValues"
             android:key="ActionButton"
-            android:summary="Action button is the button between the send button and the text input filed - the place you write your message in.\npick what button is shown by default"
+            android:summary="action button set to: Location"
             app:title="Action Button" />
-        <ListPreference
-            android:defaultValue="20"
-            android:entries="@array/numberOfMessagesToLoad"
-            android:entryValues="@array/numberOfMessagesToLoad"
-            android:key="messagesLoad"
-            android:summary="when opening a conversation, loading x messages from server. the higher the number, the slower the load"
-            android:title="Load x amount of messages" />
-        <SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:key="Long press"
-            android:summary="Allow Long press options on the buttons"
-            android:title="Long press" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="SendButtonLP"
-            android:title="Send Button long press"
-            app:isPreferenceVisible="true" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="ActionButtonLP"
-            android:title="Action Button long press"
-            app:isPreferenceVisible="true" />
+
     </PreferenceCategory>
+
+    <ListPreference
+        android:defaultValue="Medium"
+        android:entryValues="@array/textSizeValue"
+        android:entries="@array/textSizeName"
+        android:key="textSize"
+        android:title="Text Size"
+        android:summary="Choose the text size your texts will be at.\ncurrent size: Medium"
+        />
 
 </PreferenceScreen>

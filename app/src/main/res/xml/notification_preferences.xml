@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:icon="@drawable/ic_baseline_notifications_24"
+        android:title="Notifications">
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:icon="@drawable/ic_baseline_notifications_24"
+            android:key="allowNotifications"
+            android:summary="Allow chat notifications"
+            android:title="Allow notifications" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:icon="@drawable/ic_baseline_notifications_empty_black"
+            android:key="iconNotification"
+            android:title="minimized notifications"
+            app:summaryOn="won't show full notification when message arrives, only icon"
+            android:summaryOff="show full notification when message arrives, with message preview"/>
+    </PreferenceCategory>
+</PreferenceScreen>

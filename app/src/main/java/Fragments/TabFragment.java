@@ -51,6 +51,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.R;
+import com.google.android.gms.dynamic.IFragmentWrapper;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
@@ -88,13 +89,10 @@ import static com.example.woofmeow.MainActivity.STANDBY_S;
 public class TabFragment extends Fragment implements MainGUI {
 
     private static final String tabNumber = "tabNumber";
-
-    //private ConversationsAdapter conversationsAdapter;
     private String currentUser;
     private ArrayList<Conversation> conversations = new ArrayList<>();
     private ArrayList<String>recipientsName = new ArrayList<>();
     private CController controller;
-    //private CustomListView customListView;
     private User user;
     private String currentStatus = ONLINE_S;
     private String link, title;
@@ -111,6 +109,7 @@ public class TabFragment extends Fragment implements MainGUI {
     private LinearLayout searchLayout;
     private boolean search;
 
+
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
         Bundle bundle = new Bundle();
@@ -122,6 +121,7 @@ public class TabFragment extends Fragment implements MainGUI {
 
     public interface UpdateMain {
         void onUserUpdate(User user);
+        void onLoadUserFromMemory(User user);
         void onConversationAction();
         void onUserQuery(User user);
     }
@@ -309,6 +309,7 @@ public class TabFragment extends Fragment implements MainGUI {
                         startConversationIntent.putExtra("conversationID",conversation.getConversationID());
                         startConversationIntent.putExtra("recipient",conversation.getRecipient());
                         startConversationIntent.putExtra("recipientPhone",conversation.getRecipientPhoneNumber());
+                        startConversationIntent.putExtra("recipientImagePath",conversation.getRecipientImagePath());
                         SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share",Context.MODE_PRIVATE);
                         String title = sharedPreferences.getString("title","noTitle");
                         String link = sharedPreferences.getString("link","noLink");
@@ -417,19 +418,19 @@ public class TabFragment extends Fragment implements MainGUI {
                     case ONLINE_S:
                         item.setIcon(R.drawable.circle_red);
                         currentStatus = OFFLINE_S;
-                        ChangeStatus();
+                        ChangeStatus(OFFLINE_S);
                         //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
                         break;
                     case OFFLINE_S:
                         item.setIcon(R.drawable.circle_yellow);
                         currentStatus = STANDBY_S;
-                        ChangeStatus();
+                        ChangeStatus(STANDBY_S);
                         // controller.onUpdateData("users/" + currentUser + "/status", STANDBY_S);
                         break;
                     case STANDBY_S:
                         item.setIcon(R.drawable.circle_green);
                         currentStatus = ONLINE_S;
-                        ChangeStatus();
+                        ChangeStatus(ONLINE_S);
                         // controller.onUpdateData("users/" + currentUser + "/status", ONLINE_S);
                         break;
                 }
@@ -438,13 +439,25 @@ public class TabFragment extends Fragment implements MainGUI {
         return super.onOptionsItemSelected(item);
     }
 
-    private void ChangeStatus() {
+    private void ChangeStatus(String currentStatus) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean status = preferences.getBoolean("status", true);
         if (status)
+        {
+            if (user!=null) {
+                user.setStatus(currentStatus);
+                UpdateUser(user);
+            }
             controller.onUpdateData("users/" + currentUser + "/status", currentStatus);
+        }
         else
+        {
+            if (user!=null) {
+                user.setStatus(OFFLINE_S);
+                UpdateUser(user);
+            }
             controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
+        }
     }
 
     @Override
@@ -568,7 +581,7 @@ public class TabFragment extends Fragment implements MainGUI {
             // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
              //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
-          /*  db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);*/
+            //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
             // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
             dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
             //db.execSQL("CREATE TABLE IF NOT EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
@@ -577,13 +590,7 @@ public class TabFragment extends Fragment implements MainGUI {
 
     //called only if user doesn't exists - the first lunch of the app
     private void InsertUser(User user) {
-        ContentValues values = new ContentValues();
-        values.put(DataBaseContract.User.USER_UID, user.getUserUID());
-        values.put(DataBaseContract.User.USER_NAME, user.getName());
-        values.put(DataBaseContract.User.USER_LAST_NAME, user.getLastName());
-        values.put(DataBaseContract.User.USER_TIME_CREATED, user.getTimeCreated());
-        values.put(DataBaseContract.User.USER_PICTURE_LINK, user.getPictureLink());
-
+        ContentValues values = CreateUserValues(user);
         long rowID = db.insert(DataBaseContract.User.USER_TABLE, null, values);
         if (rowID == -1)
             Log.e(DATABASE_ERROR, "error inserting user to database");
@@ -591,19 +598,25 @@ public class TabFragment extends Fragment implements MainGUI {
 
     //on each login, the user table is updated with the current login user
     private void UpdateUser(User user) {
+        ContentValues values = CreateUserValues(user);
+        int count = db.update(DataBaseContract.User.USER_TABLE, values, null, null);
+        if (count != 1)
+            Log.e(DATABASE_ERROR, "more than 1 or 0 rows were updated in the user table");
+    }
+
+    private ContentValues CreateUserValues(User user)
+    {
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.User.USER_UID, user.getUserUID());
         values.put(DataBaseContract.User.USER_NAME, user.getName());
         values.put(DataBaseContract.User.USER_LAST_NAME, user.getLastName());
         values.put(DataBaseContract.User.USER_TIME_CREATED, user.getTimeCreated());
         values.put(DataBaseContract.User.USER_PICTURE_LINK, user.getPictureLink());
-
-
-        int count = db.update(DataBaseContract.User.USER_TABLE, values, null, null);
-        if (count != 1)
-            Log.e(DATABASE_ERROR, "more than 1 or 0 rows were updated in the user table");
+        if (user.getPhoneNumber() != null)
+            values.put(DataBaseContract.User.USER_PHONE_NUMBER,user.getPhoneNumber());
+        values.put(DataBaseContract.User.USER_LAST_STATUS,user.getStatus());
+        return values;
     }
-
     /*
         we check if the user exists in the database. compare user uid to the saved uid. unless the table is empty just update the user table with the new user that login
         then we load the conversations assigned to this user uid
@@ -633,7 +646,9 @@ public class TabFragment extends Fragment implements MainGUI {
                     DataBaseContract.User.USER_NAME,
                     DataBaseContract.User.USER_LAST_NAME,
                     DataBaseContract.User.USER_PICTURE_LINK,
-                    DataBaseContract.User.USER_TIME_CREATED
+                    DataBaseContract.User.USER_TIME_CREATED,
+                    DataBaseContract.User.USER_PHONE_NUMBER,
+                    DataBaseContract.User.USER_LAST_STATUS
             };
             String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {currentUser};
@@ -646,12 +661,17 @@ public class TabFragment extends Fragment implements MainGUI {
                 String lastName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_NAME));
                 String pictureLink = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PICTURE_LINK));
                 String timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_TIME_CREATED));
+                String phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PHONE_NUMBER));
+                String status = cursor.getColumnName(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_STATUS));
                 user.setUserUID(uid);
                 user.setName(name);
                 user.setLastName(lastName);
                 user.setPictureLink(pictureLink);
                 user.setTimeCreated(timeCreated);
+                user.setPhoneNumber(phoneNumber);
+                user.setStatus(status);
                 this.user = user;
+                callback.onLoadUserFromMemory(user);
             } else if (cursor.getCount() > 1)
                 Log.e(DATABASE_ERROR, "cursor contains more than 1 user");
             else
@@ -984,8 +1004,7 @@ public class TabFragment extends Fragment implements MainGUI {
     public void onPause() {
         super.onPause();
         if (!openingActivity)
-            ChangeStatus();
-        controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
+            ChangeStatus(OFFLINE_S);
         openingActivity = false;
         controller.onRemoveUserListener();
         controller.setMainGUI(null);
@@ -997,9 +1016,7 @@ public class TabFragment extends Fragment implements MainGUI {
         super.onResume();
         controller = CController.getController();
         controller.setMainGUI(this);
-
-        ChangeStatus();
-        controller.onUpdateData("users/" + currentUser + "/status", ONLINE_S);
+        ChangeStatus(ONLINE_S);
     }
 
     @Override

@@ -30,9 +30,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import Controller.CController;
 import NormalObjects.Server;
 
-public class UserCreationActivity extends AppCompatActivity {
+@SuppressWarnings("Convert2Lambda")
+public class UserCreationActivity extends AppCompatActivity implements UserCreationGUI {
 
     private Bitmap imageBitmap;
     private int WRITE_PERMISSION = 2;
@@ -41,6 +43,7 @@ public class UserCreationActivity extends AppCompatActivity {
     private  String photoPath;
     private Uri imageUri;
     private ImageView userImage;
+    private CController cController;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,7 +55,8 @@ public class UserCreationActivity extends AppCompatActivity {
         Button cameraBtn = findViewById(R.id.openCameraBtn);
         Button galleryBtn = findViewById(R.id.openGalleryBtn);
         Button continueBtn = findViewById(R.id.nextBtn);
-
+        cController = CController.getController();
+        cController.setUserCreationGUI(this);
         continueBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -67,6 +71,7 @@ public class UserCreationActivity extends AppCompatActivity {
                 if(!name.equals("")&&!last.equals("")) {
                     createNewUser(name, last, nick,imageBitmap);
                     startActivity(new Intent(UserCreationActivity.this,MainActivity.class));
+                    finish();
                 }
 
             }
@@ -87,9 +92,16 @@ public class UserCreationActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        cController.setUserCreationGUI(null);
+    }
+
     private void createNewUser(String name, String lastName, String nickname, Bitmap userImage)
     {
-        Server.createNewUser(name,lastName,nickname,userImage,UserCreationActivity.this);
+        cController.onNewUser(name,lastName,nickname,userImage,this);
+        //Server.createNewUser(name,lastName,nickname,userImage,UserCreationActivity.this);
     }
 
     private void requestCamera()

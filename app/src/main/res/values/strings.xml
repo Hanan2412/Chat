@@ -1,22 +1,6 @@
 <resources>
     <string name="app_name">Chat</string>
 
-    <string-array name="tabStartPreferenceListName">
-        <item>Feed</item>
-        <item>Shop</item>
-        <item>Chat</item>
-    </string-array>
-    <string-array name="tabStartPreferenceListValue">
-        <item>Feed</item>
-        <item>Shop</item>
-        <item>Chat</item>
-    </string-array>
-
-    <string-array name="numberOfMessagesToLoad">
-        <item>20</item>
-        <item>40</item>
-        <item>60</item>
-    </string-array>
 
     <string-array name="chatPreferenceListName">
         <item>Location</item>
@@ -25,13 +9,24 @@
         <item>Delayed Message</item>
         <item>Video Message</item>
     </string-array>
-    <integer-array name="chatPreferenceListValues">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
-    </integer-array>
+    <string-array name="chatPreferenceListValues">
+        <item>Location</item>
+        <item>Camera</item>
+        <item>Gallery</item>
+        <item>Delayed Message</item>
+        <item>Video Message</item>
+    </string-array>
+
+    <string-array name="textSizeValue">
+        <item>small</item>
+        <item>medium</item>
+        <item>large</item>
+    </string-array>
+    <string-array name="textSizeName">
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+    </string-array>
     <string name="send">Send</string>
     <string name="edit">Edit</string>
     <string name="message_hint">type your message here</string>

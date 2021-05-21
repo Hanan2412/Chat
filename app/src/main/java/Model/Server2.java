@@ -405,7 +405,7 @@ public class Server2 implements IServer {
             userMap.put("name", name);
             userMap.put("lastName", lastName);
             userMap.put("nickname", nick);
-            String time = System.currentTimeMillis() + "Time";
+            String time = System.currentTimeMillis() + "";
             userMap.put("lastTimeLogIn", time);
             userMap.put("timeCreated", time);
             reference.updateChildren(userMap);
@@ -517,6 +517,10 @@ public class Server2 implements IServer {
                             conversation.setMuted((boolean) conversationInfo.get("muted"));
                         else
                             conversation.setMuted(false);
+                        if (conversationInfo.get("typing") != null)
+                            conversation.setTyping((boolean)conversationInfo.get("typing"));
+                        else
+                            conversation.setTyping(false);
                         conversation.setSenderName((String)conversationInfo.get("recipientName"));
                         callback.onConversationChanged(conversation);
                     }
@@ -621,7 +625,8 @@ public class Server2 implements IServer {
 
     @Override
     public void removeMessagesChildEvent() {
-        messagesQuery.removeEventListener(messagesChildEventListener);
+        if (messagesQuery!=null && messagesChildEventListener != null)
+            messagesQuery.removeEventListener(messagesChildEventListener);
     }
 
     @Override

@@ -17,6 +17,7 @@ public class Conversation implements Serializable {
     private boolean muted;
     private int messageType;
     private String lastMessageID;
+    private boolean typing;
 
     private String recipientPhoneNumber;
 
@@ -150,5 +151,13 @@ public class Conversation implements Serializable {
 
     public void setLastMessageID(String lastMessageID) {
         this.lastMessageID = lastMessageID;
+    }
+
+    public boolean isTyping() {
+        return typing;
+    }
+
+    public void setTyping(boolean typing) {
+        this.typing = typing;
     }
 }
