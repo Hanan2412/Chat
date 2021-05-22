@@ -6,6 +6,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+@Deprecated
 public class Network extends ConnectivityManager.NetworkCallback {
 
     private NetworkChange callback;

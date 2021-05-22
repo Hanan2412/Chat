@@ -45,7 +45,6 @@ import java.util.TreeMap;
 
 import NormalObjects.Conversation;
 import NormalObjects.Message;
-import NormalObjects.Server;
 import NormalObjects.User;
 
 @SuppressWarnings({"Convert2Lambda", "unchecked"})
@@ -455,47 +454,8 @@ public class Server2 implements IServer {
                                 conversation.setSenderName((String)conversationInfo.get("recipientName"));
                                 callback.onConversationDownloaded(conversation);
                             }
-
-
-
                         }
-                       /* conversation.setLastMessage((String) conversationInfo.get("lastMessage"));
-                        conversation.setLastMessageID((String) conversationInfo.get("lastMessageID"));
-                        if (conversationInfo.get("lastMessageType") != null)
-                            conversation.setMessageType(((Long) conversationInfo.get("lastMessageType")).intValue());
-                        conversation.setLastMessageTime((String) conversationInfo.get("lastMessageTime"));
-                        if (conversationInfo.get("muted") != null)
-                            conversation.setMuted((boolean) conversationInfo.get("muted"));
-                        else
-                            conversation.setMuted(false);
-                        conversation.setLastMessageID((String)conversationInfo.get("lastMessageID"));*/
                     }
-
-
-                    /*
-
-                    Conversation conversation = new Conversation(snapshot.getKey());
-                    String conversationID = snapshot.getKey();
-                    for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                        HashMap<String, Object> conversationInfo = (HashMap<String, Object>) dataSnapshot.getValue();
-                        if (conversationInfo != null) {
-                            conversation.setConversationID((String) conversationInfo.get("conversationID"));
-                            conversation.setLastMessage((String) conversationInfo.get("lastMessage"));
-                            String[] idSplit = conversationID.split(" {3}");
-                            if (idSplit[0].equals(currentUserUID))
-                                conversation.setRecipient(idSplit[1]);
-                            else conversation.setRecipient(idSplit[0]);
-                            conversation.setLastMessageID((String) conversationInfo.get("lastMessageID"));
-                            if (conversationInfo.get("lastMessageType") != null)
-                                conversation.setMessageType(((Long) conversationInfo.get("lastMessageType")).intValue());
-                            conversation.setLastMessageTime((String) conversationInfo.get("lastMessageTime"));
-                            if (conversationInfo.get("muted") != null)
-                                conversation.setMuted((boolean) conversationInfo.get("muted"));
-                            else
-                                conversation.setMuted(false);
-                        }
-                    }*/
-                    //callback.onConversationDownloaded(conversation);
                 }
 
                 @Override
@@ -561,6 +521,7 @@ public class Server2 implements IServer {
     }
 
 
+    @Deprecated
     @Override
     public void DownloadConversations2(Context context) {
         DownloadConversations3(context);

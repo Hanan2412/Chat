@@ -30,6 +30,7 @@ import android.graphics.ImageDecoder;
 
 
 import android.graphics.drawable.Drawable;
+import android.graphics.pdf.PdfRenderer;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -47,6 +48,7 @@ import android.os.Handler;
 
 import android.os.Looper;
 
+import android.os.ParcelFileDescriptor;
 import android.provider.BaseColumns;
 import android.provider.CalendarContract;
 import android.provider.ContactsContract;
@@ -132,6 +134,7 @@ import org.jsoup.select.Elements;
 import java.io.BufferedInputStream;
 import java.io.File;
 
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -238,6 +241,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private final int SEND_FILE = 80;
     private final int SEND_CONTACT = 9;
     private final int PICK_PDF_FILE = 10;
+    private final int DOCUMENT_REQUEST = 11;
     private User user;
     private User recipient;
     private String recipientToken;
@@ -341,8 +345,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private Uri videoUri;
     private final String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
     private boolean iReadThat = true;//allows the recipient to see that we have read the message sent
-    private  RelativeLayout relativeLayout;
+    private RelativeLayout relativeLayout;
     private Network2 network2;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -387,7 +392,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                             RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                             if (manager != null) {
                                 View view = manager.findViewByPosition(indices.get(indicesIndex));
-                                MarkMessage(view,true);
+                                MarkMessage(view, true);
                             }
                             recyclerView.removeOnScrollListener(this);
                         }
@@ -768,7 +773,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 Intent openRecipientIntent = new Intent(ConversationActivity.this, ProfileActivity2.class);
                 openRecipientIntent.putExtra("recipient", recipient);
                 openRecipientIntent.putExtra("currentUser", user);
-                openRecipientIntent.putExtra("recipientImagePath",recipientImagePath);
+                openRecipientIntent.putExtra("recipientImagePath", recipientImagePath);
+                openRecipientIntent.putExtra("conversationID",conversationID);
                 startActivity(openRecipientIntent);
             }
         });
@@ -908,12 +914,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         registerForContextMenu(recyclerView);
     }
 
-    private void LoadRecipientImage()
-    {
+    private void LoadRecipientImage() {
         try {
             ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
             File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-            File imageFile = new File(directory,recipientUID + "_Image");
+            File imageFile = new File(directory, recipientUID + "_Image");
             Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
             talkingToImage.setImageBitmap(imageBitmap);
         } catch (FileNotFoundException e) {
@@ -941,7 +946,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void onCameraAction() {
-        if(AskPermission(MessageType.photoMessage))
+        if (AskPermission(MessageType.photoMessage))
             requestCamera();
     }
 
@@ -965,6 +970,15 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         builder.create().show();
     }
 
+    private void onContactAction() {
+
+    }
+
+    private void onDocumentAction() {
+        Intent openDocIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        startActivityForResult(openDocIntent, DOCUMENT_REQUEST);
+    }
+
     private void onVideoAction() {
         if (AskPermission(MessageType.photoMessage))
             RecordVideo();
@@ -983,13 +997,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         transaction.commit();
     }
 
-    private void SetUpBySettings()
-    {
+    private void SetUpBySettings() {
         final String SMALL = "small";
         final String MEDIUM = "medium";
         final String LARGE = "large";
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String chosenActionBtn = preferences.getString("ActionButton","mega");
+        String chosenActionBtn = preferences.getString("ActionButton", "mega");
         darkMode = preferences.getBoolean("darkView", false);
         directCall = preferences.getBoolean("directCall", false);
         switch (chosenActionBtn) {
@@ -1005,13 +1018,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 SetCorrectColor(ButtonType.gallery);
                 actionState = ButtonType.gallery.ordinal();
                 break;
-            case "Delayed Message":{
+            case "Delayed Message": {
                 SetCorrectColor(ButtonType.delay);
                 actionState = ButtonType.delay.ordinal();
                 break;
             }
-            case "Video Message":
-            {
+            case "Video Message": {
                 SetCorrectColor(ButtonType.video);
                 actionState = ButtonType.video.ordinal();
                 break;
@@ -1019,7 +1031,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             default:
                 SetCorrectColor(ButtonType.location);
                 actionState = ButtonType.location.ordinal();
-                Log.e(ERROR_CASE,"default action preference");
+                Log.e(ERROR_CASE, "default action preference");
         }
         if (darkMode) {
             relativeLayout.setBackgroundColor(getResources().getColor(android.R.color.black, getTheme()));
@@ -1034,9 +1046,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             messageSent.setTextColor(getResources().getColor(android.R.color.black, getTheme()));
             //sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
         }
-        String textSize = preferences.getString("textSize","medium");
-        switch (textSize)
-        {
+        String textSize = preferences.getString("textSize", "medium");
+        switch (textSize) {
             case SMALL:
                 chatAdapter.setTextSize(12);
                 break;
@@ -1047,111 +1058,100 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 chatAdapter.setTextSize(48);
                 break;
         }
-        iReadThat = preferences.getBoolean("readMessage",true);
+        iReadThat = preferences.getBoolean("readMessage", true);
 
     }
 
-    private void SetCorrectColor(ButtonType type)
-    {
-        switch (type)
-        {
-            case location:
-            {
+    private void SetCorrectColor(ButtonType type) {
+        switch (type) {
+            case location: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
                 else
                     sendActionBtn.setImageResource(R.drawable.location_white);
                 break;
             }
-            case attachFile:
-            {
+            case attachFile: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_24);
                 else
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_white);
                 break;
             }
-            case camera:{
+            case camera: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_24);
                 else
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
                 break;
             }
-            case gallery:
-            {
+            case gallery: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_photo_24);
                 else
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
                 break;
             }
-            case delay:
-            {
+            case delay: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_black);
                 else
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_white);
                 break;
             }
-            case video:
-            {
+            case video: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_black);
                 else
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_white);
                 break;
             }
-            case sendMessage:
-            {
+            case sendMessage: {
                 if (!darkMode)
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
                 else
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
                 break;
             }
-            case microphone:
-            {
+            case microphone: {
                 if (!darkMode)
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
                 else
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
                 break;
             }
-            case recording:
-            {
+            case recording: {
                 if (!darkMode)
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_black);
                 else
                     imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_white);
                 break;
             }
-            case play:
-            {
+            case play: {
                 if (!darkMode)
                     playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
                 else
                     playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
                 break;
             }
-            case pause:
-            {
+            case pause: {
                 if (!darkMode)
                     playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
                 else
                     playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
                 break;
             }
-            default:{
+            default: {
                 if (!darkMode)
                     sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
                 else
                     sendActionBtn.setImageResource(R.drawable.location_white);
-                Log.i(ERROR_CASE,"default color");
+                Log.i(ERROR_CASE, "default color");
                 break;
             }
         }
     }
+
     private void ShowMessageForUserConfirmation() {
         messageSent.setText(link);
         buttonState = SEND_MESSAGE;
@@ -1416,14 +1416,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (messageLongPress) {
             messageLongPress = false;
             invalidateOptionsMenu();
-            if (selectedMessage.getSender().equals(currentUser))
-            {
-                Drawable drawable = ResourcesCompat.getDrawable(getResources(),R.drawable.outgoing_message_look,getTheme());
+            if (selectedMessage.getSender().equals(currentUser)) {
+                Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.outgoing_message_look, getTheme());
                 selectedMessageView.setBackground(drawable);
-            }
-            else
-            {
-                Drawable drawable = ResourcesCompat.getDrawable(getResources(),R.drawable.incoming_message_look,getTheme());
+            } else {
+                Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.incoming_message_look, getTheme());
                 selectedMessageView.setBackground(drawable);
             }
 
@@ -1442,7 +1439,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                                 RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                                 if (manager != null) {
                                     View view1 = manager.findViewByPosition(index);
-                                    MarkMessage(view1,true);
+                                    MarkMessage(view1, true);
                                 }
                                 recyclerView.removeOnScrollListener(this);
                             }
@@ -1459,7 +1456,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
     }
 
-    private void MarkMessage(View view,boolean scroll) {
+    private void MarkMessage(View view, boolean scroll) {
         if (view != null) {
             view.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.border, getTheme()));
             if (scroll) {
@@ -1481,7 +1478,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         invalidateOptionsMenu();
         selectedMessage = message;
         selectedMessageView = view;
-        MarkMessage(view,false);
+        MarkMessage(view, false);
 
     }
 
@@ -1629,8 +1626,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             try {
                 BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
                 int bytesLength = bufferedInputStream.read(bytes, 0, bytes.length);
-                if (bytesLength!=size)
-                    Log.e(ERROR_WRITE,"writing file wasn't complete");
+                if (bytesLength != size)
+                    Log.e(ERROR_WRITE, "writing file wasn't complete");
                 bufferedInputStream.close();
                 out.write(bytes);
             } catch (IOException e) {
@@ -1710,7 +1707,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     protected void onDestroy() {
         super.onDestroy();
         String recipientConversationID = RecipientConversationID(conversationID);
-        if (recipient!=null && recipient.getUserUID()!=null)
+        if (recipient != null && recipient.getUserUID() != null)
             controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", false);
         controller.onRemoveChildEvent();
         // Server.removeMessagesChildEvent();
@@ -1721,7 +1718,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         controller.removeInterface(1);
         controller.setConversationGUI(null);
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        if (connectivityManager!=null && network2 != null)
+        if (connectivityManager != null && network2 != null)
             connectivityManager.unregisterNetworkCallback(network2);
     }
 
@@ -1890,7 +1887,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     break;
                 }
                 default:
-                    Log.e(ERROR_CASE,"error in switch case: couldn't find the correct message type");
+                    Log.e(ERROR_CASE, "error in switch case: couldn't find the correct message type");
                     return;
             }
             if (message.getMessageType() != MessageType.webMessage.ordinal())
@@ -2139,6 +2136,15 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
             case video: {
                 onVideoAction();
+                break;
+            }
+            case contact: {
+                onContactAction();
+                break;
+            }
+            case document: {
+                onDocumentAction();
+                break;
             }
             default:
                 Log.e(ERROR_CASE, "bottom sheet error " + new Throwable().getStackTrace()[0].getLineNumber());
@@ -2233,6 +2239,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             Uri uri = data.getData();
             File file = new File(uri.getPath());
         } else if (requestCode == SEND_CONTACT && resultCode == RESULT_OK) {
+            //needs check
             //gets a contact to send to the recipient
             if (data != null) {
                 Uri contactUri = data.getData();
@@ -2247,6 +2254,26 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         //need to add contact support to message and display the contact - to do later
                         cursor.close();
 
+                    }
+                }
+            }
+        } else if (requestCode == DOCUMENT_REQUEST && resultCode == RESULT_OK) {
+            //needs check
+            Uri docUri = null;
+            if (data != null) {
+                docUri = data.getData();
+                File file = new File(docUri.getPath());
+                if (file.exists()) {
+                    try {
+                        ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+                        PdfRenderer renderer = new PdfRenderer(descriptor);
+                        PdfRenderer.Page page = renderer.openPage(0);
+                        Bitmap docBitmap = BitmapFactory.decodeFileDescriptor(descriptor.getFileDescriptor());
+                        page.render(docBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        imageView.setVisibility(View.VISIBLE);
+                        imageView.setImageBitmap(docBitmap);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -2394,14 +2421,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
                 ArrayList<String> blocked = user.getBlockedUsers();
                 if (blocked.size() == 0)
-                    controller.onUpdateData("users/" + currentUser + "/block/" + recipientUID, recipientUID);
+                    controller.onUpdateData("users/" + currentUser + "/blocked/" + recipientUID, recipientUID);
                 else {
                     for (String block : blocked) {
                         if (block.equals(recipientUID)) {
-                            controller.onRemoveData("users/" + currentUser + "/block/" + recipientUID);
+                            controller.onRemoveData("users/" + currentUser + "/blocked/" + recipientUID);
                             Toast.makeText(this, "user: " + recipientName + " " + recipientLastName + " is un blocked!", Toast.LENGTH_SHORT).show();
                         } else {
-                            controller.onUpdateData("users/" + currentUser + "/block/" + recipientUID, recipientUID);
+                            controller.onUpdateData("users/" + currentUser + "/blocked/" + recipientUID, recipientUID);
                             Toast.makeText(this, "user: " + recipientName + " " + recipientLastName + " is blocked!", Toast.LENGTH_SHORT).show();
                         }
 
@@ -2554,8 +2581,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
             //no need to update server database message status after the message is seen
             if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
-               // SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ConversationActivity.this);
-               // boolean messageSeen = preferences.getBoolean("readMessage", true);
+                // SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ConversationActivity.this);
+                // boolean messageSeen = preferences.getBoolean("readMessage", true);
                 if (iReadThat) {
                     HashMap<String, Object> statusMap = new HashMap<>();
                     statusMap.put("messageStatus", MESSAGE_SEEN);
@@ -2574,10 +2601,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 //controller.onUpdateData("users/" + currentUser + "/conversations/" + message.getConversationID() + "/conversationInfo/conversationMessages/" + message.getMessageID(), readAt);
             }
 
-           // if (!message.getSender().equals(currentUser))
-                if (!CheckIfExistsInDataBase(message)) {
-                    AddMessageToDisplay(message);
-                }
+            // if (!message.getSender().equals(currentUser))
+            if (!CheckIfExistsInDataBase(message)) {
+                AddMessageToDisplay(message);
+            }
             //InsertToDataBase(message);
             messageSent.requestFocus();
             // }
@@ -2798,7 +2825,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
         values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
         values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
-        values.put(DataBaseContract.Messages.MESSAGE_STAR,message.isStar());
+        values.put(DataBaseContract.Messages.MESSAGE_STAR, message.isStar());
         if (message.getMessageType() == MessageType.webMessage.ordinal())
             values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
         String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
@@ -2960,7 +2987,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 message.setLatitude(latitude);
                 message.setLocationAddress(address);
                 message.setRecordingPath(recordingPath);
-                if (star!=null)
+                if (star != null)
                     if (star.equals("1"))
                         message.setStar(true);
                     else

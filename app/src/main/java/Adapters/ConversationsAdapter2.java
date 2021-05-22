@@ -84,7 +84,8 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             int index = FindCorrectConversationIndex(conversation.getConversationID());
             if (index > -1) {
                 //places the conversation at the beginning of the list
-                if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
+                if (!conversation.isTyping()){
+                //if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
                     //this if prevents the update if the only update is the typing indicator
                     if (index == 0)
                     {

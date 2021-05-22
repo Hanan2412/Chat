@@ -20,6 +20,7 @@ import java.util.ArrayList;
 
 import NormalObjects.User;
 
+@SuppressWarnings("Convert2Lambda")
 public class UserListAdapter extends BaseAdapter {
 
     public interface userListInterface{

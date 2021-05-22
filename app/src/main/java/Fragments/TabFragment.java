@@ -514,7 +514,9 @@ public class TabFragment extends Fragment implements MainGUI {
                                 SharedPreferences.Editor editor = sharedPreferences.edit();
                                 for (int i = 0; i < selectedConversations.size(); i++) {
                                     String userToBlock = selectedConversations.get(i).getRecipient();
+                                    String conversationID = selectedConversations.get(i).getConversationID();
                                     controller.onUpdateData("users/" + currentUser + "/blocked/" + userToBlock, true);
+                                    controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/blocked",true);
                                     editor.putString(userToBlock,userToBlock);
                                     editor.apply();
 
@@ -1017,6 +1019,15 @@ public class TabFragment extends Fragment implements MainGUI {
         controller = CController.getController();
         controller.setMainGUI(this);
         ChangeStatus(ONLINE_S);
+        ArrayList<Conversation>waitingConversations =  controller.getWaitingConversations();
+        if (!waitingConversations.isEmpty())
+        {
+            for (Conversation conversation : waitingConversations)
+            {
+                UpdateConversationsInDataBase(conversation,false);
+            }
+            controller.ResetWaitingConversations();
+        }
     }
 
     @Override

@@ -21,14 +21,14 @@
             android:layout_gravity="center"
             style="@style/circleImageView"
             >
-            <com.google.android.material.imageview.ShapeableImageView
+            <ImageView
                 android:id="@+id/profileImage"
                 style="@style/circleImageView"
                 app:shapeAppearanceOverlay="@style/circleImageView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
                 android:layout_gravity="center"
-                android:background="@drawable/circle_green"
+                android:background="@drawable/ic_launcher_background"
                 android:contentDescription="show user profile image"
                 android:src="@drawable/ic_launcher_foreground"
                 />
@@ -69,7 +69,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_baseline_stars_black"
-                android:contentDescription="favorite this user - will also appear in a saperate ta"/>
+                android:contentDescription="favorite this user - will also appear in a saperate ta"
+                android:visibility="gone"/>
 
             <ImageButton
                 android:id="@+id/deleteBtn"
@@ -79,14 +80,6 @@
                 android:src="@drawable/ic_baseline_delete_black"
                 android:contentDescription="delete this user"/>
 
-            <ImageButton
-                android:id="@+id/notificationBtn"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_baseline_notifications_black"
-                android:contentDescription="allow notifications even if mute all selected in settings"
-                />
         </LinearLayout>
     </LinearLayout>
 

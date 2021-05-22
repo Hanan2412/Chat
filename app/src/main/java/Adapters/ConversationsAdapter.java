@@ -35,7 +35,7 @@ import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.CustomConversation;
 import NormalObjects.onConversationChange;
-
+@Deprecated
 public class ConversationsAdapter extends BaseAdapter {
 
     //private ArrayList<Chat>list;

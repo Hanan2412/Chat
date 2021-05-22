@@ -487,7 +487,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     @Override
     public void onReply(String replyText, int notificationID, String sender, String myName, String recipient, String conversationID) {
-        Toast.makeText(this, "replied to the message", Toast.LENGTH_SHORT).show();
         if (notificationID != -1) {
             NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
             notificationManagerCompat.cancel(notificationID);

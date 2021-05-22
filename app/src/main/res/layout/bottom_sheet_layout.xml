@@ -93,5 +93,16 @@
             android:id="@+id/contact"
             android:visibility="gone"
             />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            app:drawableTopCompat="@drawable/ic_baseline_file_copy_black"
+            android:id="@+id/document"
+            android:text="Document"
+            android:textColor="@color/black"
+            android:visibility="gone"
+            />
     </LinearLayout>
 </LinearLayout>

@@ -29,11 +29,21 @@ public class CController implements IConversationController,IMainController, Ser
     private static CController cController = null;
     private PreferencesUpdate preferencesUpdate;
     private UserCreationGUI userCreationGUI;
+    private ArrayList<Conversation>waitingConversations = new ArrayList<>();
+
     private CController()
     {
         //singleton design pattern is implemented so each view won't go null when views are changed
     }
 
+    public ArrayList<Conversation>getWaitingConversations()
+    {
+        return waitingConversations;
+    }
+    public void ResetWaitingConversations()
+    {
+        waitingConversations = new ArrayList<>();
+    }
     public static CController getController()
     {
         if(cController==null)
@@ -245,6 +255,8 @@ public class CController implements IConversationController,IMainController, Ser
     public void onConversationChanged(Conversation conversation) {
         if(mainGUI!=null)
             mainGUI.onChangedConversation(conversation);
+        else
+            waitingConversations.add(conversation);
     }
 
     @Override

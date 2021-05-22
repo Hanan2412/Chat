@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 @SuppressWarnings({"unchecked", "Convert2Lambda"})
+@Deprecated
 public class Server {
 
 

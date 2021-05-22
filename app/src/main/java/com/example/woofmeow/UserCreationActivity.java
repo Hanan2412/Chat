@@ -31,7 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import Controller.CController;
-import NormalObjects.Server;
+
 
 @SuppressWarnings("Convert2Lambda")
 public class UserCreationActivity extends AppCompatActivity implements UserCreationGUI {

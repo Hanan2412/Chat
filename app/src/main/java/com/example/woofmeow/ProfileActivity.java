@@ -11,11 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
-
-import NormalObjects.Server;
 import NormalObjects.User;
 
+@Deprecated
 public class ProfileActivity extends AppCompatActivity {
 
     @Override

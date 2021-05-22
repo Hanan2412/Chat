@@ -11,5 +11,7 @@ public enum ButtonType {
     microphone,
     play,
     pause,
-    recording
+    recording,
+    contact,
+    document
 }
