@@ -89,6 +89,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         String onVideoDownloaded(File file, Message message);
 
         void onVideoClicked(Uri uri);
+
+        void onUpdateMessageStatus(Message message);
     }
 
     private MessageInfoListener callback;
@@ -171,7 +173,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         final Message message = messages.get(position);
-
+        if (!message.getMessageStatus().equals(ConversationActivity.MESSAGE_SEEN))
+            callback.onUpdateMessageStatus(message);
         holder.message.setText(message.getMessage());
             if (message.isStar()) {
                 holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);

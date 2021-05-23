@@ -1659,6 +1659,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     @Override
+    public void onUpdateMessageStatus(Message message) {
+        HashMap<String, Object> statusMap = new HashMap<>();
+        statusMap.put("messageStatus", MESSAGE_SEEN);
+        String recipientConversationID = RecipientConversationID(conversationID);
+        UpdateMessageStatus("users/" + recipientUID + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages/" + message.getMessageID(), statusMap);
+    }
+
+    @Override
     public void onDeleteMessageClick(Message message) {
         controller.onRemoveData("users/" + currentUser + "/conversations/" + message.getConversationID() + "/conversationInfo/conversationMessages" + message.getMessageID());
         String recipientConversationID = RecipientConversationID(conversationID);

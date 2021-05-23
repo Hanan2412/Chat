@@ -500,10 +500,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 message.setConversationID(conversationID);
                 message.setMessageID(time);
                 message.setMessageTime(Current_time);
-                messageMap.put(Current_time, message);//setting a unique id for each message sent using the system time
+                messageMap.put(time, message);//setting a unique id for each message sent using the system time
                 controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/conversationMessages", messageMap);
                 message.setConversationID(recipientConversationID);
-                messageMap.put(Current_time,message);
+                messageMap.put(time,message);
                 controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages", messageMap);
 
 
