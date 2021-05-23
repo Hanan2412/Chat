@@ -1931,6 +1931,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo", conversationInfo);
 
             controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/conversationMessages", messageMap);
+            message.setConversationID(recipientConversationID);
+            messageMap.put(time,message);
             controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages", messageMap);
 
 

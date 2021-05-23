@@ -4,12 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -25,10 +23,10 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
 import com.example.woofmeow.ConversationActivity;
+import com.example.woofmeow.MainActivity;
 import com.example.woofmeow.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -60,10 +58,8 @@ import Consts.MessageType;
 
 import Controller.CController;
 import DataBase.DataBase;
-import NormalObjects.Conversation;
 import NormalObjects.Message;
 import NormalObjects.ObjectToSend;
-import NormalObjects.Server;
 import Retrofit.RetrofitApi;
 import Retrofit.RetrofitClient;
 import Try.TryMyResponse;
@@ -73,7 +69,7 @@ import retrofit2.Response;
 
 import DataBase.DataBaseContract;
 
-public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, NotificationsControl {
+public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, Notifications {
 
     private String CHANNEL_ID = "MessagesChannel";
     private String GROUP_CONVERSATIONS = "conversations";
@@ -81,13 +77,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private static ArrayList<NotificationCompat.Builder> builders;
     public static String myName = "";
     private RetrofitApi api;
-    private static boolean exist = false;
     private CController controller;
-    private static HashMap<String, Boolean> mutedConversations;
-    private ArrayList<String> blocked;
+    private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
-    private String NOTIFICATION_ERROR = "notification_Error";
-    private String NOTIFICATION_INFO = "notification_info";
+    private final String NOTIFICATION_ERROR = "notification_Error";
+    private final String NOTIFICATION_INFO = "notification_info";
+    private final String SEND_MESSAGE_ERROR = "sending message error";
     private SQLiteDatabase db = null;
 
     public FirebaseMessageService() {
@@ -100,9 +96,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         if (buildersHashMap == null)
             buildersHashMap = new HashMap<>();
         controller = CController.getController();
-        controller.setNotificationsControl(this);
+        controller.setNotifications(this);
 
-        blocked = new ArrayList<>();
+
     }
 
     @Override
@@ -111,12 +107,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         System.out.println("new token generated - in the service: " + s);
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            //HashMap<String, Object> tokenMap = new HashMap<>();
-            //tokenMap.put("token", s);
             controller = CController.getController();
-            controller.setNotificationsControl(this);
+            controller.setNotifications(this);
             controller.onUpdateData("Tokens/" + currentUser,s);
-            //Server.updateServer("users/" + currentUser, tokenMap);
         }
     }
 
@@ -124,10 +117,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-        System.out.println("in onMessageReceived");
-       // DisableNotification();
-        //String messageSenderUID = remoteMessage.getData().get("sender");
-        //String conversationID = remoteMessage.getData().get("conversationID");
+        Log.i(NOTIFICATION_INFO,"onMessageReceived reached");
         if(isNotificationsAllowed())
             setUp(remoteMessage);
 
@@ -146,13 +136,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void setUp(RemoteMessage remoteMessage) {
-        System.out.println("in SetUp");
+        Log.i(NOTIFICATION_INFO,"setUp reached");
         String messageSenderUID = remoteMessage.getData().get("sender");
         String conversationID = remoteMessage.getData().get("conversationID");
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
         String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        if (messageSenderUID.equals(currentUser))
+        if (messageSenderUID != null && messageSenderUID.equals(currentUser))
             Log.e(NOTIFICATION_ERROR, "sender is currentUser");
 
         //checks if the conversation is open when the notification should be displayed, if so, the notification won't be displayed
@@ -170,7 +160,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 String messageSenderName = remoteMessage.getData().get("senderName");
                 String messageID = remoteMessage.getData().get("messageID");
                 String messageTime = remoteMessage.getData().get("messageTime");
+
                 updateServer(messageSenderUID, conversationID, messageID);
+
                 String messageLongitude = "";
                 String messageLatitude = "";
                 String messageLocationAddress = "";
@@ -210,9 +202,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 ContextWrapper contextWrapper = new ContextWrapper(this.getApplicationContext());
                 File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
                 File imageFile = new File(directory,sender + "_Image");
-                Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
-                return imageBitmap;
-                //holder.profileImage.setImageBitmap(imageBitmap);
+                return BitmapFactory.decodeStream(new FileInputStream(imageFile));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -328,7 +318,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private void updateServer(String recipient, String conversationID, String messageID) {
         HashMap<String, Object> statusMap = new HashMap<>();
         statusMap.put("messageStatus", ConversationActivity.MESSAGE_DELIVERED);
-       // Server.updateServer("users/" + recipient + "/conversations/" + conversationID + "/conversationInfo/conversationMessages/" + messageID, statusMap);
+        if (controller == null)
+        {
+            controller = CController.getController();
+            controller.setNotifications(this);
+        }
+        String recipientConversationID = RecipientConversationID(conversationID);
+        controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages/" + messageID ,statusMap);
     }
 
     @Override
@@ -446,24 +442,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     }
 
-    private void DisableNotification()
-    {
-        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String conversationID = intent.getStringExtra("ConversationID");
-                if(conversations.contains(conversationID))
-                {
-                    int index = conversations.indexOf(conversationID);
-                    NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
-                    notificationManagerCompat.cancel(index);
-                    notificationManagerCompat.cancel(100);
-                }
-            }
-        };
-        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver,new IntentFilter("disableNotifications"));
-    }
-
     //if notification already exists, will return it id. else will create a new id for the notification
     private int getNotificationID(String conversationID) {
         int i = 0;
@@ -484,6 +462,17 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return i;
     }
 
+    private String RecipientConversationID(String conversationID)
+    {
+        String[] conversationIDSplit = conversationID.split(" {3}");
+        String recipientConversationID;
+        if (currentUser.equals(conversationIDSplit[0])) {
+            recipientConversationID = conversationIDSplit[1] + "   " + conversationIDSplit[0];
+        } else {
+            recipientConversationID = conversationIDSplit[0] + "   " + conversationIDSplit[1];
+        }
+        return recipientConversationID;
+    }
 
     @Override
     public void onReply(String replyText, int notificationID, String sender, String myName, String recipient, String conversationID) {
@@ -491,9 +480,16 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
             notificationManagerCompat.cancel(notificationID);
             notificationManagerCompat.cancel(100);
-
+            if (controller == null){
+                controller = CController.getController();
+                controller.setNotifications(this);
+            }
             if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-                String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
+                Calendar calendar = Calendar.getInstance(timeZone);
+                String time = calendar.getTimeInMillis() + "";
+                String recipientConversationID = RecipientConversationID(conversationID);
+                String Current_time = System.currentTimeMillis() + "";
                 Message message = new Message();
                 message.setSender(sender);
                 message.setSenderName(myName);
@@ -502,13 +498,15 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 message.setMessageType(MessageType.textMessage.ordinal());
                 message.setRecipient(recipient);
                 message.setConversationID(conversationID);
-                messageMap.put(System.currentTimeMillis() + "", message);//setting a unique id for each message sent using the system time
-                Server.updateServer("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/conversationMessages", messageMap);//updates the current user - the sender in the database with the sent message
-                Server.updateServer("users/" + recipient + "/conversations/" + conversationID + "/conversationInfo/conversationMessages", messageMap);//updates the recipient in the database with the message
+                message.setMessageID(time);
+                message.setMessageTime(Current_time);
+                messageMap.put(Current_time, message);//setting a unique id for each message sent using the system time
+                controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/conversationMessages", messageMap);
+                message.setConversationID(recipientConversationID);
+                messageMap.put(Current_time,message);
+                controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages", messageMap);
 
-                TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
-                Calendar calendar = Calendar.getInstance(timeZone);
-                String time = calendar.getTimeInMillis() + "";
+
                 HashMap<String, Object> conversationInfo = new HashMap<>();
                 conversationInfo.put("lastMessage", message.getMessage());
                 conversationInfo.put("lastMessageTime", System.currentTimeMillis() + "");
@@ -516,9 +514,12 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 conversationInfo.put("recipientID", recipient);
                 conversationInfo.put("conversationID", conversationID);
                 conversationInfo.put("lastMessageType", MessageType.textMessage.ordinal());
-                Server.updateServer("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo", conversationInfo);
-                Server.updateServer("users/" + recipient + "/conversations/" + conversationID + "/conversationInfo", conversationInfo);
 
+                controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo", conversationInfo);
+                conversationInfo.put("conversationID",recipientConversationID);
+                controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo", conversationInfo);
+
+                //part 2 of function
                 api = RetrofitClient.getRetrofitClient("https://fcm.googleapis.com/").create(RetrofitApi.class);
 
                 DatabaseReference tokenReference = FirebaseDatabase.getInstance().getReference("Tokens");
@@ -529,26 +530,23 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                             //tryData is the message object
                             String tokenString = dataSnapshot.getValue(String.class);
-                            //TryToken tryToken = new TryToken(tokenString);
-                            //TryData tryData = new TryData(currentUser,message.getMessage(),"new message from" + myName,recipient);
                             ObjectToSend toSend = new ObjectToSend(message, tokenString);
                             message.setTo(tokenString);
                             api.sendMessage(toSend).enqueue(new Callback<TryMyResponse>() {
                                 @Override
                                 public void onResponse(@NonNull Call<TryMyResponse> call, @NonNull Response<TryMyResponse> response) {
-                                    System.out.println("this is the response code: " + response.code());
-                                    System.out.println("this is the response message: " + response.message());
                                     if (response.code() == 200) {
-                                        // notificationManagerCompat.cancel(notificationID);
                                         assert response.body() != null;
                                         if (response.body().success != 1)
-                                            Toast.makeText(FirebaseMessageService.this, "Failed", Toast.LENGTH_SHORT).show();
+                                            Log.e(SEND_MESSAGE_ERROR,"Failed sending message");
                                     }
+                                    else
+                                        Log.e(SEND_MESSAGE_ERROR,"response code: " + response.code() + " response body: " + response.body());
                                 }
 
                                 @Override
                                 public void onFailure(@NonNull Call<TryMyResponse> call, @NonNull Throwable t) {
-                                    System.out.println("Retrofit failed!!!!!!!! " + Arrays.toString(t.getStackTrace()));
+                                    Log.e(SEND_MESSAGE_ERROR,"Retrofit failed!!!!!!!!");
                                 }
                             });
                         }
@@ -587,11 +585,4 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
 
-    @Override
-    public void onConversationMute(ArrayList<Conversation> conversations) {
-        if (mutedConversations == null)
-            mutedConversations = new HashMap<>();
-        for (Conversation conversation : conversations)
-            mutedConversations.put(conversation.getConversationID(), conversation.isMuted());
-    }
 }

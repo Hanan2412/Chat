@@ -16,7 +16,8 @@ import Model.Server2;
 import NormalObjects.Conversation;
 import NormalObjects.Message;
 import NormalObjects.User;
-import Services.NotificationsControl;
+import Services.Notifications;
+
 
 //@SuppressWarnings("unchecked")
 public class CController implements IConversationController,IMainController, Server2.ServerData, IPreferenceInterface,INewUser {
@@ -25,7 +26,7 @@ public class CController implements IConversationController,IMainController, Ser
     private  MainGUI mainGUI;
     private Server2 server2;
     private ProfileGUI profileGUI;
-    private NotificationsControl notificationsControl;
+    private Notifications notifications;
     private static CController cController = null;
     private PreferencesUpdate preferencesUpdate;
     private UserCreationGUI userCreationGUI;
@@ -78,9 +79,9 @@ public class CController implements IConversationController,IMainController, Ser
         server2.setServerData(this);
     }
 
-    public void setNotificationsControl(NotificationsControl notificationsControl)
+    public void setNotifications(Notifications notifications)
     {
-        this.notificationsControl = notificationsControl;
+        this.notifications = notifications;
         server2 = Server2.getServer();
         server2.setServerData(this);
     }
@@ -103,7 +104,7 @@ public class CController implements IConversationController,IMainController, Ser
                 conversationGUI = null;
                 break;
             case 2:
-                notificationsControl = null;
+                notifications = null;
                 break;
         }
     }
@@ -241,8 +242,6 @@ public class CController implements IConversationController,IMainController, Ser
     public void onConversationsDownloaded(ArrayList<Conversation> conversations) {
         if(mainGUI!=null)
             mainGUI.onReceiveConversations(conversations);
-        if(notificationsControl!=null)
-            notificationsControl.onConversationMute(conversations);
     }
 
     @Override
