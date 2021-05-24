@@ -41,7 +41,7 @@ import java.util.Objects;
 import Adapters.UserListAdapter;
 import NormalObjects.Server;
 import NormalObjects.User;
-
+@Deprecated
 @SuppressWarnings({"unchecked", "Convert2Lambda"})
 public class NewChatFragment extends DialogFragment implements UserListAdapter.userListInterface {
 
@@ -69,7 +69,7 @@ public class NewChatFragment extends DialogFragment implements UserListAdapter.u
         if(darkMode)
         {
             mainLayout.setBackgroundColor(getResources().getColor(android.R.color.black,requireContext().getTheme()));
-            searchUsers.setTextColor(getResources().getColor(android.R.color.black,requireContext().getTheme()));
+            searchUsers.setTextColor(getResources().getColor(android.R.color.white,requireContext().getTheme()));
 
         }
         else {

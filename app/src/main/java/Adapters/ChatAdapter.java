@@ -2,12 +2,10 @@ package Adapters;
 
 import android.annotation.SuppressLint;
 
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.fonts.Font;
 import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
@@ -63,7 +61,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private String currentUserUID;
     private boolean playing = false;
     private MediaPlayer player = null;
-    private String ERROR = "CHAT_ADAPTER_ERROR";
+    private final String ERROR = "CHAT_ADAPTER_ERROR";
     private HashMap<Integer, String> paths = new HashMap<>();
     private float textSize = 30;
 
@@ -90,7 +88,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         void onVideoClicked(Uri uri);
 
-        void onUpdateMessageStatus(Message message);
+        //void onUpdateMessageStatus(Message message);
     }
 
     private MessageInfoListener callback;
@@ -111,7 +109,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
 
-    public void changeExistingMessage(Message message, int position) {
+    public void changeExistingMessage(Message message) {
         if (messages != null) {
             int messageIndex = findCorrectMessage(messages, 0, messages.size() - 1, Long.parseLong(message.getMessageID()));
             if (messageIndex != -1) {
@@ -164,7 +162,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 break;
             }
             default:
-                System.out.println("error in creating viewHolder in chatAdapter");
+                Log.e(ERROR,"error in creating viewHolder in chatAdapter");
                 break;
         }
         return new ChatAdapter.ChatViewHolder(view);
@@ -173,8 +171,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         final Message message = messages.get(position);
-        if (!message.getMessageStatus().equals(ConversationActivity.MESSAGE_SEEN))
-            callback.onUpdateMessageStatus(message);
+       /* if (!message.getMessageStatus().equals(ConversationActivity.MESSAGE_SEEN))
+            callback.onUpdateMessageStatus(message);*/
         holder.message.setText(message.getMessage());
             if (message.isStar()) {
                 holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
@@ -494,9 +492,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 }
             });
         }
-
-
     }
+
     public void setTextSize(float textSize){this.textSize = textSize;}
     public String getMessageID(int position) {
         return messages.get(position).getMessageID();
@@ -643,13 +640,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     while (player.isPlaying()) {
                         int currentPosition = player.getCurrentPosition();
                         seek.setProgress(currentPosition);
+                        String post;
                         if (currentPosition / 1000 < 10) {
-                            String post = "00:0" + currentPosition / 1000;
-                            playback.setText(post);
+                            post = "00:0" + currentPosition / 1000;
                         } else {
-                            String post = "00:" + currentPosition / 1000;
-                            playback.setText(post);
+                            post = "00:" + currentPosition / 1000;
                         }
+                        playback.setText(post);
 
                     }
                 }

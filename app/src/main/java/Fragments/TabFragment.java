@@ -8,16 +8,12 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-
-
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-
-
 import android.os.Handler;
 import android.provider.BaseColumns;
 import android.text.Editable;
@@ -29,17 +25,14 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -47,39 +40,25 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.R;
-import com.google.android.gms.dynamic.IFragmentWrapper;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
-
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-
 import Adapters.ConversationsAdapter2;
 import Consts.Tabs;
 import Controller.CController;
-
 import DataBase.DataBase;
 import DataBase.DataBaseContract;
 import NormalObjects.Conversation;
-
 import NormalObjects.User;
-
 import static com.example.woofmeow.MainActivity.OFFLINE_S;
 import static com.example.woofmeow.MainActivity.ONLINE_S;
 import static com.example.woofmeow.MainActivity.STANDBY_S;
@@ -102,8 +81,8 @@ public class TabFragment extends Fragment implements MainGUI {
     private int selected = 0;
     private ArrayList<Conversation> selectedConversations = new ArrayList<>();
     private RecyclerView recyclerView;
-    private String DATABASE_ERROR = "database error";
-    private String FCM_ERROR = "fcm error";
+    private final String DATABASE_ERROR = "database error";
+    private final String FCM_ERROR = "fcm error";
     private boolean once = false;
     private View view;
     private LinearLayout searchLayout;
@@ -375,66 +354,59 @@ public class TabFragment extends Fragment implements MainGUI {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-        switch (item.getItemId()) {
-            case R.id.pinConversation:
-                PinConversation();
-                break;
-            case R.id.callBtn:
-                if (selected == 1)
-                    CallPhone();
-                break;
-
-            case R.id.block:
-                BlockUser();
-                break;
-            case R.id.searchConversation:{
-                Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
-                Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
-                if (searchLayout.getVisibility() == View.GONE)
-                {
-                    searchLayout.setVisibility(View.VISIBLE);
-                    searchLayout.startAnimation(in);
-                    recyclerView.startAnimation(in);
-                    conversationsAdapter2.SetBackUp();
-                    search = true;
-                }
-                else
-                {
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            searchLayout.setVisibility(View.GONE);
-                        }
-                    },out.getDuration());
-                    searchLayout.startAnimation(out);
-                    recyclerView.startAnimation(out);
-                    conversationsAdapter2.Reset();
-                    search = false;
-                }
-                break;
+        if (item.getItemId() == R.id.pinConversation)
+            PinConversation();
+        else if (item.getItemId() == R.id.callBtn) {
+            if (selected == 1)
+                CallPhone();
+        }
+        else if (item.getItemId() == R.id.block)
+            BlockUser();
+        else if (item.getItemId() == R.id.searchConversation)
+        {
+            Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
+            Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
+            if (searchLayout.getVisibility() == View.GONE)
+            {
+                searchLayout.setVisibility(View.VISIBLE);
+                searchLayout.startAnimation(in);
+                recyclerView.startAnimation(in);
+                conversationsAdapter2.SetBackUp();
+                search = true;
             }
-            case R.id.status:
-                switch (currentStatus) {
-                    case ONLINE_S:
-                        item.setIcon(R.drawable.circle_red);
-                        currentStatus = OFFLINE_S;
-                        ChangeStatus(OFFLINE_S);
-                        //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
-                        break;
-                    case OFFLINE_S:
-                        item.setIcon(R.drawable.circle_yellow);
-                        currentStatus = STANDBY_S;
-                        ChangeStatus(STANDBY_S);
-                        // controller.onUpdateData("users/" + currentUser + "/status", STANDBY_S);
-                        break;
-                    case STANDBY_S:
-                        item.setIcon(R.drawable.circle_green);
-                        currentStatus = ONLINE_S;
-                        ChangeStatus(ONLINE_S);
-                        // controller.onUpdateData("users/" + currentUser + "/status", ONLINE_S);
-                        break;
-                }
-                break;
+            else
+            {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        searchLayout.setVisibility(View.GONE);
+                    }
+                },out.getDuration());
+                searchLayout.startAnimation(out);
+                recyclerView.startAnimation(out);
+                conversationsAdapter2.Reset();
+                search = false;
+            }
+        }
+        else if (item.getItemId() == R.id.status)
+        {
+            switch (currentStatus) {
+                case ONLINE_S:
+                    item.setIcon(R.drawable.circle_red);
+                    currentStatus = OFFLINE_S;
+                    ChangeStatus(OFFLINE_S);
+                    break;
+                case OFFLINE_S:
+                    item.setIcon(R.drawable.circle_yellow);
+                    currentStatus = STANDBY_S;
+                    ChangeStatus(STANDBY_S);
+                    break;
+                case STANDBY_S:
+                    item.setIcon(R.drawable.circle_green);
+                    currentStatus = ONLINE_S;
+                    ChangeStatus(ONLINE_S);
+                    break;
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -697,14 +669,6 @@ public class TabFragment extends Fragment implements MainGUI {
             }
             //sends the data to mainActivity
             callback.onUserUpdate(user);
-            //asking for recipients User
-            /*for(int i = 0;i<conversations.size();i++)
-                controller.onDownloadUser(requireContext(),conversations.get(i).getRecipient());*/
-        }
-        else // the recipients
-        {
-            System.out.println("got recipients");
-            //assignRecipientsToConversations(user);
         }
     }
 
@@ -823,23 +787,18 @@ public class TabFragment extends Fragment implements MainGUI {
                 String[] selectionArgs = {user.getUserUID()};
                 Cursor cursor = db.query(DataBaseContract.Entry.CONVERSATIONS_TABLE, projections, selections, selectionArgs, null, null, null);
                 while (cursor.moveToNext()) {
+                    String IDs;
                     if (idType) {
 
-                        String IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
-                        if (IDs.equals(ID)) {
-                            cursor.close();
-                            return true;
-                        }
+                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
                     } else {
-                        String IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID));
-                        if (IDs.equals(ID)) {
-                            cursor.close();
-                            return true;
-                        }
+                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID));
+                    }
+                    if (IDs.equals(ID)) {
+                        cursor.close();
+                        return true;
                     }
                 }
-
-
                 cursor.close();
             }
         }else
@@ -861,7 +820,8 @@ public class TabFragment extends Fragment implements MainGUI {
                     DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME,
                     DataBaseContract.Entry.USER_UID,
                     DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME,
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH
+                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    //DataBaseContract.Entry.CONVERSATION_INDEX
                     //DataBaseContract.Entry.CONVERSATIONS_BLOCK_COLUMN_NAME
             };
             String selection = DataBaseContract.Entry.USER_UID + " LIKE ?";
@@ -877,6 +837,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID));
                     String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME));
                     String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH));
+                   // int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_INDEX));
                     Conversation conversation = new Conversation(conversationIDs);
                     conversation.setLastMessageTimeFormatted(lastMessageTime);
                     conversation.setLastMessage(lastMessage);
@@ -885,6 +846,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     conversation.setRecipient(recipient);
                     conversation.setRecipientImagePath(imagePath);
                     conversation.setSenderName(recipientName);
+                   // conversationsAdapter2.setConversation(conversation,position);
                     conversationsAdapter2.addConversation(conversation);
                    // conversationsAdapter2.setRecipientName(recipientName);
                     recipientsName.add(recipientName);
@@ -943,7 +905,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 public void onClick(View v) {
                     //opens play store with the app link
                 }
-            });
+            }).show();
         }
     }
 

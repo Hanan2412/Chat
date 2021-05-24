@@ -6,31 +6,21 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
-
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-
 import androidx.fragment.app.FragmentTransaction;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
-
-
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-
-import android.content.BroadcastReceiver;
-
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
-
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
-
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -39,12 +29,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-
 import android.widget.ImageView;
-
 import android.widget.Toast;
-
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.navigation.NavigationView;
@@ -58,7 +44,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -69,14 +54,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import Consts.Tabs;
 import Fragments.NewChatFragment2;
 import Fragments.TabFragment;
 import NormalObjects.*;
 import Services.FirebaseMessageService;
-
-
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
 
 //this app is to be published
@@ -103,14 +85,11 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
-   // private LinearLayout searchLayout;
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // controller = new CController(this);
 
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
@@ -126,33 +105,29 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         // actionBar.setDisplayShowTitleEnabled(false);
         View headerView = navigationView.getHeaderView(0);
         floatingActionButton = findViewById(R.id.floatingActionButton);
-        //searchLayout = findViewById(R.id.searchLayout);
 
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.profile: {
-                        //need to send user object to new activity
-                        Intent intent = new Intent(MainActivity.this,  CurrentUserProfileActivity.class);
-                        intent.putExtra("currentUser", user);
-                        startActivity(intent);
-                        drawerLayout.closeDrawer(GravityCompat.START);
-                        break;
-                    }
-                    case R.id.disconnect: {
-                        FirebaseMessaging.getInstance().deleteToken();
-                        FirebaseAuth.getInstance().signOut();
-                        Intent intent = new Intent(MainActivity.this, FirstPageActivity.class);
-                        startActivity(intent);
-                        finish();
-                        break;
-                    }
-                    case R.id.settings: {
-                        startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
-                        drawerLayout.closeDrawer(GravityCompat.START);
-                    }
-                    default:
+                if (item.getItemId() == R.id.profile)
+                {
+                    Intent intent = new Intent(MainActivity.this,  CurrentUserProfileActivity.class);
+                    intent.putExtra("currentUser", user);
+                    startActivity(intent);
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                }
+                else if (item.getItemId() == R.id.disconnect)
+                {
+                    FirebaseMessaging.getInstance().deleteToken();
+                    FirebaseAuth.getInstance().signOut();
+                    Intent intent = new Intent(MainActivity.this, FirstPageActivity.class);
+                    startActivity(intent);
+                    finish();
+                }
+                else if (item.getItemId() == R.id.settings)
+                {
+                    startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
+                    drawerLayout.closeDrawer(GravityCompat.START);
                 }
                 return false;
             }

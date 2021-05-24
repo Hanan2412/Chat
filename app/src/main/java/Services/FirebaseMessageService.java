@@ -17,16 +17,12 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.util.Log;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
 import androidx.preference.PreferenceManager;
-
 import com.example.woofmeow.ConversationActivity;
-import com.example.woofmeow.MainActivity;
 import com.example.woofmeow.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -38,24 +34,19 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.RemoteMessage;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.TimeZone;
-
-
 import BroadcastReceivers.ReplyMessageBroadcast;
 import Consts.MessageType;
-
 import Controller.CController;
 import DataBase.DataBase;
 import NormalObjects.Message;
@@ -66,13 +57,12 @@ import Try.TryMyResponse;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
 import DataBase.DataBaseContract;
 
 public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, Notifications {
 
-    private String CHANNEL_ID = "MessagesChannel";
-    private String GROUP_CONVERSATIONS = "conversations";
+    private final String CHANNEL_ID = "MessagesChannel";
+    private final String GROUP_CONVERSATIONS = "conversations";
     public static ArrayList<String> conversations;
     private static ArrayList<NotificationCompat.Builder> builders;
     public static String myName = "";
@@ -88,7 +78,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     public FirebaseMessageService() {
         super();
-        System.out.println("messaging service constructor");
+        Log.i(NOTIFICATION_INFO,"messaging service constructor");
         if (conversations == null)
             conversations = new ArrayList<>();
         if (builders == null)
@@ -104,7 +94,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     @Override
     public void onNewToken(@NonNull String s) {
         super.onNewToken(s);
-        System.out.println("new token generated - in the service: " + s);
+        Log.i(NOTIFICATION_INFO,"new token generated - in the service: " + s);
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
             controller = CController.getController();
@@ -378,7 +368,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean showNotificationLikeThis = preferences.getBoolean("iconNotification",false);
-        String channelID="";
+        String channelID;
         if(!showNotificationLikeThis){
              channelID = "Receive_Messages_Channel";
         }

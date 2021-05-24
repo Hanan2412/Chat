@@ -18,7 +18,7 @@ public final class DataBaseContract {
         public static final String CONVERSATION_RECIPIENT_NAME = "recipientName";
         public static final String CONVERSATION_RECIPIENT_IMAGE_PATH = "imagePath";
         public static final String USER_UID = "UID";
-
+        public static final String CONVERSATION_INDEX = "index";
     }
 
     public static class Messages implements BaseColumns{

@@ -74,12 +74,21 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
     public void addConversation(Conversation conversation) {
-        if (conversations == null)
-            conversations = new ArrayList<>();
+        init();
         conversations.add(conversation);
         notifyItemInserted(conversations.size() - 1);
     }
-
+    public void setConversation(Conversation conversation,int position)
+    {
+        init();
+        conversations.add(position,conversation);
+        notifyItemInserted(position);
+    }
+    private void init()
+    {
+        if (conversations == null)
+            conversations = new ArrayList<>();
+    }
     public void updateConversation(Conversation conversation) {
             int index = FindCorrectConversationIndex(conversation.getConversationID());
             if (index > -1) {
@@ -94,10 +103,12 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                     }
                     else {
                         conversations.remove(index);
-                        notifyItemRemoved(index);
+                        //notifyItemRemoved(index);
                         conversations.add(0, conversation);
-                        notifyItemInserted(0);
+                        //notifyItemInserted(0);
+                        notifyItemMoved(index,0);
                     }
+
                     /*conversations.remove(index + 1);//causes flickering
                     notifyItemRemoved(index + 1);
                     //conversations.set(index, conversation);
