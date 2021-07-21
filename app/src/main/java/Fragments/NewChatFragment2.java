@@ -115,7 +115,8 @@ public class NewChatFragment2 extends Fragment implements UserListAdapter.userLi
         Toast.makeText(requireContext(), "starting conversation", Toast.LENGTH_SHORT).show();
         Intent openConversationIntent = new Intent(requireContext(), ConversationActivity.class);
         openConversationIntent.putExtra("recipient",user.getUserUID());
-        openConversationIntent.putExtra("conversationID",currentUser + "   " + user.getUserUID());
+        //openConversationIntent.putExtra("conversationID",currentUser + "   " + user.getUserUID());
+        openConversationIntent.putExtra("conversationID",CreateConversationID());
         requireActivity().getSupportFragmentManager().beginTransaction().remove(NewChatFragment2.this).commit();
         startActivity(openConversationIntent);
 
@@ -129,5 +130,10 @@ public class NewChatFragment2 extends Fragment implements UserListAdapter.userLi
         openProfileIntent.putExtra("recipient",user.getUserUID());
         requireActivity().getSupportFragmentManager().beginTransaction().remove(NewChatFragment2.this).commit();
         startActivity(openProfileIntent);
+    }
+
+    private String CreateConversationID()
+    {
+        return "C_" + System.currentTimeMillis();
     }
 }

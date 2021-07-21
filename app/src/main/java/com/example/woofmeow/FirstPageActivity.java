@@ -28,6 +28,8 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.Objects;
+
 import Fragments.SignFragment;
 import NormalObjects.Network2;
 import NormalObjects.NetworkChange;
@@ -218,6 +220,10 @@ public class FirstPageActivity extends AppCompatActivity implements SignFragment
                                 showCaseLayout.setAnimation(slideDown);
                                 signInBtn.startAnimation(outLeft);
                                 signUpBtn.startAnimation(outRight);
+                                SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser",MODE_PRIVATE);
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                editor.putString("currentUser", Objects.requireNonNull(auth.getCurrentUser()).getUid());
+                                editor.apply();
                             } else
                                 Toast.makeText(FirstPageActivity.this, "SignIn has failed, verify that the email or password is correct or try again later", Toast.LENGTH_SHORT).show();
                         }

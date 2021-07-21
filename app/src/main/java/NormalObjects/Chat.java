@@ -3,6 +3,7 @@ package NormalObjects;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+@Deprecated
 public class Chat implements Serializable {
 
     private String lastMessage,lastMessageTime,imagePath;

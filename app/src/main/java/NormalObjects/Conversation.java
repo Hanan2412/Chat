@@ -14,12 +14,14 @@ public class Conversation implements Serializable {
     private String recipientImagePath;
     private ArrayList<Message>messages;
     private String senderName;
-    private boolean muted;
+    private boolean muted = false;
     private int messageType;
     private String lastMessageID;
     private boolean typing;
-
+    private String recipientName;
     private String recipientPhoneNumber;
+    private boolean blocked = false;
+    private String recipientToken;
 
     public Conversation(String conversationID)
     {
@@ -159,5 +161,29 @@ public class Conversation implements Serializable {
 
     public void setTyping(boolean typing) {
         this.typing = typing;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
+    }
+
+    public String getRecipientToken() {
+        return recipientToken;
+    }
+
+    public void setRecipientToken(String recipientToken) {
+        this.recipientToken = recipientToken;
     }
 }

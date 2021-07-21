@@ -49,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import javax.net.ssl.HttpsURLConnection;
+
+import BackgroundMessages.ReadMessage;
 import Consts.MessageType;
 import Consts.Messaging;
 import NormalObjects.Message;
@@ -108,6 +110,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         notifyItemInserted(getItemCount() - 1);
     }
 
+    public void DeleteMessage(String messageID)
+    {
+        int index = findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(messageID));
+        messages.remove(index);
+        notifyItemRemoved(index);
+    }
 
     public void changeExistingMessage(Message message) {
         if (messages != null) {
@@ -141,6 +149,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         if (messages.get(mid).getMessageID().equals(String.valueOf(key)))
             return mid;
         return -1;
+    }
+
+
+    public void UpdateMessageStatus(ReadMessage message)
+    {
+        int index = findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(message.getMessageID()));
+        Message message1 = messages.get(index);
+        message1.setMessageStatus(message.getMessageStatus());
+        message1.setReadAt(Long.parseLong(message.getReadAt()));
+        notifyItemChanged(index);
     }
 
     public void setListener(MessageInfoListener listener) {
@@ -425,7 +443,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         //show the time of the messages i sent
         if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
             try {
-                long timeSent = Long.parseLong(message.getMessageTime());
+                long timeSent = Long.parseLong(message.getSendingTime());
                 calendar.setTimeInMillis(timeSent);
             } catch (NumberFormatException e) {
                 e.printStackTrace();

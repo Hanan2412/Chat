@@ -5,7 +5,7 @@ import android.provider.BaseColumns;
 public final class DataBaseContract {
     private DataBaseContract(){}
 
-    public static class Entry implements BaseColumns{
+    public static class Conversations implements BaseColumns{
         public static final String CONVERSATIONS_TABLE = "conversations";
         public static final String CONVERSATIONS_ID_COLUMN_NAME = "conversationID";
         public static final String CONVERSATIONS_MUTE_COLUMN_NAME = "muted";
@@ -41,6 +41,10 @@ public final class DataBaseContract {
         public static final String MESSAGE_LINK_CONTENT = "link_content";
         public static final String MESSAGE_RECORDING_PATH = "recording_path";
         public static final String MESSAGE_STAR = "star";
+        public static final String MESSAGE_RECIPIENT_NAME = "recipient_name";
+        public static final String MESSAGE_FILE_PATH = "file_path";
+        public static final String MESSAGE_SENDER_NAME = "sender_name";
+        public static final String MESSAGE_READ_TIME = "read_time";
     }
 
     public static class User implements BaseColumns{
@@ -53,7 +57,7 @@ public final class DataBaseContract {
         public static final String USER_PICTURE_LINK = "picture_link";
         public static final String USER_PHONE_NUMBER = "phone_number";
         public static final String USER_LAST_STATUS = "status";
-
+        public static final String TOKEN = "token";
     }
 
     public static class  BlockedUsers implements BaseColumns{

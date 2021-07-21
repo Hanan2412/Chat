@@ -14,27 +14,28 @@ import androidx.annotation.RequiresApi;
 public class DataBase extends SQLiteOpenHelper {
 
     private static final String SQL_CREATE_CONVERSATIONS_TABLE =
-            "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE + " (" +
-                    DataBaseContract.Entry._ID + " INTEGER PRIMARY KEY," +
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATIONS_BLOCK_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH + " TEXT," +
-                    DataBaseContract.Entry.USER_UID + " TEXT," +
-                    DataBaseContract.Entry.CONVERSATION_INDEX + "TEXT)";
+            "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE + " (" +
+                    DataBaseContract.Conversations._ID + " INTEGER PRIMARY KEY," +
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATIONS_BLOCK_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH + " TEXT," +
+                    DataBaseContract.Conversations.USER_UID + " TEXT," +
+                    DataBaseContract.User.TOKEN + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_INDEX + "TEXT)";
 
-    private static final String SQL_DELETE_CONVERSATIONS_TABLE = "DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE;
+    private static final String SQL_DELETE_CONVERSATIONS_TABLE = "DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE;
 
     private static final String SQL_CREATE_MESSAGES_TABLE =
             "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE + " (" +
                     DataBaseContract.Messages._ID + " INTEGER PRIMARY KEY," +
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_ID + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME + " TEXT," +
@@ -51,7 +52,10 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Messages.MESSAGE_LINK_TITLE + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_LINK_CONTENT + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_RECORDING_PATH + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_STAR + " TEXT)";
+                    DataBaseContract.Messages.MESSAGE_STAR + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_FILE_PATH + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_SENDER_NAME + " TEXT)";
 
 
     private static final String SQL_CREATE_USER_TABLE =
@@ -63,7 +67,8 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.User.USER_TIME_CREATED + " TEXT," +
                     DataBaseContract.User.USER_PICTURE_LINK + " TEXT," +
                     DataBaseContract.User.USER_PHONE_NUMBER + " TEXT," +
-                    DataBaseContract.User.USER_LAST_STATUS + " TEXT)";
+                    DataBaseContract.User.USER_LAST_STATUS + " TEXT," +
+                    DataBaseContract.User.TOKEN + " TEXT)";
 
 
     private static final String SQL_CREATE_BLOCKED_USERS_TABLE =

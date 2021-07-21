@@ -42,12 +42,13 @@ import java.util.ArrayList;
 
 import Consts.MessageType;
 import NormalObjects.Conversation;
+import NormalObjects.Message;
 
 @SuppressWarnings("Convert2Lambda")
 public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAdapter2.ConversationsViewHolder> {
 
 
-    private ArrayList<String> recipientsNames = new ArrayList<>();
+
 
     public interface onPressed {
         void onLongPressed(boolean selected, Conversation conversation);
@@ -68,6 +69,10 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     private ArrayList<String> selected = new ArrayList<>();
     private ArrayList<Integer> selectedPosition = new ArrayList<>();
 
+    public ConversationsAdapter2()
+    {
+        conversations = new ArrayList<>();
+    }
     public void setConversations(ArrayList<Conversation> conversations) {
         this.conversations = conversations;
         notifyDataSetChanged();
@@ -120,7 +125,38 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     }
 
+    public void UpdateConversation(Message message,String conversationID)
+    {
+        int index = FindCorrectConversationIndex(conversationID);
+        Conversation conversation = conversations.get(index);
+        conversation.setLastMessageTime(message.getArrivingTime());
+        conversation.setLastMessage(message.getMessage());
+        conversation.setRecipientName(message.getRecipientName());
+        notifyItemChanged(index);
+    }
 
+    public boolean BlockedConversation(String conversationID)
+    {
+        int index = FindCorrectConversationIndex(conversationID);
+        Conversation conversation = conversations.get(index);
+        conversation.setBlocked(conversation.isBlocked());
+        notifyItemChanged(index);
+        return conversation.isBlocked();
+    }
+    public boolean MuteConversation(String conversationID)
+    {
+        int index = FindCorrectConversationIndex(conversationID);
+        Conversation conversation = conversations.get(index);
+        conversation.setMuted(!conversation.isMuted());
+        notifyItemChanged(index);
+        return conversation.isMuted();
+    }
+    public void DeleteConversation(String conversationID)
+    {
+        int index = FindCorrectConversationIndex(conversationID);
+        conversations.remove(index);
+        notifyItemRemoved(index);
+    }
     private int FindCorrectConversationIndex(String conversationID) {
         for (int i = 0; i < conversations.size(); i++) {
             if (conversationID.equals(conversations.get(i).getConversationID()))
@@ -156,7 +192,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     @Override
     public void onBindViewHolder(@NonNull ConversationsAdapter2.ConversationsViewHolder holder, int position) {
-
         Conversation conversation = conversations.get(position);
         if (conversation.getMessageType() == MessageType.VoiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
@@ -168,10 +203,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
             holder.conversationStatus.setVisibility(View.GONE);
-
-        /*if (recipientsNames.size() > position)
-            holder.recipientName.setText(recipientsNames.get(position));*/
-
+        holder.recipientName.setText(conversation.getRecipientName());
         SharedPreferences savedImagesPreferences = holder.itemView.getContext().getSharedPreferences("SavedImages",Context.MODE_PRIVATE);
         //image exists in the app
         if (savedImagesPreferences.getBoolean(conversation.getRecipient(),false))
@@ -240,70 +272,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 }
             });
         }
-
-        /*DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/pictureLink");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String pictureLink = snapshot.getValue(String.class);
-                Picasso.get().load(pictureLink).into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        ContextWrapper contextWrapper = new ContextWrapper(holder.itemView.getContext().getApplicationContext());
-                        File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                        if (!directory.exists())
-                            if (!directory.mkdir()) {
-                                Log.e("error", "couldn't create a directory in conversationAdapter2");
-                            }
-                        File Path = new File(directory, conversation.getRecipient() + "_Image");
-                        conversations.get(position).setRecipientImagePath(Path.getAbsolutePath());
-                        callback.onImageDownloaded(conversations.get(position),true);
-                        try {
-                            FileOutputStream fileOutputStream = new FileOutputStream(Path);
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                            fileOutputStream.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        Log.e("Error","couldn't load image");
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                    }
-                });
-                Picasso.get().load(pictureLink).into(holder.profileImage);
-                reference.removeEventListener(this);
-
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                error.toException().printStackTrace();
-            }
-        });*/
-
-       /* DatabaseReference nameReference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/name");
-        nameReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String recipientNameString = snapshot.getValue(String.class);
-                holder.recipientName.setText(recipientNameString);
-                nameReference.removeEventListener(this);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                error.toException().printStackTrace();
-            }
-        });*/
-
         DatabaseReference statusReference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/status");
         statusReference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -327,11 +295,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             @Override
             public void onClick(View v) {
                 callback.onClicked(conversations.get(position));
-                /*Intent intent = new Intent(holder.itemView.getContext(), ConversationActivity.class);
-                intent.putExtra("conversationID", conversations.get(position).getConversationID());
-                intent.putExtra("recipient", conversations.get(position).getRecipient());
-                intent.putExtra("recipientPhone", conversations.get(position).getRecipientPhoneNumber());
-                holder.itemView.getContext().startActivity(intent);*/
             }
         });
         holder.rootLayout.setOnLongClickListener(new View.OnLongClickListener() {
@@ -379,6 +342,8 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     @Override
     public int getItemCount() {
+        if (conversations == null)
+            conversations = new ArrayList<>();
         return conversations.size();
     }
 

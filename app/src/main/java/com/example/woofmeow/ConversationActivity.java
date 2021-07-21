@@ -1,34 +1,27 @@
 package com.example.woofmeow;
 
 import android.Manifest;
-
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
-
-
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
-
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
-
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-
 import android.graphics.ImageDecoder;
-
-
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfRenderer;
 import android.location.Address;
@@ -42,12 +35,9 @@ import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-
 import android.os.Environment;
 import android.os.Handler;
-
 import android.os.Looper;
-
 import android.os.ParcelFileDescriptor;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
@@ -75,7 +65,6 @@ import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -87,11 +76,11 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -107,11 +96,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -132,13 +119,17 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.HttpsURLConnection;
-
 import Adapters.ChatAdapter;
+import BackgroundMessages.InteractionMessage;
+import BackgroundMessages.ReadMessage;
+import BackgroundMessages.RequestMessage;
 import BroadcastReceivers.AlarmReceiverBroadcast;
+import Consts.BackgroundMessages;
 import Consts.ButtonType;
+import Consts.MessageAction;
 import Consts.MessageType;
+import Consts.Requests;
 import Controller.CController;
 import Fragments.BackdropFragment;
 import Fragments.BottomSheetFragment;
@@ -148,17 +139,15 @@ import DataBase.DataBase;
 import DataBase.DataBaseContract;
 import Fragments.TimePickerFragment;
 import Fragments.VideoFragment;
+import Model.MessageSender;
+import Model.Server3;
+import Model.Uploads;
 import NormalObjects.Message;
 import NormalObjects.Network2;
 import NormalObjects.NetworkChange;
-import NormalObjects.ObjectToSend;
 import NormalObjects.User;
 import Retrofit.RetrofitApi;
 import Retrofit.RetrofitClient;
-import Try.TryMyResponse;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 //ui doesn't scale with accessibility
 @SuppressWarnings("Convert2Lambda")
@@ -190,6 +179,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private String longitude, latitude, gpsAddress;
     //currentUser is the sender always and should not be changed during the lifecycle of the activity
     private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+    private String currentUser1;
     private String messageToSend;
     private EditText messageSent;
     private String recipientUID;
@@ -282,7 +272,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     //private final String STATUS_INFO = "status";
     private final String ERROR_CASE = "Error in switch case";
     private final String ERROR_WRITE = "write error";
-    private ArrayList<Message> offlineMessages;
     private LinearLayout searchLayout;
     private EditText searchText;
     private Button searchBtn;
@@ -296,12 +285,21 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private boolean iReadThat = true;//allows the recipient to see that we have read the message sent
     private RelativeLayout relativeLayout;
     private Network2 network2;
-
+    private BroadcastReceiver receiveNewMessages;
+    private ArrayList<String> recipientsTokens;
+    private String conversationID1;
+    private int TYPING = 0;
+    private int RECORDING = 1;
+    private boolean typing = false;
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.converastion_layout2);
+
+        conversationID1 = getIntent().getStringExtra("conversationID1");
+        recipientsTokens = new ArrayList<>();
+
         Toolbar toolbar = findViewById(R.id.toolbar1);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -309,7 +307,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (actionBar != null)
             actionBar.setDisplayShowTitleEnabled(false);
         relativeLayout = findViewById(R.id.root_container);
-
         searchLayout = findViewById(R.id.searchLayout);
         searchText = findViewById(R.id.searchText);
         searchBtn = findViewById(R.id.searchBtn);
@@ -413,17 +410,20 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (chatAdapter.getItemCount() > 0) {//prevents updating and creating new incomplete conversation object in server before first message sent
-                    String recipientConversationID = RecipientConversationID(conversationID);
-                    controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", true);
+                    if(!typing) {
+                        SendMessageInteraction(conversationID, TYPING, true);
+                        typing = true;
+                    }
                 }
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                String recipientConversationID = RecipientConversationID(conversationID);
                 if (chatAdapter.getItemCount() > 0)//prevents updating and creating new incomplete conversation object in server before first message sent
-                    if (s.toString().equals(""))
-                        controller.onUpdateInteraction("users/" + recipient.getUserUID() + "/conversations/" + recipientConversationID + "/conversationInfo/typing/", false);
+                    if (s.toString().equals("")) {
+                        SendMessageInteraction(conversationID, TYPING, false);
+                        typing = false;
+                    }
                 if (s.toString().equals("")) {
                     if (buttonState != RECORD_VOICE)
                         SetCorrectColor(ButtonType.microphone);
@@ -438,10 +438,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 }
             }
         });
-
         Animation in = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left);
         Animation out = AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right);
-
         imageSwitcher = findViewById(R.id.sendImageSwitch);
         imageSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
             @Override
@@ -470,8 +468,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
         recyclerView.setAdapter(chatAdapter);
 
-
-        LoadMessagesFromDataBase();
+        //LoadMessagesFromDataBase();
 
         recyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
 
@@ -536,7 +533,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     if (buttonState == SEND_MESSAGE) {
                         messageToSend = messageSent.getText().toString();
                         if (editMode) {//distinction between editing a message and sending a new message
-                            SendEditedMessage();
+                            PrepareEditedMessage(editMessage);
+                            //SendEditedMessage();
                         } else {
                             if (!messageToSend.equals("") || camera) {//cant send empty message
                                 SendMessageSound();
@@ -809,6 +807,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
 
         registerForContextMenu(recyclerView);
+
+        init(conversationID);
     }
 
     private void LoadRecipientImage() {
@@ -1057,7 +1057,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
 
-    private void SendEditedMessage() {
+    /*private void SendEditedMessage() {
         HashMap<String, Object> editMessageMap = new HashMap<>();
         editMessageMap.put("message", messageToSend);
         controller.onUpdateData("users/" + currentUser + "/conversations/" + editMessage.getConversationID() + "/conversationInfo/conversationMessages/" + editMessage.getMessageID() + "/", editMessageMap);
@@ -1065,7 +1065,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         controller.onUpdateData("users/" + recipientUID + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages/" + editMessage.getMessageID() + "/", editMessageMap);
         messageSent.setText("");
         editMode = false;
-    }
+    }*/
 
     private void RecordingSoundStart() {
         MediaPlayer startRecordingSound = MediaPlayer.create(getApplicationContext(), R.raw.recording_sound_start);
@@ -1102,16 +1102,21 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void PrepareSendMessage() {
 
-        if (imageView.getVisibility() == View.VISIBLE)
-            sendMessage(MessageType.photoMessage.ordinal(), recipientUID);
-        else if (imageView.getVisibility() == View.GONE)
-            sendMessage(MessageType.textMessage.ordinal(), recipientUID);
+        if (imageView.getVisibility() == View.VISIBLE) {
+            //sendMessage(MessageType.photoMessage.ordinal(), recipientUID);
+            PrepareMessageToSend(MessageType.photoMessage.ordinal(), recipientUID);
+        } else if (imageView.getVisibility() == View.GONE) {
+            PrepareMessageToSend(MessageType.textMessage.ordinal(), recipientUID);
+            //sendMessage(MessageType.textMessage.ordinal(), recipientUID);
+        }
         linkedMessagePreview.setVisibility(View.GONE);
         link = null;
     }
 
     private void ResetToText() {
         messageSent.setVisibility(View.VISIBLE);
+        messageSent.setText("");//clears the input field
+        imageView.setVisibility(View.GONE);
         messageSent.requestFocus();
         recordingTimeText.setVisibility(View.GONE);
         voiceLayout.setVisibility(View.GONE);
@@ -1142,7 +1147,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void SendRecording() {
         CreateFileUri(fileName);
-        sendMessage(MessageType.VoiceMessage.ordinal(), recipientUID);
+        String[] names = {recipient.getName()};
+        CreateMessage("recording", MessageType.VoiceMessage.ordinal(), names, recipient.getUserUID());
+        //sendMessage(MessageType.VoiceMessage.ordinal(), recipientUID);
     }
 
     private void CreateFileUri(String filePath) {
@@ -1513,10 +1520,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     @Override
     public void onDeleteMessageClick(Message message) {
-        controller.onRemoveData("users/" + currentUser + "/conversations/" + message.getConversationID() + "/conversationInfo/conversationMessages" + message.getMessageID());
+        PrepareDeletedMessage(message);
+        /*controller.onRemoveData("users/" + currentUser + "/conversations/" + message.getConversationID() + "/conversationInfo/conversationMessages" + message.getMessageID());
         String recipientConversationID = RecipientConversationID(conversationID);
         controller.onRemoveData("users/" + recipientUID + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages" + message.getMessageID());
-        Toast.makeText(this, "message was deleted", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "message was deleted", Toast.LENGTH_SHORT).show();*/
     }
 
 
@@ -1663,8 +1671,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     Address address = addresses.get(0);
                     gpsAddress = address.getAddressLine(0);
                     client.removeLocationUpdates(locationCallback);
-                    sendMessage(MessageType.gpsMessage.ordinal(), recipientUID);
-                    //messageIndicator(sendMessage(MessageType.gpsMessage.ordinal()));
+                    String name;
+                    if (ConversationActivity.this.recipient == null)
+                        name = "abc";
+                    else
+                        name = ConversationActivity.this.recipient.getName();
+                    String[] recipientsNames = {name};
+                    CreateMessage(messageToSend, MessageType.gpsMessage.ordinal(), recipientsNames, recipient.getUserUID());
+                    //sendMessage(MessageType.gpsMessage.ordinal(), recipientUID);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -1678,11 +1692,22 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     }
 
+    private void PrepareMessageToSend(int messageType, String recipient) {
+        String name;
+        if (this.recipient == null)
+            name = "abc";
+        else
+            name = this.recipient.getName();
+        String[] recipientsNames = {name};
+        CreateMessage(messageToSend, messageType, recipientsNames, recipient);
+        ResetToText();
+    }
+
     /*
     the send message function updates the server with the message sent and uses Retrofit to access the fcm server to send messages
      */
+    /*@Deprecated
     private void sendMessage(int messageType, String recipient) {
-
         if (networkConnection) {
             //this is part 1 of the function - here the function updates the database with the message being sent
 
@@ -1820,7 +1845,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             Toast.makeText(this, "no connection is available, connect to the internet in order to send messages", Toast.LENGTH_SHORT).show();
         }
     }
-
+*/
     //adds the message to the chat
     private void AddMessageToDisplay(Message message) {
         chatAdapter.addNewMessage(message);
@@ -1900,15 +1925,17 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     }
 
+    @Deprecated
     private String RecipientConversationID(String conversationID) {
-        String[] conversationIDSplit = conversationID.split(" {3}");
+        /*String[] conversationIDSplit = conversationID.split(" {3}");
         String recipientConversationID;
         if (currentUser.equals(conversationIDSplit[0])) {
             recipientConversationID = conversationIDSplit[1] + "   " + conversationIDSplit[0];
         } else {
             recipientConversationID = conversationIDSplit[0] + "   " + conversationIDSplit[1];
         }
-        return recipientConversationID;
+        return recipientConversationID;*/
+        return conversationID;
     }
 
     @Override
@@ -2057,7 +2084,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         @Override
                         public void onSendVideo() {
                             ConversationActivity.this.videoUri = videoUri;
-                            sendMessage(MessageType.videoMessage.ordinal(), recipientUID);
+                            String[] name = {recipient.getName()};
+                            CreateMessage(messageToSend, MessageType.videoMessage.ordinal(), name, recipient.getName());
+                            //sendMessage(MessageType.videoMessage.ordinal(), recipientUID);
                             //ConversationActivity.this.videoUri = null;
                             FragmentManager manager = getSupportFragmentManager();
                             Fragment fragment = manager.findFragmentByTag(VIDEO_FRAGMENT_TAG);
@@ -2457,6 +2486,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         } else {
             recipient = user;
             GetRecipientToken(recipient.getUserUID());
+            RetrieveRecipientsTokens(recipient.getUserUID());
             String recipientPictureLink = recipient.getPictureLink();
             Picasso.get().load(recipientPictureLink).into(talkingToImage);
             recipientName = user.getName();
@@ -2475,8 +2505,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 else if (status.equals(MainActivity.OFFLINE_S) || status.equals(MainActivity.STANDBY_S))
                     statusView.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.circle_red, getTheme()));
             }
-            if (!calledMessages)
-                controller.onDownloadMessages(ConversationActivity.this, conversationID, 20);
+            /*if (!calledMessages)
+                controller.onDownloadMessages(ConversationActivity.this, conversationID, 20);*/
             calledMessages = true;
         }
     }
@@ -2586,7 +2616,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (!CheckIfExistsInDataBase(message)) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
+            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
             values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, message.getMessage());
             values.put(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME, message.getRecipient());
             values.put(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME, message.getSender());
@@ -2611,7 +2641,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         PrintDataBase();
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
-        values.put(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
+        values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
         values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, message.getMessage());
         values.put(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME, message.getRecipient());
         values.put(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME, message.getSender());
@@ -2638,7 +2668,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     /*private void DeleteFromDataBase(Message message) {
         String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
         String[] selectionArgs = {message.getMessageID()};
-        int deletedRows = db.delete(DataBaseContract.Entry.CONVERSATIONS_TABLE, selection, selectionArgs);
+        int deletedRows = db.delete(DataBaseContract.Conversations.CONVERSATIONS_TABLE, selection, selectionArgs);
         if (deletedRows == -1)
             Log.e(DATABASE_ERROR, "didn't delete anything - deleted rows = -1");
 
@@ -2649,7 +2679,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             String[] projection = {
                     BaseColumns._ID,
                     DataBaseContract.Messages.MESSAGE_ID,
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME,
@@ -2658,7 +2688,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME
             };
-            String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
             String[] selectionArgs = {conversationID};
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projection, selection, selectionArgs, null, null, null);
             List<String> MessagesIDs = new ArrayList<>();
@@ -2713,7 +2743,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             //in order to not scan the database each time from the start, we should start scanning from the last message received - time. since messages
             //come in a linear order, a message that was sent now will never arrive prior to the message that was sent before it
             // String selection = DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME + " = ?";
-            String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
             String[] selectionArgs = {conversationID};
             String sortOrder = DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME + " DESC LIMIT 1";
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, sortOrder);
@@ -2736,7 +2766,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (db != null) {
             String[] projections = {
                     DataBaseContract.Messages.MESSAGE_ID,
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME,
                     DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME,
@@ -2751,13 +2781,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     DataBaseContract.Messages.MESSAGE_RECORDING_PATH,
                     DataBaseContract.Messages.MESSAGE_STAR
             };
-            String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
             String[] selectionArgs = {conversationID};
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, null);
             while (cursor.moveToNext()) {
 
                 String messageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
-                String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
+                String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
                 String messageContent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME));
                 String messageSender = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME));
                 String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME));
@@ -2830,5 +2860,553 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+    private void init(String conversationID) {
+        DataBaseSetUp();
+        LoadCurrentUserID();
+        LoadCurrentUserFromDataBase();
+        LoadMessages(conversationID);
+        ReceiveMessages(conversationID);
+        RequestRecipientsStatus();
+    }
+
+    private void LoadCurrentUserID() {
+        String currentUser;
+        SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
+        currentUser = sharedPreferences.getString("currentUser", "no user");
+        if (!currentUser.equals("no user"))
+            this.currentUser1 = currentUser;
+    }
+
+    private void LoadCurrentUserFromDataBase() {
+        if (db != null) {
+            String[] projections = {
+                    DataBaseContract.User._ID,
+                    DataBaseContract.User.USER_UID,
+                    DataBaseContract.User.USER_NAME,
+                    DataBaseContract.User.USER_LAST_NAME,
+                    DataBaseContract.User.USER_PICTURE_LINK,
+                    DataBaseContract.User.USER_TIME_CREATED,
+                    DataBaseContract.User.USER_PHONE_NUMBER,
+                    DataBaseContract.User.USER_LAST_STATUS
+            };
+            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
+            String[] selectionArgs = {currentUser1};
+            Cursor cursor = db.query(DataBaseContract.User.USER_TABLE, projections, selection, selectionArgs, null, null, null);
+            cursor.moveToNext();
+            if (cursor.getCount() == 1) {
+                User user = new User();
+                String uid = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_NAME));
+                String lastName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_NAME));
+                String pictureLink = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PICTURE_LINK));
+                String timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_TIME_CREATED));
+                String phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PHONE_NUMBER));
+                String status = cursor.getColumnName(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_STATUS));
+                user.setUserUID(uid);
+                user.setName(name);
+                user.setLastName(lastName);
+                user.setPictureLink(pictureLink);
+                user.setTimeCreated(timeCreated);
+                user.setPhoneNumber(phoneNumber);
+                user.setStatus(status);
+                this.user = user;
+            } else if (cursor.getCount() > 1)
+                Log.e(DATABASE_ERROR, "cursor contains more than 1 user");
+            else
+                Log.e(DATABASE_ERROR, "no user in database ");
+            cursor.close();
+        } else
+            Log.e(DATABASE_ERROR, "db is null");
+    }
+
+    /**
+     * creates the messages to send
+     *
+     * @param content         - the message content - the text
+     * @param messageType     - the type of the message that is going to be sent - for example: text,picture,video,audio,etc...
+     * @param recipientsNames - an array with the names of the recipients, must be at least size of 1
+     * @param recipients      - the recipients UID. must much in size to recipients names array
+     */
+
+    private void CreateMessage(String content, int messageType, String[] recipientsNames, String... recipients) {
+        String currentTime = System.currentTimeMillis() + "";
+        TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
+        Calendar calendar = Calendar.getInstance(timeZone);
+        String time = calendar.getTimeInMillis() + "";
+        Message message = new Message();
+        message.setMessage(content);
+        message.setSendingTime(currentTime);
+        message.setConversationID(conversationID);
+        if (recipients.length == 1) {
+            message.setRecipient(recipients[0]);
+            message.setRecipientName(recipientsNames[0]);
+        }
+        String name;
+        if (user == null)
+            name = "def";
+        else
+            name = user.getName();
+        message.setSenderName(name);
+        message.setSender(currentUser);
+        message.setMessageStatus(MESSAGE_SENT);
+        message.setMessageType(messageType);
+        Server3 server3 = Server3.getInstance();
+        server3.SetListener(new Uploads.onResult() {
+            @Override
+            public void onPathReady(String path) {
+                message.setFilePath(path);
+                SendMessage(message);
+            }
+
+            @Override
+            public void onStartedUpload() {
+                Toast.makeText(ConversationActivity.this, "starting sending file", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress(int progress) {
+                Log.e("PROGRESS", progress + "");
+            }
+
+            @Override
+            public void onError(String errorDescription) {
+                Toast.makeText(ConversationActivity.this, "an error accrued while sending the file, try again later", Toast.LENGTH_SHORT).show();
+            }
+        });
+        if (quoteOn) {
+            message.setQuoteMessage(quoteText.getText().toString());
+            message.setQuotedMessagePosition(quotedMessagePosition);
+            message.setQuotedMessageID(quotedMessageID);
+            quotedMessageID = null;
+            quotedMessagePosition = -1;
+            quoteText.setText("");
+            quoteText.setVisibility(View.GONE);
+            quoteOn = false;
+        }
+        message.setMessageID(time);
+        MessageType type = MessageType.values()[messageType];
+        switch (type) {
+            case textMessage:
+                if (Patterns.WEB_URL.matcher(messageToSend).matches())
+                    message.setMessageType(MessageType.webMessage.ordinal());
+                break;
+            case gpsMessage:
+                message.setLatitude(latitude);
+                message.setLongitude(longitude);
+                message.setLocationAddress(gpsAddress);
+                message.setMessage("my location: " + gpsAddress);
+                break;
+            case photoMessage:
+                if (camera)//photo from camera
+                {
+                    server3.uploadImage(photoPath);
+                } else//photo from gallery
+                {
+                    server3.uploadImageBitmap(imageBitmap);
+                }
+                break;
+            case VoiceMessage:
+                message.setMessage("Voice Message");
+                server3.uploadFile(fileUri.toString());
+                break;
+            case videoMessage:
+                server3.uploadFile(videoUri.toString());
+                break;
+        }
+        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage)
+            SendMessage(message);
+    }
+
+    /**
+     * sends the message to the correct recipients. recipientsTokens must be greater than 0 or the message won't be sent.
+     *
+     * @param message - the message to send
+     */
+
+    private void SendMessage(@NonNull Message message) {
+        String token = getMyToken();
+        message.setSenderToken(token);
+        MessageSender messageSender = MessageSender.getInstance();
+        String[] recipientsToken = recipientsTokens.toArray(new String[0]);
+        messageSender.SendMessage(message, recipientsToken);
+        ShowMessageOnScreen(message, message.getMessageAction());
+    }
+
+    //call this function when activity starts
+
+    /**
+     * Call this function when the activity starts to load all the messages in the database for this conversation
+     *
+     * @param conversationID - the current conversationID for the currently open conversation.
+     */
+    private void LoadMessages(String conversationID) {
+        LoadMessage(conversationID, DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?", MessageAction.activity_start);
+    }
+
+    //gets new messages from fcm service
+
+    /**
+     * sets a broadcast receiver for the current conversation. each message received in fcm has conversationID.
+     * this broadcast receiver should be unregistered when the activity closes in onDestroy
+     *
+     * @param conversationID - the current conversationID for the currently open conversation
+     */
+    private void ReceiveMessages(String conversationID) {
+        receiveNewMessages = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.hasExtra("read"))
+                {
+                    ReadMessage readMessage = (ReadMessage) intent.getSerializableExtra("read");
+                    if (readMessage!=null) {
+                        chatAdapter.UpdateMessageStatus(readMessage);
+                        MarkAsRead(readMessage.getMessageID());
+                    }
+                }
+                else if (intent.hasExtra("typing") || intent.hasExtra("recording"))
+                {
+                    boolean typing = intent.getBooleanExtra("typing",false);
+                    String recording = intent.getStringExtra("recording");
+                    if (typing)
+                        textSwitcherTyping.setText("typing");
+                    else if (recording!=null)
+                        textSwitcherTyping.setText("recording");
+                    else
+                        textSwitcherTyping.setText("");
+                }
+                else {
+                    Message message = (Message) intent.getSerializableExtra("message");
+                    if (message != null) {
+                        MessageAction action = message.getMessageAction();
+                        if (action == MessageAction.new_message) {
+                            ShowMessageOnScreen(message, message.getMessageAction());
+                            // LoadNewMessage(messageID);
+                        } else if (action == MessageAction.edit_message) {
+                            ShowMessageOnScreen(message, message.getMessageAction());
+                            UpdateMessage(message);
+                        } else if (action == MessageAction.delete_message) {
+                            ShowMessageOnScreen(message, message.getMessageAction());
+                            DeleteMessage(message.getMessageID());
+                        }
+                    }
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiveNewMessages, new IntentFilter(conversationID));
+    }
+
+    //call this function when a new message arrives while being at the activity
+    private void LoadNewMessage(@NonNull String messageID) {
+        LoadMessage(messageID, DataBaseContract.Messages.MESSAGE_ID + " = ?", MessageAction.new_message);
+    }
+
+    /**
+     * Loads a single message that arrives when the activity is active or loads the entire conversation when the activity is being lunched
+     *
+     * @param id        the id of the message to display on the screen or the id of the conversation to display
+     * @param selection the identifier to decide what to load - a single message or the full conversation
+     */
+    private void LoadMessage(@NonNull final String id, @NonNull final String selection, MessageAction messageAction) {
+        if (db != null) {
+            String[] projections = {
+                    DataBaseContract.Messages.MESSAGE_ID,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_SENDER_NAME,
+                    DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME,
+                    DataBaseContract.Messages.MESSAGE_FILE_PATH,
+                    DataBaseContract.Messages.MESSAGE_ADDRESS,
+                    DataBaseContract.Messages.MESSAGE_LATITUDE,
+                    DataBaseContract.Messages.MESSAGE_LONGITUDE,
+                    DataBaseContract.Messages.MESSAGE_LINK,
+                    DataBaseContract.Messages.MESSAGE_LINK_CONTENT,
+                    DataBaseContract.Messages.MESSAGE_LINK_TITLE,
+                    DataBaseContract.Messages.MESSAGE_STAR
+            };
+            String[] selectionArgs = {id};
+            Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, null);
+            while (cursor.moveToNext()) {
+                String messageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
+                String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
+                String content = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME));
+                String senderUID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME));
+                String timeDelivered = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME));
+                String timeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME));
+                String senderName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_NAME));
+                String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME));
+                String filePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_FILE_PATH));
+                String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
+                String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
+                String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LATITUDE));
+                String link = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LINK));
+                String star = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STAR));
+                String status = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME));
+                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME));
+                Message message = new Message();
+                message.setMessageID(messageID);
+                message.setMessage(content);
+                message.setConversationID(conversationID);
+                message.setMessageTime(timeSent);
+                message.setSender(senderUID);
+                message.setArrivingTime(timeDelivered);
+                message.setSenderName(senderName);
+                message.setRecipient(recipient);
+                message.setRecipientName(recipientName);
+                message.setFilePath(filePath);
+                message.setLocationAddress(address);
+                message.setLongitude(longitude);
+                message.setLatitude(latitude);
+                if (link != null)
+                    message.setMessage(link);
+                if (star != null)
+                    message.setStar(star.equals("1"));
+                message.setMessageStatus(status);
+                ShowMessageOnScreen(message, messageAction);
+
+            }
+            cursor.close();
+        }
+    }
+
+    private void MarkAsRead(String messageID) {
+        if (db != null) {
+            String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
+            String[] selectionArgs = {messageID};
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, ConversationActivity.MESSAGE_SEEN);
+            db.update(DataBaseContract.Messages.MESSAGES_TABLE, contentValues, selection, selectionArgs);
+        }
+    }
+
+    private void ShowMessageOnScreen(Message message, MessageAction action) {
+        switch (action) {
+            case new_message:
+                int amount = chatAdapter.getItemCount();
+                chatAdapter.addNewMessage(message);
+                recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
+                if (amount == 0)
+                    CreateNewConversation(message);
+                SaveMessage(message);
+                UpdateConversation(message);
+                break;
+            case edit_message:
+                chatAdapter.changeExistingMessage(message);
+                break;
+            case delete_message:
+                chatAdapter.DeleteMessage(message.getMessageID());
+                DeleteMessage(message.getMessageID());
+                break;
+            case activity_start:
+                chatAdapter.addNewMessage(message);
+                recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
+                break;
+        }
+        if (!message.getSender().equals(currentUser) && !message.getMessageStatus().equals(MESSAGE_SEEN))
+            SendMessageRead(message.getMessageID(), message.getConversationID(),message);
+    }
+
+    private void CreateNewConversation(Message message) {
+        if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, message.getConversationID());
+            values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, message.getMessageID());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, message.getMessage());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, message.getSendingTime());
+            values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, message.getRecipientName());
+            values.put(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME, false);
+            long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
+            if (newConversationID == -1)
+                Log.e(DATABASE_ERROR, "inserted more than 1 row");
+            SharedPreferences sharedPreferences = getSharedPreferences("New Conversation", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("new conversation", conversationID);
+            editor.apply();
+        }
+    }
+
+    private void UpdateConversation(Message message) {
+        if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, message.getConversationID());
+            values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, message.getMessageID());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, message.getMessage());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, message.getSendingTime());
+            values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, message.getRecipientName());
+            values.put(DataBaseContract.User.TOKEN, message.getSenderToken());
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+            String[] selectionArgs = {message.getConversationID()};
+            long updatedRowNum = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
+            if (updatedRowNum != 1)
+                Log.e(DATABASE_ERROR, "updated more than 1 row");
+            LocalBroadcastManager.getInstance(this)
+                    .sendBroadcast(new Intent("Update Conversation")
+                            .putExtra("message", message));
+            if (!message.getSender().equals(currentUser) && recipientsTokens.size() == 1)
+                recipientsTokens.set(0,message.getSenderToken());
+           else
+               Log.e("MORE THAN 1 RECIPIENT","TO MANY RECIPIENTS");
+        }
+    }
+
+    //Saves the message in the database
+    private void SaveMessage(Message message) {
+        if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
+            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
+            values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, message.getMessage());
+            values.put(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME, message.getRecipient());
+            values.put(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME, message.getSender());
+            values.put(DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME, message.getArrivingTime());
+            values.put(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME, message.getSendingTime());
+            values.put(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
+            values.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, message.getMessageStatus());
+            values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH, message.getImagePath());
+            values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE, message.getLongitude());
+            values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
+            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
+            values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
+            if (message.getMessageType() == MessageType.webMessage.ordinal())
+                values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
+            long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
+            if (newRowId == -1)
+                Log.e(DATABASE_ERROR, "inserted more than 1 row");
+        }
+    }
+
+    /**
+     * updates the message in the data base
+     *
+     * @param message - the message to update
+     */
+    private void UpdateMessage(@NonNull Message message) {
+
+        if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, message.getMessage());
+            String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
+            String[] selectionArgs = {message.getMessageID()};
+            long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
+            if (updatedRow != 1)
+                Log.e(DATABASE_ERROR, "updated more than 1 message");
+        }
+        //LoadMessage(messageID, DataBaseContract.Messages.MESSAGE_ID + " = ?", "Edit Message");
+    }
+
+    private void DeleteMessage(@NonNull String messageID) {
+
+        if (db != null) {
+            String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
+            String[] selectionArgs = {messageID};
+            int deletedRows = db.delete(DataBaseContract.Messages.MESSAGES_TABLE, selection, selectionArgs);
+            if (deletedRows == -1)
+                Log.e(DATABASE_ERROR, "didn't delete anything - deleted rows = -1");
+        }
+    }
+
+    /**
+     * Retrieves the tokens of all the recipients in the conversation
+     *
+     * @param recipients - the UID of all the recipients in the conversation (size of 1 means a 1 to 1 conversation, size > 1 means a group conversation
+     *                   and size < 1 means an error)
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private void RetrieveRecipientsTokens(String... recipients) {
+        //gets the tokens of all the recipients that are stored in the database
+        DatabaseReference tokenReference = FirebaseDatabase.getInstance().getReference("Tokens");
+        for (int i = 0; i < recipients.length; i++) {
+            Query tokensQuery = tokenReference.orderByKey().equalTo(recipients[i]);//here the tokens that were retrieved are ordered by the key - which is equal to the recipients UID
+            // Query tokensQuery = tokenReference.orderByKey().equalTo(currentUser);
+            tokensQuery.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                        String token = dataSnapshot.getValue(String.class);
+                        if (!recipientsTokens.contains(token))
+                            recipientsTokens.add(token);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(FIREBASE_ERROR, "cancelled firebase - didn't retrieve token");
+                }
+            });
+        }
+    }
+
+    private void PrepareEditedMessage(Message message) {
+        message.setMessage(messageToSend);
+        message.setEditTime(System.currentTimeMillis() + "");
+        message.setMessageAction(MessageAction.edit_message);
+        SendMessage(message);
+        messageSent.setText("");
+        editMode = false;
+    }
+
+    private void PrepareDeletedMessage(Message message) {
+        message.setMessageAction(MessageAction.delete_message);
+        SendMessage(message);
+    }
+
+    // String[] recipientsToken = recipientsTokens.toArray(new String[0]);
+
+
+    /**
+     * every time a message is read - aka when the activity is opened or when a message is replayed to from a notification, sends a
+     * data message to other party with an indicator that a message with id x has been read at time y
+     */
+    private void SendMessageRead(String messageId, String conversationID,Message message) {
+        ReadMessage readMessage = new ReadMessage(messageId, conversationID);
+        readMessage.setMessageStatus(MESSAGE_SEEN);
+        readMessage.setReadAt(System.currentTimeMillis() + "");
+        String[] recipientsToken = recipientsTokens.toArray(new String[0]);
+        MessageSender.getInstance().SendMessage(readMessage, BackgroundMessages.read, message.getSenderToken());
+    }
+
+    private void SendMessageInteraction(String conversationID, int interactionType, boolean action) {
+        InteractionMessage interactionMessage = new InteractionMessage();
+        interactionMessage.setConversationID(conversationID);
+        if (interactionType == TYPING)
+            if (action)
+                interactionMessage.setTyping("typing");
+            else
+                interactionMessage.setTyping("no");
+        else if (interactionType == RECORDING)
+            if (action)
+                interactionMessage.setRecording("recording");
+            else
+                interactionMessage.setRecording("no");
+        String[] recipientsToken = recipientsTokens.toArray(new String[0]);
+        MessageSender.getInstance().SendMessage(interactionMessage, BackgroundMessages.interaction, recipientsToken);
+    }
+
+    private String getMyToken() {
+        SharedPreferences sharedPreferences = getSharedPreferences("Token", MODE_PRIVATE);
+        String token = sharedPreferences.getString("token", "no token");
+        if (!token.equals("no token"))
+            return token;
+        else
+            Log.e("TOKEN ERROR", "no token for current user");
+        return null;
+    }
+
+    private void RequestRecipientsStatus()
+    {
+        RequestMessage requestMessage = new RequestMessage(Requests.status);
+        String[] recipientsToken = recipientsTokens.toArray(new String[0]);
+        MessageSender.getInstance().SendMessage(requestMessage,BackgroundMessages.request,recipientsToken);
     }
 }

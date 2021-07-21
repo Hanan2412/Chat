@@ -31,6 +31,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
@@ -40,6 +41,7 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.R;
@@ -48,17 +50,24 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
+
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
+
 import Adapters.ConversationsAdapter2;
+import Consts.MessageAction;
 import Consts.Tabs;
 import Controller.CController;
 import DataBase.DataBase;
 import DataBase.DataBaseContract;
 import NormalObjects.Conversation;
+import NormalObjects.ItemTouch;
+import NormalObjects.Message;
+import NormalObjects.TouchListener;
 import NormalObjects.User;
+
+import static android.content.Context.MODE_PRIVATE;
 import static com.example.woofmeow.MainActivity.OFFLINE_S;
 import static com.example.woofmeow.MainActivity.ONLINE_S;
 import static com.example.woofmeow.MainActivity.STANDBY_S;
@@ -70,7 +79,7 @@ public class TabFragment extends Fragment implements MainGUI {
     private static final String tabNumber = "tabNumber";
     private String currentUser;
     private ArrayList<Conversation> conversations = new ArrayList<>();
-    private ArrayList<String>recipientsName = new ArrayList<>();
+    private ArrayList<String> recipientsName = new ArrayList<>();
     private CController controller;
     private User user;
     private String currentStatus = ONLINE_S;
@@ -100,8 +109,11 @@ public class TabFragment extends Fragment implements MainGUI {
 
     public interface UpdateMain {
         void onUserUpdate(User user);
+
         void onLoadUserFromMemory(User user);
+
         void onConversationAction();
+
         void onUserQuery(User user);
     }
 
@@ -144,16 +156,13 @@ public class TabFragment extends Fragment implements MainGUI {
         assert getArguments() != null;
         currentUser = getArguments().getString("currentUser");
         controller.onDownloadUser(requireContext(), currentUser);
-        TokenUpdate();
+        //TokenUpdate();
         setHasOptionsMenu(true);
-        DataBaseSetUp();
-
+        //DataBaseSetUp();
         conversationsAdapter2 = new ConversationsAdapter2();
-        ArrayList<Conversation> conversations = new ArrayList<>();
-        conversationsAdapter2.setConversations(conversations);
-
-        LoadUserFromDataBase();
-        LoadConversationFromDataBase();
+        //LoadUserFromDataBase();
+        init();
+        //LoadConversationFromDataBase();
         Tabs tab = Tabs.values()[getArguments().getInt(tabNumber)];
         switch (tab) {
             case chat: {
@@ -174,15 +183,13 @@ public class TabFragment extends Fragment implements MainGUI {
 
                     @Override
                     public void afterTextChanged(Editable s) {
-                        if (s.toString().equals(""))
-                        {
+                        if (s.toString().equals("")) {
                             conversationsAdapter2.Reset();
-                        }
-                        else {
+                        } else {
                             int i = 0;
                             for (String name : recipientsName) {
                                 if (!name.contains(s.toString())) {
-                                    if(i<conversations.size()) {
+                                    if (i < conversations.size()) {
                                         conversationsAdapter2.deleteConversation(conversations.get(i));
                                         conversationsAdapter2.notifyItemRemoved(i);
                                     }
@@ -206,18 +213,11 @@ public class TabFragment extends Fragment implements MainGUI {
                 recyclerView.setItemViewCacheSize(20);
                 recyclerView.setDrawingCacheEnabled(true);
                 recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
-
-                onSharedLinkIN();
                 recyclerView.setAdapter(conversationsAdapter2);
-                ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
+                ItemTouch touch = new ItemTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT);
+                touch.setListener(new TouchListener() {
                     @Override
-                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                        return false;
-                    }
-
-                    @Override
-                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                        //swiping left will promote to delete the conversation
+                    public void onSwipe(@NonNull  RecyclerView.ViewHolder viewHolder, int direction) {
                         if (direction == ItemTouchHelper.LEFT) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
                             builder.setMessage("Are you sure you would like to delete the selected conversations? this action can't be undone")
@@ -228,7 +228,7 @@ public class TabFragment extends Fragment implements MainGUI {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             Conversation conversation = conversationsAdapter2.getConversation(viewHolder.getAdapterPosition());
-                                            controller.onRemoveData("users/" + currentUser + "/conversations/" + conversation.getConversationID());
+                                            DeleteConversation(conversation.getConversationID());
                                             Toast.makeText(requireContext(), "Selected conversations were deleted", Toast.LENGTH_SHORT).show();
                                         }
                                     }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -242,31 +242,17 @@ public class TabFragment extends Fragment implements MainGUI {
                         }
                         //swiping right will promote to mute the conversation
                         else if (direction == ItemTouchHelper.RIGHT) {
-                            ArrayList<String> mutedUsers = user.getMutedUsersUID();
-                            Conversation conversation = conversationsAdapter2.getConversation(viewHolder.getAdapterPosition());
-                            if (mutedUsers.contains(conversation.getRecipient())) {
-                                //unMute
-                                Mute(false,conversation);
-                                Snackbar.make(requireContext(),view,"User was unMuted",Snackbar.LENGTH_LONG).setAction("Undo", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        Mute(true,conversation);
-                                    }
-                                }).show();
-                            } else {
-                                //mute
-                                Mute(true,conversation);
-                                Snackbar.make(requireContext(),view,"User was muted",Snackbar.LENGTH_LONG).setAction("Undo", new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        Mute(false,conversation);
-                                    }
-                                }).show();
-                            }
+                            MuteConversation(conversationsAdapter2.getConversation(viewHolder.getAdapterPosition()).getConversationID());
                         }
                     }
-                };
-                ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+
+                    @Override
+                    public boolean onMove(@NonNull  RecyclerView recyclerView, @NonNull  RecyclerView.ViewHolder viewHolder, @NonNull  RecyclerView.ViewHolder target) {
+                        return false;
+                    }
+                });
+                touch.setConversations(conversationsAdapter2);
+                ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
                 itemTouchHelper.attachToRecyclerView(recyclerView);
 
                 conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
@@ -285,17 +271,16 @@ public class TabFragment extends Fragment implements MainGUI {
                     @Override
                     public void onClicked(Conversation conversation) {
                         Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
-                        startConversationIntent.putExtra("conversationID",conversation.getConversationID());
-                        startConversationIntent.putExtra("recipient",conversation.getRecipient());
-                        startConversationIntent.putExtra("recipientPhone",conversation.getRecipientPhoneNumber());
-                        startConversationIntent.putExtra("recipientImagePath",conversation.getRecipientImagePath());
-                        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share",Context.MODE_PRIVATE);
-                        String title = sharedPreferences.getString("title","noTitle");
-                        String link = sharedPreferences.getString("link","noLink");
-                        if (!link.equals("noLink"))
-                        {
-                            startConversationIntent.putExtra("title",title);
-                            startConversationIntent.putExtra("link",link);
+                        startConversationIntent.putExtra("conversationID", conversation.getConversationID());
+                        startConversationIntent.putExtra("recipient", conversation.getRecipient());
+                        startConversationIntent.putExtra("recipientPhone", conversation.getRecipientPhoneNumber());
+                        startConversationIntent.putExtra("recipientImagePath", conversation.getRecipientImagePath());
+                        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
+                        String title = sharedPreferences.getString("title", "noTitle");
+                        String link = sharedPreferences.getString("link", "noLink");
+                        if (!link.equals("noLink")) {
+                            startConversationIntent.putExtra("title", title);
+                            startConversationIntent.putExtra("link", link);
                             SharedPreferences.Editor editor = sharedPreferences.edit();
                             editor.remove("title");
                             editor.remove("link");
@@ -305,8 +290,8 @@ public class TabFragment extends Fragment implements MainGUI {
                     }
 
                     @Override
-                    public void onImageDownloaded(Conversation conversation,boolean image) {
-                        UpdateConversationsInDataBase(conversation,image);
+                    public void onImageDownloaded(Conversation conversation, boolean image) {
+                        UpdateConversationsInDataBase(conversation, image);
                     }
                 });
                 LinearLayout rootLayout = view.findViewById(R.id.rootLayout);
@@ -320,11 +305,10 @@ public class TabFragment extends Fragment implements MainGUI {
                 recyclerView.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                        if(selected>0) {
+                        if (selected > 0) {
                             UnSelectAll();
                             return true;
-                        }
-                        else return false;
+                        } else return false;
                     }
                 });
 
@@ -332,23 +316,95 @@ public class TabFragment extends Fragment implements MainGUI {
                 break;
             }
             case groups:
-                view = inflater.inflate(R.layout.grops_conversation_layout,container,false);
-                break;
+                view = inflater.inflate(R.layout.coming_soon_layout, container, false);
+                /*view = inflater.inflate(R.layout.conversation_layout2,container,false);
+                RecyclerView recyclerView = view.findViewById(R.id.recycle_view);
+                ConversationsAdapter2 conversationsAdapter2 = new ConversationsAdapter2();
+                recyclerView.setHasFixedSize(true);
+                LinearLayoutManager linearLayoutManager = new LinearLayoutManager(requireContext());
+                recyclerView.setLayoutManager(linearLayoutManager);
+                recyclerView.setItemViewCacheSize(20);
+                recyclerView.setDrawingCacheEnabled(true);
+                recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+                recyclerView.setAdapter(conversationsAdapter2);
+                ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.ACTION_STATE_IDLE,ItemTouchHelper.START | ItemTouchHelper.END) {
+                    @Override
+                    public boolean onMove(@NonNull  RecyclerView recyclerView, @NonNull  RecyclerView.ViewHolder viewHolder, @NonNull  RecyclerView.ViewHolder target) {
+                        return false;
+                    }
 
+                    @Override
+                    public void onSwiped(@NonNull  RecyclerView.ViewHolder viewHolder, int direction) {
+                        if (direction == ItemTouchHelper.END)
+                        {
+                            //leave group
+                            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+                            builder.setCancelable(true)
+                                    .setTitle("Leave group?")
+                                    .setMessage("Are you sure you would like to leave this group?")
+                                    .setPositiveButton("Leave", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+
+                                        }
+                                    })
+                                    .setNegativeButton("Stay", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    }).create().show();
+
+                        }
+                        else if (direction == ItemTouchHelper.START)
+                        {
+                            //mute group
+                            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+                            builder.setCancelable(true)
+                                    .setTitle("Mute group?")
+                                    .setMessage("Are you sure you would like to mute this group?")
+                                    .setPositiveButton("Mute", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+
+                                        }
+                                    })
+                                    .setNegativeButton("Don't mute", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    }).create().show();
+                        }
+                    }
+                };
+                ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+                itemTouchHelper.attachToRecyclerView(recyclerView);
+                conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
+                    @Override
+                    public void onLongPressed(boolean selected, Conversation conversation) {
+                        //shows menu options
+                    }
+
+                    @Override
+                    public void onClicked(Conversation conversation) {
+                        //opens group conversation activity
+                        Intent intent = new Intent(requireActivity(), GroupConversationActivity.class);
+                        intent.putExtra("ConversationID",conversation.getConversationID());
+                       // intent.putExtra("recipients",new int[10]);
+                        startActivity(intent);
+                    }
+
+                    @Override
+                    public void onImageDownloaded(Conversation conversation, boolean image) {
+                        //downloads group image
+                    }
+                });*/
+
+                break;
         }
 
         return view;
-    }
-
-    private void Mute(boolean mute,Conversation conversation) {
-
-        if (mute) {
-            controller.onUpdateData("users/" + currentUser + "/mutedUsers/" + conversation.getRecipient(), true);
-            controller.onUpdateData("users/" + currentUser + "/conversations/" + conversation.getConversationID() + "/conversationInfo/muted", true);
-        } else {
-            controller.onRemoveData("users/" + currentUser + "/mutedUsers/" + conversation.getRecipient());
-            controller.onUpdateData("users/" + currentUser + "/conversations/" + conversation.getConversationID() + "/conversationInfo/muted", false);
-        }
     }
 
     @Override
@@ -359,37 +415,30 @@ public class TabFragment extends Fragment implements MainGUI {
         else if (item.getItemId() == R.id.callBtn) {
             if (selected == 1)
                 CallPhone();
-        }
-        else if (item.getItemId() == R.id.block)
+        } else if (item.getItemId() == R.id.block)
             BlockUser();
-        else if (item.getItemId() == R.id.searchConversation)
-        {
+        else if (item.getItemId() == R.id.searchConversation) {
             Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
             Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
-            if (searchLayout.getVisibility() == View.GONE)
-            {
+            if (searchLayout.getVisibility() == View.GONE) {
                 searchLayout.setVisibility(View.VISIBLE);
                 searchLayout.startAnimation(in);
                 recyclerView.startAnimation(in);
                 conversationsAdapter2.SetBackUp();
                 search = true;
-            }
-            else
-            {
+            } else {
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         searchLayout.setVisibility(View.GONE);
                     }
-                },out.getDuration());
+                }, out.getDuration());
                 searchLayout.startAnimation(out);
                 recyclerView.startAnimation(out);
                 conversationsAdapter2.Reset();
                 search = false;
             }
-        }
-        else if (item.getItemId() == R.id.status)
-        {
+        } else if (item.getItemId() == R.id.status) {
             switch (currentStatus) {
                 case ONLINE_S:
                     item.setIcon(R.drawable.circle_red);
@@ -412,24 +461,43 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
     private void ChangeStatus(String currentStatus) {
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean status = preferences.getBoolean("status", true);
-        if (status)
-        {
-            if (user!=null) {
+        if (status) {
+            if (user != null) {
                 user.setStatus(currentStatus);
                 UpdateUser(user);
             }
-            controller.onUpdateData("users/" + currentUser + "/status", currentStatus);
-        }
-        else
-        {
-            if (user!=null) {
+            editor.putString("status", currentStatus);
+            //controller.onUpdateData("users/" + currentUser + "/status", currentStatus);
+        } else {
+            if (user != null) {
                 user.setStatus(OFFLINE_S);
                 UpdateUser(user);
             }
-            controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
+            editor.putString("status", OFFLINE_S);
+            //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
         }
+        editor.apply();
+    }
+
+    private String getMyToken() {
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Token", MODE_PRIVATE);
+        String token = sharedPreferences.getString("token", "no token");
+        if (!token.equals("no token"))
+            return token;
+        else
+            Log.e("TOKEN ERROR", "no token for current user");
+        return null;
+    }
+
+    public String[] getRecipientsList() {
+        //tmp implementation
+        String[] recipientsTokens = new String[1];
+        recipientsTokens[0] = "eZ6xrJiQQNWGIPAZhSpVK6:APA91bFLWs47d-xN_-FGVtx5ixyCEkTczIycjnjO5AIEKh2aDlGbnq4MDwPlJYp8s1juJyQb9y4Wx3l09XIA5Hl9GqWE85hXafwcao7Op0uGqoNxdGtH61ri--Td9Jwu5SU0oKUHe07L";
+        return recipientsTokens;
     }
 
     @Override
@@ -482,22 +550,14 @@ public class TabFragment extends Fragment implements MainGUI {
                     public void onClick(DialogInterface dialog, int which) {
                         if (!selectedConversations.isEmpty()) {
                             if (user != null) {
-                                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("blocked",Context.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = sharedPreferences.edit();
                                 for (int i = 0; i < selectedConversations.size(); i++) {
                                     String userToBlock = selectedConversations.get(i).getRecipient();
                                     String conversationID = selectedConversations.get(i).getConversationID();
-                                    controller.onUpdateData("users/" + currentUser + "/blocked/" + userToBlock, true);
-                                    controller.onUpdateData("users/" + currentUser + "/conversations/" + conversationID + "/conversationInfo/blocked",true);
-                                    editor.putString(userToBlock,userToBlock);
-                                    editor.apply();
-
+                                    BlockUser(userToBlock, conversationID);
                                 }
                             }
                             requireActivity().invalidateOptionsMenu();
                             UnSelectAll();
-
-
                             Toast.makeText(requireContext(), "Blocked all selected users", Toast.LENGTH_SHORT).show();
                         }
                     }
@@ -512,15 +572,14 @@ public class TabFragment extends Fragment implements MainGUI {
                 .show();
     }
 
-    private void BlockUserLocally(String userToBlock)
-    {
-        if (db!=null)
-        {
+    @Deprecated
+    private void BlockUserLocally(String userToBlock) {
+        if (db != null) {
             ContentValues contentValues = new ContentValues();
-            contentValues.put(DataBaseContract.BlockedUsers.USER_UID,userToBlock);
-            long rawNumber =  db.insert(DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE,null,contentValues);
+            contentValues.put(DataBaseContract.BlockedUsers.USER_UID, userToBlock);
+            long rawNumber = db.insert(DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE, null, contentValues);
             if (rawNumber == -1)
-                Log.e(DATABASE_ERROR,"didn't update database with new blocked user");
+                Log.e(DATABASE_ERROR, "didn't update database with new blocked user");
         }
     }
 
@@ -553,12 +612,12 @@ public class TabFragment extends Fragment implements MainGUI {
             DataBase dbHelper = new DataBase(requireContext());
             db = dbHelper.getWritableDatabase();
             // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
-             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
+            //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
             // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
             dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
-            //db.execSQL("CREATE TABLE IF NOT EXISTS " + DataBaseContract.Entry.CONVERSATIONS_TABLE);
+            //db.execSQL("CREATE TABLE IF NOT EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
         }
     }
 
@@ -578,8 +637,7 @@ public class TabFragment extends Fragment implements MainGUI {
             Log.e(DATABASE_ERROR, "more than 1 or 0 rows were updated in the user table");
     }
 
-    private ContentValues CreateUserValues(User user)
-    {
+    private ContentValues CreateUserValues(User user) {
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.User.USER_UID, user.getUserUID());
         values.put(DataBaseContract.User.USER_NAME, user.getName());
@@ -587,10 +645,11 @@ public class TabFragment extends Fragment implements MainGUI {
         values.put(DataBaseContract.User.USER_TIME_CREATED, user.getTimeCreated());
         values.put(DataBaseContract.User.USER_PICTURE_LINK, user.getPictureLink());
         if (user.getPhoneNumber() != null)
-            values.put(DataBaseContract.User.USER_PHONE_NUMBER,user.getPhoneNumber());
-        values.put(DataBaseContract.User.USER_LAST_STATUS,user.getStatus());
+            values.put(DataBaseContract.User.USER_PHONE_NUMBER, user.getPhoneNumber());
+        values.put(DataBaseContract.User.USER_LAST_STATUS, user.getStatus());
         return values;
     }
+
     /*
         we check if the user exists in the database. compare user uid to the saved uid. unless the table is empty just update the user table with the new user that login
         then we load the conversations assigned to this user uid
@@ -661,37 +720,30 @@ public class TabFragment extends Fragment implements MainGUI {
         if (user.getUserUID().equals(currentUser)) {//us - the user login
             CheckIfUserExist(user);
             this.user = user;
-            //since user is being called for each message sent, and inorder not to have repeating conversations, once variable prevents it
-            if (!once)
-            {
-                controller.onDownloadConversations(requireContext());
-                once = true;
-            }
             //sends the data to mainActivity
             callback.onUserUpdate(user);
         }
     }
 
 
-
     private void InsertConversationToDataBase(Conversation conversation) {
         String conversationID = conversation.getConversationID();
 
         ContentValues values = new ContentValues();
-        values.put(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
-        values.put(DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME, conversation.isMuted());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, conversation.getLastMessage());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, conversation.getLastMessageTime());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, conversation.getMessageType());
-        values.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT, conversation.getRecipient());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID, conversation.getLastMessageID());
-        values.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH,conversation.getRecipientImagePath());
-        values.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME,conversation.getSenderName());
-        values.put(DataBaseContract.Entry.USER_UID, user.getUserUID());
+        values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
+        values.put(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME, conversation.isMuted());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, conversation.getLastMessage());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, conversation.getLastMessageTime());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, conversation.getMessageType());
+        values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT, conversation.getRecipient());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, conversation.getLastMessageID());
+        values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH, conversation.getRecipientImagePath());
+        values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, conversation.getSenderName());
+        values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
 
-        //  values.put(DataBaseContract.Entry.CONVERSATIONS_BLOCK_COLUMN_NAME,"CONVERSATION_BLOCKED");
+        //  values.put(DataBaseContract.Conversations.CONVERSATIONS_BLOCK_COLUMN_NAME,"CONVERSATION_BLOCKED");
 
-        long newRowId = db.insert(DataBaseContract.Entry.CONVERSATIONS_TABLE, null, values);
+        long newRowId = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
         if (newRowId == -1)
             Log.e(DATABASE_ERROR, "error inserting data to database");
         else {
@@ -701,77 +753,38 @@ public class TabFragment extends Fragment implements MainGUI {
         }
     }
 
-    private void DeleteFromDataBase(Conversation conversation) {
-        String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+    /*private void DeleteFromDataBase(Conversation conversation) {
+        String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
         String[] selectionArgs = {conversation.getConversationID()};
-        int deletedRows = db.delete(DataBaseContract.Entry.CONVERSATIONS_TABLE, selection, selectionArgs);
+        int deletedRows = db.delete(DataBaseContract.Conversations.CONVERSATIONS_TABLE, selection, selectionArgs);
         if (deletedRows == -1)
             Log.e(DATABASE_ERROR, "didn't delete anything - deleted rows = -1");
 
-    }
+    }*/
 
-    private void UpdateConversationsInDataBase(Conversation conversation,boolean image) {
+    private void UpdateConversationsInDataBase(Conversation conversation, boolean image) {
 
         DataBaseSetUp();
         ContentValues values = new ContentValues();
-        values.put(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME, conversation.getConversationID());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID, conversation.getLastMessageID());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, conversation.getMessageType());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, conversation.getLastMessage());
-        values.put(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, conversation.getLastMessageTime());
-        values.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH,conversation.getRecipientImagePath());
-        values.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME,conversation.getSenderName());
-        values.put(DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME, conversation.isMuted());
-        values.put(DataBaseContract.Entry.USER_UID, user.getUserUID());
-        String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+        values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversation.getConversationID());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, conversation.getLastMessageID());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, conversation.getMessageType());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, conversation.getLastMessage());
+        values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, conversation.getLastMessageTime());
+        values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH, conversation.getRecipientImagePath());
+        values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, conversation.getSenderName());
+        values.put(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME, conversation.isMuted());
+        values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
+        values.put(DataBaseContract.User.TOKEN, conversation.getRecipientToken());
+        String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
         String[] selectionArgs = {conversation.getConversationID()};
-        int count = db.update(DataBaseContract.Entry.CONVERSATIONS_TABLE, values, selection, selectionArgs);
+        int count = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
         if (count > 0)
             if (!image)
                 conversationsAdapter2.updateConversation(conversation);
 
     }
 
-    private void PrintDataBase() {
-        if (db != null) {
-            String[] projections = {
-                    BaseColumns._ID,
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID,
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT
-                    // DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME,
-                    //DataBaseContract.Entry.CONVERSATIONS_BLOCK_COLUMN_NAME
-            };
-            //String sortOrder = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " ASC";
-            Cursor cursor = db.query(DataBaseContract.Entry.CONVERSATIONS_TABLE, projections, null, null, null, null, null);
-            List<String> conversationIDsList = new ArrayList<>();
-            List<String> lastMessagesList = new ArrayList<>();
-            List<String> lastMessagesTimeList = new ArrayList<>();
-            List<Integer> lastMessageTypeList = new ArrayList<>();
-            List<String> recipientList = new ArrayList<>();
-            while (cursor.moveToNext()) {
-                String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
-                conversationIDsList.add(conversationIDs);
-                String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
-                lastMessagesList.add(lastMessage);
-                String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME));
-                lastMessagesTimeList.add(lastMessageTime);
-                int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME));
-                lastMessageTypeList.add(lastMessageType);
-                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT));
-                recipientList.add(recipient);
-            }
-            cursor.close();
-            System.out.println(conversationIDsList);
-            System.out.println(lastMessagesList);
-            System.out.println(lastMessagesTimeList);
-            System.out.println(lastMessageTypeList);
-            System.out.println(recipientList);
-        }
-    }
 
     //idType - true for conversationID, false for messageID
     private boolean CheckIfExist(String ID, boolean idType) {
@@ -779,20 +792,20 @@ public class TabFragment extends Fragment implements MainGUI {
             if (db != null) {
                 String[] projections = {
                         BaseColumns._ID,
-                        DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME,
-                        DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID
+                        DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                        DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID
                 };
-                //String sortOrder = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " DESC";
-                String selections = DataBaseContract.Entry.USER_UID + " LIKE ?";
+                //String sortOrder = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " DESC";
+                String selections = DataBaseContract.Conversations.USER_UID + " LIKE ?";
                 String[] selectionArgs = {user.getUserUID()};
-                Cursor cursor = db.query(DataBaseContract.Entry.CONVERSATIONS_TABLE, projections, selections, selectionArgs, null, null, null);
+                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selections, selectionArgs, null, null, null);
                 while (cursor.moveToNext()) {
                     String IDs;
                     if (idType) {
 
-                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
+                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
                     } else {
-                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID));
+                        IDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID));
                     }
                     if (IDs.equals(ID)) {
                         cursor.close();
@@ -801,8 +814,8 @@ public class TabFragment extends Fragment implements MainGUI {
                 }
                 cursor.close();
             }
-        }else
-            Log.e(DATABASE_ERROR,"id is null");
+        } else
+            Log.e(DATABASE_ERROR, "id is null");
         return false;
     }
 
@@ -811,44 +824,44 @@ public class TabFragment extends Fragment implements MainGUI {
 
             String[] projections = {
                     BaseColumns._ID,
-                    DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME,
-                    DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID,
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT,
-                    DataBaseContract.Entry.CONVERSATIONS_MUTE_COLUMN_NAME,
-                    DataBaseContract.Entry.USER_UID,
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME,
-                    DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH,
-                    //DataBaseContract.Entry.CONVERSATION_INDEX
-                    //DataBaseContract.Entry.CONVERSATIONS_BLOCK_COLUMN_NAME
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT,
+                    DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME,
+                    DataBaseContract.Conversations.USER_UID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    //DataBaseContract.Conversations.CONVERSATION_INDEX
+                    //DataBaseContract.Conversations.CONVERSATIONS_BLOCK_COLUMN_NAME
             };
-            String selection = DataBaseContract.Entry.USER_UID + " LIKE ?";
+            String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
             if (user != null && user.getUserUID() != null) {
                 String[] selectionArgs = {user.getUserUID()};
-                Cursor cursor = db.query(DataBaseContract.Entry.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
                 while (cursor.moveToNext()) {
-                    String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME));
-                    String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
-                    String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME));
-                    int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME));
-                    String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT));
-                    String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_LAST_MESSAGE_ID));
-                    String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME));
-                    String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_RECIPIENT_IMAGE_PATH));
-                   // int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Entry.CONVERSATION_INDEX));
+                    String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
+                    String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
+                    String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME));
+                    int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME));
+                    String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT));
+                    String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID));
+                    String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME));
+                    String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH));
+                    // int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
                     Conversation conversation = new Conversation(conversationIDs);
-                    conversation.setLastMessageTimeFormatted(lastMessageTime);
+                    conversation.setLastMessageTime(lastMessageTime);
                     conversation.setLastMessage(lastMessage);
                     conversation.setMessageType(lastMessageType);
                     conversation.setLastMessageID(lastMessageID);
                     conversation.setRecipient(recipient);
                     conversation.setRecipientImagePath(imagePath);
                     conversation.setSenderName(recipientName);
-                   // conversationsAdapter2.setConversation(conversation,position);
+                    // conversationsAdapter2.setConversation(conversation,position);
                     conversationsAdapter2.addConversation(conversation);
-                   // conversationsAdapter2.setRecipientName(recipientName);
+                    // conversationsAdapter2.setRecipientName(recipientName);
                     recipientsName.add(recipientName);
                     conversations.add(conversation);
                 }
@@ -858,6 +871,7 @@ public class TabFragment extends Fragment implements MainGUI {
         }
     }
 
+    @Deprecated
     @Override
     public void onReceiveConversations(ArrayList<Conversation> conversations) {
 
@@ -867,21 +881,18 @@ public class TabFragment extends Fragment implements MainGUI {
     @Override
     public void onReceiveConversation(Conversation conversation) {
         //checks if conversation already exists
-        if(!CheckIfExist(conversation.getConversationID(),true))
-        {
+        if (!CheckIfExist(conversation.getConversationID(), true)) {
             //if conversation doesn't exists - meaning its a new conversation
             InsertConversationToDataBase(conversation);
-        }
-        else
-        {
+        } else {
             //meaning conversationExists already - so we only need to update the database
-            UpdateConversationsInDataBase(conversation,false);
+            UpdateConversationsInDataBase(conversation, false);
         }
     }
 
     @Override
     public void onChangedConversation(Conversation conversation) {
-        UpdateConversationsInDataBase(conversation,false);
+        UpdateConversationsInDataBase(conversation, false);
     }
 
     @Override
@@ -896,11 +907,10 @@ public class TabFragment extends Fragment implements MainGUI {
 
     @Override
     public void onVersionChange(float newVersionNumber) {
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("App",Context.MODE_PRIVATE);
-        float currentVersionNumber = sharedPreferences.getFloat("Version",-1);
-        if (currentVersionNumber != newVersionNumber)
-        {
-            Snackbar.make(requireContext(),view,"A newer version is available",Snackbar.LENGTH_SHORT).setAction("Update", new View.OnClickListener() {
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("App", MODE_PRIVATE);
+        float currentVersionNumber = sharedPreferences.getFloat("Version", -1);
+        if (currentVersionNumber != newVersionNumber) {
+            Snackbar.make(requireContext(), view, "A newer version is available", Snackbar.LENGTH_SHORT).setAction("Update", new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     //opens play store with the app link
@@ -915,9 +925,13 @@ public class TabFragment extends Fragment implements MainGUI {
             @Override
             public void onComplete(@NonNull Task<String> task) {
                 if (!task.isSuccessful())
-                    Log.e(FCM_ERROR,"Fetching FCM registration token failed: " + task.getException());
+                    Log.e(FCM_ERROR, "Fetching FCM registration token failed: " + task.getException());
                 else {
                     String token = task.getResult();
+                    SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("Token", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("token", token);
+                    editor.apply();
                     HashMap<String, Object> tokenMap = new HashMap<>();
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         String currentUserUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -932,36 +946,10 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
 
-    private void assignRecipientsToConversations(User user) {
-        String userID = user.getUserUID();
-        for (int i = 0; i < conversations.size(); i++) {
-            if (userID.equals(conversations.get(i).getRecipient())) {
-                conversations.get(i).setRecipientPhoneNumber(user.getPhoneNumber());
-                ContentValues contentValues = new ContentValues();
-                System.out.println(user.getName());
-                contentValues.put(DataBaseContract.Entry.CONVERSATION_RECIPIENT_NAME, user.getName());
-                String selection = DataBaseContract.Entry.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
-                String[] selectionArgs = {conversations.get(i).getConversationID()};
-                int k = db.update(DataBaseContract.Entry.CONVERSATIONS_TABLE, contentValues, selection, selectionArgs);
-                if (k != 1)
-                    Log.e(DATABASE_ERROR, "updated more than 1 conversation in assignRecipientsToConversation");
-               // conversationsAdapter2.setRecipientName(user.getName());
-                //recipientsName.add(user.getName());
-                break;
-            }
-        }
-    }
-
-    private String checkOverriddenPhoneNumber(int key) {
-        String recipientUID = conversations.get(key).getRecipient();
-        return user.getRecipientPhoneNumber(recipientUID);
-    }
-
 
     @Override
     public void onDetach() {
         super.onDetach();
-
     }
 
     @Override
@@ -970,7 +958,6 @@ public class TabFragment extends Fragment implements MainGUI {
         if (!openingActivity)
             ChangeStatus(OFFLINE_S);
         openingActivity = false;
-        controller.onRemoveUserListener();
         controller.setMainGUI(null);
 
     }
@@ -981,14 +968,11 @@ public class TabFragment extends Fragment implements MainGUI {
         controller = CController.getController();
         controller.setMainGUI(this);
         ChangeStatus(ONLINE_S);
-        ArrayList<Conversation>waitingConversations =  controller.getWaitingConversations();
-        if (!waitingConversations.isEmpty())
-        {
-            for (Conversation conversation : waitingConversations)
-            {
-                UpdateConversationsInDataBase(conversation,false);
-            }
-            controller.ResetWaitingConversations();
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("New Conversation", MODE_PRIVATE);
+        String newConversation = sharedPreferences.getString("new conversation", "no new conversation");
+        if (!newConversation.equals("no new conversation")) {
+            LoadNewConversation(newConversation);
+            sharedPreferences.edit().putString("new conversation", "no new conversation").apply();
         }
     }
 
@@ -1013,5 +997,343 @@ public class TabFragment extends Fragment implements MainGUI {
         };
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(broadcastReceiver, new IntentFilter("sharedDataIN"));
     }
+    //---------------------------------------------------------------------------------------------------------------------------------------------//
 
+    //calls all the functions needed to start the fragment
+    private void init() {
+        DataBaseSetUp();
+        NullifyData();
+        LoadCurrentUserID();
+        LoadUserFromDataBase();
+        LoadConversations();
+        TokenUpdate();
+        onNewConversation();
+        onUpdateConversation();
+        onSharedLinkIN();
+    }
+
+    private void NullifyData() {
+        SharedPreferences conversationPreferences = requireActivity().getSharedPreferences("Conversation", MODE_PRIVATE);
+        SharedPreferences.Editor editor = conversationPreferences.edit();
+        editor.putString("liveConversation", "no conversation");
+        editor.apply();
+    }
+
+    private void LoadCurrentUserID() {
+        String currentUser;
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("CurrentUser", MODE_PRIVATE);
+        currentUser = sharedPreferences.getString("currentUser", "no user");
+        if (!currentUser.equals("no user"))
+            this.currentUser = currentUser;
+        else {
+            this.currentUser = "sDhl6ueP20WwMTKJW3fKK5FK5Nk2";//emulator
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("currentUser", this.currentUser);
+            editor.apply();
+            //this.currentUser = "pfghXKWGCja8i8YPQz71DuXxyTI2";//phone
+            Toast.makeText(requireContext(), "error fetching user information", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onNewConversation() {
+        BroadcastReceiver newConversationReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String newConversationID = intent.getStringExtra("conversationID");
+                LoadNewConversation(newConversationID);
+
+            }
+        };
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(newConversationReceiver, new IntentFilter("New Conversation"));
+    }
+
+    private void onUpdateConversation() {
+        BroadcastReceiver updateConversationReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Message message = (Message) intent.getSerializableExtra("message");
+                //updates the conversation
+                if (message != null) {
+                    MessageAction messageAction = message.getMessageAction();
+                    if (messageAction == MessageAction.new_message) {
+                        Conversation conversation = new Conversation(message.getConversationID());
+                        conversation.setLastMessageID(message.getMessageID());
+                        conversation.setLastMessage(message.getMessage());
+                        conversation.setLastMessageTime(message.getSendingTime());
+                        conversation.setMessageType(message.getMessageType());
+                        conversation.setRecipientName(message.getRecipientName());
+                        conversation.setRecipientToken(message.getSenderToken());
+                        conversationsAdapter2.updateConversation(conversation);
+                        UpdateConversationsInDataBase(conversation, false);
+                    }
+                    if (messageAction == MessageAction.edit_message) {
+                        //if the message to update is the last message in the conversation
+                        if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
+                            Conversation conversation = new Conversation(message.getConversationID());
+                            conversation.setLastMessageID(message.getMessageID());
+                            conversation.setLastMessage(message.getMessage());
+                            conversation.setLastMessageTime(message.getSendingTime());
+                            conversation.setMessageType(message.getMessageType());
+                            conversation.setRecipientName(message.getRecipientName());
+                            conversation.setRecipientToken(message.getSenderToken());
+                            conversationsAdapter2.updateConversation(conversation);
+                            UpdateConversationsInDataBase(conversation, false);
+                        }
+                    } else if (messageAction == MessageAction.delete_message) {
+                        if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
+                            Conversation conversation = new Conversation(message.getConversationID());
+                            conversation.setLastMessageID(message.getMessageID());
+                            conversation.setLastMessage("message was deleted");
+                            conversation.setLastMessageTime(message.getSendingTime());
+                            conversation.setMessageType(message.getMessageType());
+                            conversation.setRecipientName(message.getRecipientName());
+                            conversation.setRecipientToken(message.getSenderToken());
+                            conversationsAdapter2.updateConversation(conversation);
+                            UpdateConversationsInDataBase(conversation, false);
+                        }
+                    }
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateConversationReceiver, new IntentFilter("Update Conversation"));
+    }
+
+    private void LoadNewConversation(String conversationID) {
+        if (db != null) {
+            String[] projections = {
+                    BaseColumns._ID,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT,
+                    DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME,
+                    DataBaseContract.Conversations.USER_UID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    //DataBaseContract.Conversations.CONVERSATION_INDEX
+            };
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+            String[] selectionArgs = {conversationID};
+            Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+            while (cursor.moveToNext()) {
+                String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
+                String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
+                String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME));
+                int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME));
+                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT));
+                String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID));
+                String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME));
+                String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH));
+                String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME));
+                //int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
+                Conversation conversation = new Conversation(conversationIDs);
+                conversation.setLastMessageTimeFormatted(lastMessageTime);
+                conversation.setLastMessage(lastMessage);
+                conversation.setMessageType(lastMessageType);
+                conversation.setLastMessageID(lastMessageID);
+                conversation.setRecipient(recipient);
+                conversation.setRecipientImagePath(imagePath);
+                conversation.setSenderName(recipientName);
+                conversation.setRecipientName(recipientName);
+                conversation.setMuted(muted.equals("1"));
+                // conversationsAdapter2.setConversation(conversation,position);
+                conversationsAdapter2.addConversation(conversation);
+            }
+            cursor.close();
+        }
+    }
+
+    //called when the fragment is lunched
+    private void LoadConversations() {
+        if (db != null) {
+            String[] projections = {
+                    BaseColumns._ID,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT,
+                    DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME,
+                    DataBaseContract.Conversations.USER_UID,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    //DataBaseContract.Conversations.CONVERSATION_INDEX
+            };
+            String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
+            if (user != null && user.getUserUID() != null) {
+                String[] selectionArgs = {user.getUserUID()};
+                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+                while (cursor.moveToNext()) {
+                    String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
+                    String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
+                    String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME));
+                    int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME));
+                    String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT));
+                    String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID));
+                    String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME));
+                    String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH));
+                    String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME));
+                    //int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
+                    Conversation conversation = new Conversation(conversationIDs);
+                    conversation.setLastMessageTimeFormatted(lastMessageTime);
+                    conversation.setLastMessage(lastMessage);
+                    conversation.setMessageType(lastMessageType);
+                    conversation.setLastMessageID(lastMessageID);
+                    conversation.setRecipient(recipient);
+                    conversation.setRecipientImagePath(imagePath);
+                    conversation.setSenderName(recipientName);
+                    conversation.setRecipientName(recipientName);
+                    conversation.setMuted(muted.equals("1"));
+                    // conversationsAdapter2.setConversation(conversation,position);
+                    conversationsAdapter2.addConversation(conversation);
+                }
+                cursor.close();
+            }
+        }
+    }
+
+
+    private void UpdateConversation(String conversationID) {
+        Message lastMessage = RetrieveLastMessage(conversationID);
+        conversationsAdapter2.UpdateConversation(lastMessage, conversationID);
+    }
+
+    //called when the fragment is lunched to update conversation view
+    private Message RetrieveLastMessage(String conversationID) {
+        String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
+        return RetrieveMessage(conversationID, selection);
+    }
+
+    //retrieves the last message in a conversation or a message by its id
+    private Message RetrieveMessage(String id, String selection) {
+        if (db != null) {
+            String[] projections = {
+                    DataBaseContract.Messages.MESSAGE_ID,
+                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_SENDER_NAME,
+                    DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME,
+                    DataBaseContract.Messages.MESSAGE_IMAGE_PATH,
+                    DataBaseContract.Messages.MESSAGE_LONGITUDE,
+                    DataBaseContract.Messages.MESSAGE_LATITUDE,
+                    DataBaseContract.Messages.MESSAGE_ADDRESS,
+                    DataBaseContract.Messages.MESSAGE_RECORDING_PATH,
+                    DataBaseContract.Messages.MESSAGE_STAR,
+                    DataBaseContract.Messages.MESSAGE_FILE_PATH,
+                    DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME
+            };
+            String sortOrder = DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME + " DESC LIMIT 1";
+            String[] selectionArgs = {id};
+            Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, sortOrder);
+            Message message = new Message();
+            while (cursor.moveToNext()) {
+                String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
+                String messageContent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME));
+                String messageSender = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME));
+                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME));
+                long messageTimeDelivered = cursor.getLong(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME));
+                String messageTimeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME));
+                int messageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME));
+                String messageStatus = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME));
+                String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_IMAGE_PATH));
+                String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
+                String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LATITUDE));
+                String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
+                String recordingPath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECORDING_PATH));
+                String star = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STAR));
+                String senderName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_NAME));
+                String filePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_FILE_PATH));
+                message.setMessageID(id);
+                message.setMessage(messageContent);
+                message.setConversationID(conversationID);
+                message.setRecipient(recipient);
+                message.setSender(messageSender);
+                message.setMessageType(messageType);
+                message.setMessageTime(messageTimeSent);
+                message.setReadAt(messageTimeDelivered);
+                message.setMessageStatus(messageStatus);
+                message.setImagePath(imagePath);
+                message.setLongitude(longitude);
+                message.setLatitude(latitude);
+                message.setLocationAddress(address);
+                message.setRecordingPath(recordingPath);
+                message.setFilePath(filePath);
+                message.setSenderName(senderName);
+                if (star != null)
+                    message.setStar(star.equals("1"));
+                message.setMessageID(id);
+            }
+            cursor.close();
+            return message;
+        } else
+            return null;
+    }
+
+    private void MuteConversation(String conversationID) {
+        boolean muted = conversationsAdapter2.MuteConversation(conversationID);
+        if (db != null) {
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
+            String[] selectionArgs = {conversationID};
+            ContentValues contentValues = new ContentValues();
+            contentValues.put("muted", muted);
+            int rowNum = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, contentValues, selection, selectionArgs);
+            if (rowNum != 1)
+                Log.e(DATABASE_ERROR, "Updating mute values failed, updated more than 1 row");
+            if (muted)
+                Snackbar.make(requireContext(), recyclerView, "Conversation Was Muted", Snackbar.LENGTH_SHORT)
+                        .setAction("undo", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                MuteConversation(conversationID);
+                            }
+                        }).show();
+            else
+                Snackbar.make(requireContext(), recyclerView, "Conversation was unMuted", Snackbar.LENGTH_SHORT)
+                        .setAction("undo", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                MuteConversation(conversationID);
+                            }
+                        }).show();
+        }
+    }
+
+    private void BlockUser(String uid, String conversationID) {
+        boolean blocked = conversationsAdapter2.BlockedConversation(conversationID);
+        if (db != null) {
+            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
+            String[] selectionArgs = {uid};
+            if (blocked) {
+                ContentValues values = new ContentValues();
+                values.put(DataBaseContract.BlockedUsers.USER_UID, uid);
+                int rowSum = db.update(DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE, values, selection, selectionArgs);
+                if (rowSum != 1)
+                    Log.e(DATABASE_ERROR, "updated more than 1 row when blocking users");
+            } else {
+                int rowSum = db.delete(DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE, selection, selectionArgs);
+                if (rowSum > 1)
+                    Log.e(DATABASE_ERROR, "deleted more than 1 blocked user from blocked table");
+            }
+
+        }
+    }
+
+    private void DeleteConversation(String conversationID) {
+        conversationsAdapter2.DeleteConversation(conversationID);
+        if (db != null) {
+            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
+            String[] selectionArgs = {conversationID};
+            int rowSum = db.delete(DataBaseContract.Conversations.CONVERSATIONS_TABLE, selection, selectionArgs);
+            if (rowSum != 1)
+                Log.e(DATABASE_ERROR, "deleting conversation failed, more than 1 conversations were deleted or none were");
+        }
+    }
 }

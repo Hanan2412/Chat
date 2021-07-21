@@ -521,7 +521,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private void createNotificationChannel() {
 
-        CharSequence channelName = "Messages";
+        CharSequence channelName = "BackgroundMessages";
         String description = "shows new messages";
         int importance = NotificationManager.IMPORTANCE_DEFAULT;
         String CHANNEL_ID = "MessagesChannel";

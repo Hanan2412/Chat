@@ -1,6 +1,8 @@
 package NormalObjects;
 import java.io.Serializable;
 
+import Consts.MessageAction;
+
 public class Message implements Serializable {
 
     private String message;
@@ -14,6 +16,8 @@ public class Message implements Serializable {
     private String to;
     private String conversationID;
     private String messageTime;
+    private String sendingTime;
+    private String arrivingTime;
     private String imagePath;
     private String quoteMessage;
     private int messageType = -1;
@@ -25,6 +29,11 @@ public class Message implements Serializable {
     private long readAt=-1;
     private boolean star = false;
     private String starTime;
+    private String recipientName;
+    private MessageAction messageAction = MessageAction.new_message;
+    private String filePath;
+    private String editTime;
+    private String senderToken;
 
     public String getMessage() {
         return message;
@@ -202,5 +211,61 @@ public class Message implements Serializable {
 
     public void setStarTime(String starTime) {
         this.starTime = starTime;
+    }
+
+    public String getSendingTime() {
+        return sendingTime;
+    }
+
+    public void setSendingTime(String sendingTime) {
+        this.sendingTime = sendingTime;
+    }
+
+    public String getArrivingTime() {
+        return arrivingTime;
+    }
+
+    public void setArrivingTime(String arrivingTime) {
+        this.arrivingTime = arrivingTime;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
+    }
+
+    public MessageAction getMessageAction() {
+        return messageAction;
+    }
+
+    public void setMessageAction(MessageAction messageAction) {
+        this.messageAction = messageAction;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public String getEditTime() {
+        return editTime;
+    }
+
+    public void setEditTime(String editTime) {
+        this.editTime = editTime;
+    }
+
+    public String getSenderToken() {
+        return senderToken;
+    }
+
+    public void setSenderToken(String senderToken) {
+        this.senderToken = senderToken;
     }
 }
