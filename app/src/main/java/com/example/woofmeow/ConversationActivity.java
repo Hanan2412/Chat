@@ -488,7 +488,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             public void onSwipe(@NonNull  RecyclerView.ViewHolder viewHolder, int swipeDirection) {
                 viewHolder.getAdapterPosition();
                 TextView message = viewHolder.itemView.findViewById(R.id.message);
-                String quote = "\"" + message.getText() + "\"";
+                //String quote = "\"" + message.getText() + "\"";
+                String quote = message.getText().toString();
                 quoteText.setText(quote);
                 quoteText.setVisibility(View.VISIBLE);
                 quoteOn = true;
@@ -505,30 +506,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 return false;
             }
         });
-       /* ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                //swiping quotes the message
-
-                viewHolder.getAdapterPosition();
-                TextView message = viewHolder.itemView.findViewById(R.id.message);
-                String quote = "\"" + message.getText() + "\"";
-                quoteText.setText(quote);
-                quoteText.setVisibility(View.VISIBLE);
-                quoteOn = true;
-                quotedMessageID = chatAdapter.getMessageID(viewHolder.getAdapterPosition());
-                quotedMessagePosition = viewHolder.getAdapterPosition();
-                //brings back just the item that was swiped away
-                if (recyclerView.getAdapter() != null)
-                    recyclerView.getAdapter().notifyItemChanged(viewHolder.getAdapterPosition());
-                //chatAdapter.notifyDataSetChanged();
-            }
-        };*/
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
         itemTouchHelper.attachToRecyclerView(recyclerView);
         SetUpBySettings();

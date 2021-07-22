@@ -450,7 +450,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
 
         } else {
-            calendar.setTimeInMillis(message.getReadAt());
+            calendar.setTimeInMillis(Long.parseLong(message.getArrivingTime()));
         }
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH);
