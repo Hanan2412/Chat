@@ -12,12 +12,12 @@ import com.example.woofmeow.R;
 
 import Adapters.ConversationsAdapter2;
 
-public class ItemTouch extends ItemTouchHelper.SimpleCallback {
+public class ConversationTouch extends ItemTouchHelper.SimpleCallback {
 
     private ConversationsAdapter2 adapter2;
 
     private TouchListener listener;
-    public ItemTouch(int dragDirs, int swipeDirs) {
+    public ConversationTouch(int dragDirs, int swipeDirs) {
         super(dragDirs, swipeDirs);
     }
 

@@ -143,8 +143,10 @@ import Model.MessageSender;
 import Model.Server3;
 import Model.Uploads;
 import NormalObjects.Message;
+import NormalObjects.MessageTouch;
 import NormalObjects.Network2;
 import NormalObjects.NetworkChange;
+import NormalObjects.TouchListener;
 import NormalObjects.User;
 import Retrofit.RetrofitApi;
 import Retrofit.RetrofitClient;
@@ -480,7 +482,30 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 //}
             }
         });
-        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END) {
+        MessageTouch touch = new MessageTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END);
+        touch.setListener(new TouchListener() {
+            @Override
+            public void onSwipe(@NonNull  RecyclerView.ViewHolder viewHolder, int swipeDirection) {
+                viewHolder.getAdapterPosition();
+                TextView message = viewHolder.itemView.findViewById(R.id.message);
+                String quote = "\"" + message.getText() + "\"";
+                quoteText.setText(quote);
+                quoteText.setVisibility(View.VISIBLE);
+                quoteOn = true;
+                quotedMessageID = chatAdapter.getMessageID(viewHolder.getAdapterPosition());
+                quotedMessagePosition = viewHolder.getAdapterPosition();
+                //brings back just the item that was swiped away
+                if (recyclerView.getAdapter() != null)
+                    recyclerView.getAdapter().notifyItemChanged(viewHolder.getAdapterPosition());
+                //chatAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public boolean onMove(@NonNull  RecyclerView recyclerView, @NonNull  RecyclerView.ViewHolder viewHolder, @NonNull  RecyclerView.ViewHolder target) {
+                return false;
+            }
+        });
+       /* ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
                 return false;
@@ -503,8 +528,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     recyclerView.getAdapter().notifyItemChanged(viewHolder.getAdapterPosition());
                 //chatAdapter.notifyDataSetChanged();
             }
-        };
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+        };*/
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
         itemTouchHelper.attachToRecyclerView(recyclerView);
         SetUpBySettings();
         quoteText.setOnClickListener(new View.OnClickListener() {

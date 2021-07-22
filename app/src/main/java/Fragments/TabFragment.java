@@ -62,7 +62,7 @@ import Controller.CController;
 import DataBase.DataBase;
 import DataBase.DataBaseContract;
 import NormalObjects.Conversation;
-import NormalObjects.ItemTouch;
+import NormalObjects.ConversationTouch;
 import NormalObjects.Message;
 import NormalObjects.TouchListener;
 import NormalObjects.User;
@@ -214,7 +214,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 recyclerView.setDrawingCacheEnabled(true);
                 recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
                 recyclerView.setAdapter(conversationsAdapter2);
-                ItemTouch touch = new ItemTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT);
+                ConversationTouch touch = new ConversationTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT);
                 touch.setListener(new TouchListener() {
                     @Override
                     public void onSwipe(@NonNull  RecyclerView.ViewHolder viewHolder, int direction) {
