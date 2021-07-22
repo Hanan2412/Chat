@@ -101,7 +101,15 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 if (!conversation.isTyping()){
                 //if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
                     //this if prevents the update if the only update is the typing indicator
-                    if (index == 0)
+                    conversations.remove(index);
+                    notifyItemRemoved(index);
+                    conversations.add(0,conversation);
+                    notifyItemInserted(0);
+                    notifyItemRangeChanged(0,conversations.size());
+                    //notifyItemMoved(index,0);
+
+
+                    /*if (index == 0)
                     {
                         conversations.set(index, conversation);
                         notifyItemChanged(index);
@@ -112,7 +120,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                         conversations.add(0, conversation);
                         //notifyItemInserted(0);
                         notifyItemMoved(index,0);
-                    }
+                    }*/
 
                     /*conversations.remove(index + 1);//causes flickering
                     notifyItemRemoved(index + 1);

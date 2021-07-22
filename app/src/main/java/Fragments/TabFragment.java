@@ -253,7 +253,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 });
                 touch.setConversations(conversationsAdapter2);
                 ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
-                itemTouchHelper.attachToRecyclerView(recyclerView);
+                //itemTouchHelper.attachToRecyclerView(recyclerView);
 
                 conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
                     @Override
@@ -1063,7 +1063,7 @@ public class TabFragment extends Fragment implements MainGUI {
                         conversation.setMessageType(message.getMessageType());
                         conversation.setRecipientName(message.getRecipientName());
                         conversation.setRecipientToken(message.getSenderToken());
-                        conversationsAdapter2.updateConversation(conversation);
+   //                     conversationsAdapter2.updateConversation(conversation);
                         UpdateConversationsInDataBase(conversation, false);
                     }
                     if (messageAction == MessageAction.edit_message) {
@@ -1163,9 +1163,10 @@ public class TabFragment extends Fragment implements MainGUI {
                     //DataBaseContract.Conversations.CONVERSATION_INDEX
             };
             String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
+            String orderBy = DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME + " DESC";
             if (user != null && user.getUserUID() != null) {
                 String[] selectionArgs = {user.getUserUID()};
-                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, orderBy);
                 while (cursor.moveToNext()) {
                     String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME));
                     String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME));
