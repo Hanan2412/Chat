@@ -347,7 +347,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     @Override
     public void onDeletedMessages() {
         super.onDeletedMessages();
-        Toast.makeText(this, "DELETE BITCHES", Toast.LENGTH_SHORT).show();
         Log.e("ON DELETE", "delete11111111111111");
     }
 
