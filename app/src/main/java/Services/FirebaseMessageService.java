@@ -9,6 +9,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -91,7 +92,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             buildersHashMap = new HashMap<>();
         controller = CController.getController();
         controller.setNotifications(this);
-
+        DisableActiveNotification();
 
     }
 
@@ -817,5 +818,22 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 Log.e(NOTIFICATION_ERROR, "isConversationExists function presents an error - > more than 1 rows retrieved");
         }
         return false;
+    }
+
+    private void DisableActiveNotification()
+    {
+        BroadcastReceiver disableNotificationReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String conversationID = intent.getStringExtra("ConversationID");
+                int notificationID = getNotificationID(conversationID);
+                if (notificationID != -1) {
+                    NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
+                    notificationManagerCompat.cancel(notificationID);
+                    notificationManagerCompat.cancel(100);
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(disableNotificationReceiver,new IntentFilter("disableNotifications"));
     }
 }

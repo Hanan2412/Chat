@@ -1538,7 +1538,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         editor.putString("liveConversation", conversationID);
         editor.apply();
 
-        // LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("disableNotifications").putExtra("ConversationID", conversationID));
+         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("disableNotifications").putExtra("ConversationID", conversationID));
 
         controller.setConversationGUI(this);
         controller.onUpdateData("users/" + currentUser + "/status", MainActivity.ONLINE_S);
@@ -2869,7 +2869,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         DataBaseSetUp();
         LoadCurrentUserID();
         LoadCurrentUserFromDataBase();
-    //    LoadRecipient();
         LoadMessages(conversationID);
         ReceiveMessages(conversationID);
         RequestRecipientsStatus();
