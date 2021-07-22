@@ -88,6 +88,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         init();
         conversations.add(position,conversation);
         notifyItemInserted(position);
+        notifyItemRangeChanged(0,conversations.size());
     }
     private void init()
     {

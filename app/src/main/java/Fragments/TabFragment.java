@@ -253,7 +253,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 });
                 touch.setConversations(conversationsAdapter2);
                 ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
-                //itemTouchHelper.attachToRecyclerView(recyclerView);
+                itemTouchHelper.attachToRecyclerView(recyclerView);
 
                 conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
                     @Override
@@ -612,8 +612,8 @@ public class TabFragment extends Fragment implements MainGUI {
             DataBase dbHelper = new DataBase(requireContext());
             db = dbHelper.getWritableDatabase();
             // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
-            //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
-            //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
+            db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
+            db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
             //db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
             // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
             dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
@@ -1054,15 +1054,20 @@ public class TabFragment extends Fragment implements MainGUI {
                 Message message = (Message) intent.getSerializableExtra("message");
                 //updates the conversation
                 if (message != null) {
+                    if(message.getArrivingTime() == null)
+                    {
+                        message.setArrivingTime(System.currentTimeMillis() + "");
+                    }
                     MessageAction messageAction = message.getMessageAction();
                     if (messageAction == MessageAction.new_message) {
                         Conversation conversation = new Conversation(message.getConversationID());
-                        conversation.setLastMessageID(message.getMessageID());
+                        conversation.setConversationMetaData(message);
+                        /*conversation.setLastMessageID(message.getMessageID());
                         conversation.setLastMessage(message.getMessage());
                         conversation.setLastMessageTime(message.getSendingTime());
                         conversation.setMessageType(message.getMessageType());
                         conversation.setRecipientName(message.getRecipientName());
-                        conversation.setRecipientToken(message.getSenderToken());
+                        conversation.setRecipientToken(message.getSenderToken());*/
    //                     conversationsAdapter2.updateConversation(conversation);
                         UpdateConversationsInDataBase(conversation, false);
                     }
@@ -1070,25 +1075,28 @@ public class TabFragment extends Fragment implements MainGUI {
                         //if the message to update is the last message in the conversation
                         if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
                             Conversation conversation = new Conversation(message.getConversationID());
-                            conversation.setLastMessageID(message.getMessageID());
+                            conversation.setConversationMetaData(message);
+                            /*conversation.setLastMessageID(message.getMessageID());
                             conversation.setLastMessage(message.getMessage());
                             conversation.setLastMessageTime(message.getSendingTime());
                             conversation.setMessageType(message.getMessageType());
                             conversation.setRecipientName(message.getRecipientName());
-                            conversation.setRecipientToken(message.getSenderToken());
-                            conversationsAdapter2.updateConversation(conversation);
+                            conversation.setRecipientToken(message.getSenderToken());*/
+  //                          conversationsAdapter2.updateConversation(conversation);
                             UpdateConversationsInDataBase(conversation, false);
                         }
                     } else if (messageAction == MessageAction.delete_message) {
                         if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
                             Conversation conversation = new Conversation(message.getConversationID());
-                            conversation.setLastMessageID(message.getMessageID());
+                            conversation.setConversationMetaData(message);
+                            conversation.setLastMessage("message was deleted");
+                           /* conversation.setLastMessageID(message.getMessageID());
                             conversation.setLastMessage("message was deleted");
                             conversation.setLastMessageTime(message.getSendingTime());
                             conversation.setMessageType(message.getMessageType());
                             conversation.setRecipientName(message.getRecipientName());
-                            conversation.setRecipientToken(message.getSenderToken());
-                            conversationsAdapter2.updateConversation(conversation);
+                            conversation.setRecipientToken(message.getSenderToken());*/
+  //                          conversationsAdapter2.updateConversation(conversation);
                             UpdateConversationsInDataBase(conversation, false);
                         }
                     }
@@ -1112,6 +1120,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     DataBaseContract.Conversations.USER_UID,
                     DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME,
                     DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    DataBaseContract.User.TOKEN,
                     //DataBaseContract.Conversations.CONVERSATION_INDEX
             };
             String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
@@ -1127,6 +1136,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME));
                 String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH));
                 String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME));
+                String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
                 //int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
                 Conversation conversation = new Conversation(conversationIDs);
                 conversation.setLastMessageTimeFormatted(lastMessageTime);
@@ -1138,8 +1148,9 @@ public class TabFragment extends Fragment implements MainGUI {
                 conversation.setSenderName(recipientName);
                 conversation.setRecipientName(recipientName);
                 conversation.setMuted(muted.equals("1"));
-                // conversationsAdapter2.setConversation(conversation,position);
-                conversationsAdapter2.addConversation(conversation);
+                conversation.setRecipientToken(recipientToken);
+                conversationsAdapter2.setConversation(conversation,0);
+                //conversationsAdapter2.addConversation(conversation);
             }
             cursor.close();
         }
@@ -1160,6 +1171,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     DataBaseContract.Conversations.USER_UID,
                     DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME,
                     DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH,
+                    DataBaseContract.User.TOKEN,
                     //DataBaseContract.Conversations.CONVERSATION_INDEX
             };
             String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
@@ -1177,6 +1189,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME));
                     String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH));
                     String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME));
+                    String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
                     //int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
                     Conversation conversation = new Conversation(conversationIDs);
                     conversation.setLastMessageTimeFormatted(lastMessageTime);
@@ -1188,6 +1201,7 @@ public class TabFragment extends Fragment implements MainGUI {
                     conversation.setSenderName(recipientName);
                     conversation.setRecipientName(recipientName);
                     conversation.setMuted(muted.equals("1"));
+                    conversation.setRecipientToken(recipientToken);
                     // conversationsAdapter2.setConversation(conversation,position);
                     conversationsAdapter2.addConversation(conversation);
                 }

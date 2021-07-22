@@ -652,7 +652,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             message.setMessage(content);
             message.setSender(senderUID);
             message.setSenderName(senderName);
-            message.setMessageTime(sendingTime);
+            message.setSendingTime(sendingTime);
+            message.setArrivingTime(System.currentTimeMillis() + "");
             message.setQuotedMessageID(quoteMessageID);
             message.setQuoteMessage(quote);
             message.setMessageType(type);
@@ -787,8 +788,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, message.getMessage());
             values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
-            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, message.getSendingTime());
+            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, message.getArrivingTime());
             values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, message.getRecipientName());
+            values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT,message.getSender());
+            values.put(DataBaseContract.User.TOKEN,message.getSenderToken());
             values.put(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME, false);
             long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
             if (newConversationID == -1)

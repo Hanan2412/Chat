@@ -76,7 +76,9 @@ public class Conversation implements Serializable {
     }
     public void setLastMessageTimeFormatted(String lastMessageTime)
     {
-        this.lastMessageTime = lastMessageTime;
+        if(!lastMessageTime.contains("/"))
+            parseTime(lastMessageTime);
+        else this.lastMessageTime = lastMessageTime;
     }
 
     public String getRecipientImagePath() {
@@ -185,5 +187,35 @@ public class Conversation implements Serializable {
 
     public void setRecipientToken(String recipientToken) {
         this.recipientToken = recipientToken;
+    }
+
+    public void setConversationMetaData(Message message)
+    {
+        lastMessageID = message.getMessageID();
+        lastMessage = message.getMessage();
+        parseTime(message.getArrivingTime());
+        //lastMessageTime = message.getArrivingTime();
+        messageType = message.getMessageType();
+        recipientName = message.getRecipientName();
+        recipientToken = message.getSenderToken();
+    }
+
+    private void parseTime(String time)
+    {
+        if(time!=null) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(Long.parseLong(time));
+            int minute = calendar.get(Calendar.MINUTE);
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+            int month = calendar.get(Calendar.MONTH) + 1;
+            int year = calendar.get(Calendar.YEAR);
+            String minutes;
+            if(minute<10)
+                minutes = "0" + minute;
+            else
+                minutes = minute + "";
+            this.lastMessageTime = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
+        }
     }
 }

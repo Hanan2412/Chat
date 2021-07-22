@@ -1909,7 +1909,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
             @Override
             public void onNetworkLost() {
-                networkConnection = false;
+                //networkConnection = false;
                 Toast.makeText(ConversationActivity.this, "network lost - disconnected from the internet", Toast.LENGTH_SHORT).show();
             }
 
@@ -2867,6 +2867,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         DataBaseSetUp();
         LoadCurrentUserID();
         LoadCurrentUserFromDataBase();
+    //    LoadRecipient();
         LoadMessages(conversationID);
         ReceiveMessages(conversationID);
         RequestRecipientsStatus();
@@ -3409,4 +3410,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         String[] recipientsToken = recipientsTokens.toArray(new String[0]);
         MessageSender.getInstance().SendMessage(requestMessage,BackgroundMessages.request,recipientsToken);
     }
+
+
 }
