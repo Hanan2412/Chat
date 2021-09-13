@@ -38,4 +38,15 @@
     <string name="unmute">Unmute</string>
     <string name="block">Block</string>
     <string name="unblock">Unblock</string>
+    <string name="search">Serach</string>
+    <string name="scroll">Scroll</string>
+    <string name="previewImage">Preview Image</string>
+    <string name="quote">Quote</string>
+    <string name="link">Link</string>
+    <string name="playAudio">play audio</string>
+    <string name="removeRecording">remove recording</string>
+    <string name="time">Time</string>
+    <string name="location">Location</string>
+    <string name="back">Back</string>
+    <string name="userStatus">status</string>
 </resources>

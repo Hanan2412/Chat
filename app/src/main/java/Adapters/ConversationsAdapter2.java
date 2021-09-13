@@ -1,11 +1,13 @@
 package Adapters;
 
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,9 +16,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
-
 import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,13 +41,14 @@ import java.util.ArrayList;
 
 import Consts.MessageType;
 import NormalObjects.Conversation;
+import NormalObjects.FileManager;
 import NormalObjects.Message;
 
 @SuppressWarnings("Convert2Lambda")
 public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAdapter2.ConversationsViewHolder> {
 
 
-
+    private FileManager fileManager;
 
     public interface onPressed {
         void onLongPressed(boolean selected, Conversation conversation);
@@ -72,7 +72,10 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     public ConversationsAdapter2()
     {
         conversations = new ArrayList<>();
+        fileManager = FileManager.getInstance();
     }
+
+    @SuppressLint("NotifyDataSetChanged")
     public void setConversations(ArrayList<Conversation> conversations) {
         this.conversations = conversations;
         notifyDataSetChanged();
@@ -102,33 +105,13 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 if (!conversation.isTyping()){
                 //if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
                     //this if prevents the update if the only update is the typing indicator
+                    conversation.setRecipient(conversations.get(index).getRecipient());
                     conversations.remove(index);
                     notifyItemRemoved(index);
                     conversations.add(0,conversation);
                     notifyItemInserted(0);
                     notifyItemRangeChanged(0,conversations.size());
                     //notifyItemMoved(index,0);
-
-
-                    /*if (index == 0)
-                    {
-                        conversations.set(index, conversation);
-                        notifyItemChanged(index);
-                    }
-                    else {
-                        conversations.remove(index);
-                        //notifyItemRemoved(index);
-                        conversations.add(0, conversation);
-                        //notifyItemInserted(0);
-                        notifyItemMoved(index,0);
-                    }*/
-
-                    /*conversations.remove(index + 1);//causes flickering
-                    notifyItemRemoved(index + 1);
-                    //conversations.set(index, conversation);
-           /*if (getItemCount() > 1)
-                notifyItemRangeInserted(1,getItemCount());*/
-                    //notifyItemChanged(index);
                 }
             }
 
@@ -200,7 +183,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ConversationsAdapter2.ConversationsViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ConversationsAdapter2.ConversationsViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Conversation conversation = conversations.get(position);
         if (conversation.getMessageType() == MessageType.VoiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
@@ -213,7 +196,64 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         else
             holder.conversationStatus.setVisibility(View.GONE);
         holder.recipientName.setText(conversation.getRecipientName());
-        SharedPreferences savedImagesPreferences = holder.itemView.getContext().getSharedPreferences("SavedImages",Context.MODE_PRIVATE);
+        Bitmap bitmap = fileManager.getSavedImage(holder.itemView.getContext().getApplicationContext(), conversation.getRecipient() + "_Image");
+        if (bitmap!=null)
+        {
+            holder.profileImage.setImageBitmap(bitmap);
+            String path = fileManager.getSavedImagePath(holder.itemView.getContext().getApplicationContext(), conversation.getRecipient() + "_Image");
+            conversation.setRecipientImagePath(path);
+        }
+        else
+        {
+            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/pictureLink");
+            reference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String pictureLink = snapshot.getValue(String.class);
+                    Picasso.get().load(pictureLink).into(new Target() {
+                        @Override
+                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                            ContextWrapper contextWrapper = new ContextWrapper(holder.itemView.getContext().getApplicationContext());
+                            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
+                            if (!directory.exists())
+                                if (!directory.mkdir()) {
+                                    Log.e("error", "couldn't create a directory in conversationAdapter2");
+                                }
+                            File Path = new File(directory, conversation.getRecipient() + "_Image");
+                            conversations.get(position).setRecipientImagePath(Path.getAbsolutePath());
+                            callback.onImageDownloaded(conversations.get(position),true);
+                            try {
+                                FileOutputStream fileOutputStream = new FileOutputStream(Path);
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                                fileOutputStream.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                            Log.e("Error","couldn't load image");
+                        }
+
+                        @Override
+                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                        }
+                    });
+                    Picasso.get().load(pictureLink).into(holder.profileImage);
+                    reference.removeEventListener(this);
+
+
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    error.toException().printStackTrace();
+                }
+            });
+        }
+        /*SharedPreferences savedImagesPreferences = holder.itemView.getContext().getSharedPreferences("SavedImages",Context.MODE_PRIVATE);
         //image exists in the app
         if (savedImagesPreferences.getBoolean(conversation.getRecipient(),false))
         {
@@ -280,7 +320,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                     error.toException().printStackTrace();
                 }
             });
-        }
+        }*/
         DatabaseReference statusReference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/status");
         statusReference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -325,11 +365,13 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         });
     }
 
+
     public void PinConversation(Conversation conversation) {
-      /*int index = FindCorrectConversationIndex(conversation.getConversationID());
-      Conversation conversation1 = conversations.get(0);
-      conversations.set(0,conversation);
-      conversations.set(index,conversation1);*/
+      int index = FindCorrectConversationIndex(conversation.getConversationID());
+      Conversation conversation1 = conversations.get(index);
+      conversations.add(0,conversation1);
+      conversations.remove(index);
+      notifyItemMoved(index,0);
     }
 
     /*public void setRecipientName(String recipientName) {

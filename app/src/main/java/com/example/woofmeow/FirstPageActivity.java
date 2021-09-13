@@ -169,7 +169,10 @@ public class FirstPageActivity extends AppCompatActivity implements SignFragment
 
                                     @Override
                                     public void onAnimationEnd(Animation animation) {
-                                        startActivity(new Intent(FirstPageActivity.this, UserCreationActivity.class));
+                                        String currentUserUID = Objects.requireNonNull(auth.getCurrentUser()).getUid();
+                                        Intent intent = new Intent(FirstPageActivity.this, UserCreationActivity.class);
+                                        intent.putExtra("UID",currentUserUID);
+                                        startActivity(intent);
                                     }
 
                                     @Override

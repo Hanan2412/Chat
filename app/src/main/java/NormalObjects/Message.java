@@ -34,6 +34,32 @@ public class Message implements Serializable {
     private String filePath;
     private String editTime;
     private String senderToken;
+    private String messageKind = "newMessage";
+    private String contactName,contactPhone;
+
+    public String getContactName() {
+        return contactName;
+    }
+
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
+    public String getMessageKind() {
+        return messageKind;
+    }
+
+    public void setMessageKind(String messageKind) {
+        this.messageKind = messageKind;
+    }
 
     public String getMessage() {
         return message;

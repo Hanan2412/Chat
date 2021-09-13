@@ -2,7 +2,9 @@ package com.example.woofmeow;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
@@ -31,6 +33,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import Controller.CController;
+import DataBase.DBActive;
+import NormalObjects.User;
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -50,13 +54,14 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
         setContentView(R.layout.user_creation_layout);
         final TextInputEditText firstName = findViewById(R.id.userName);
         final TextInputEditText lastName = findViewById(R.id.lastName);
-        final TextInputEditText nickname = findViewById(R.id.nickname);
+       // final TextInputEditText nickname = findViewById(R.id.nickname);
         userImage = findViewById(R.id.userPhoto);
         Button cameraBtn = findViewById(R.id.openCameraBtn);
         Button galleryBtn = findViewById(R.id.openGalleryBtn);
         Button continueBtn = findViewById(R.id.nextBtn);
         cController = CController.getController();
         cController.setUserCreationGUI(this);
+        String currentUserUID = getIntent().getStringExtra("UID");
         continueBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,12 +70,22 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
                     name = firstName.getText().toString();
                 if(lastName.getText()!=null)
                     last = lastName.getText().toString();
-                if(nickname.getText()!=null)
-                    nick = nickname.getText().toString();
+                /*if(nickname.getText()!=null)
+                    nick = nickname.getText().toString();*/
 
                 if(!name.equals("")&&!last.equals("")) {
                     createNewUser(name, last, nick,imageBitmap);
-                    startActivity(new Intent(UserCreationActivity.this,MainActivity.class));
+                    User user = new User();
+                    user.setUserUID(currentUserUID);;
+                    user.setName(name);
+                    user.setLastName(last);
+                    user.setTimeCreated(System.currentTimeMillis() + "");
+                    user.setLastTimeLogIn(System.currentTimeMillis() + "");
+                    saveUser(user);
+                    Intent intent = new Intent(UserCreationActivity.this,MainActivity.class);
+                    intent.putExtra("newUser",true);
+                    intent.putExtra("user",user);
+                    startActivity(intent);
                     finish();
                 }
 
@@ -90,6 +105,16 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
                 openGallery();
             }
         });
+    }
+
+    private void saveUser(User user)
+    {
+        DBActive dbActive = DBActive.getInstance(this);
+        dbActive.InsertUser(user);
+        SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("UID",user.getUserUID());
+        editor.apply();
     }
 
     @Override

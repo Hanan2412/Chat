@@ -129,35 +129,42 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     private int findCorrectMessage(ArrayList<Message> messages, int min, int max, long key) {
 
-        int mid = (max + min) / 2;
-        long midKey = Long.parseLong(messages.get(mid).getMessageID());
-        if (midKey > key) {
-            if (max == mid) {
-                if (key == Long.parseLong(messages.get(min).getMessageID()))
-                    return min;
+        try {
+            int mid = (max + min) / 2;
+            long midKey = Long.parseLong(messages.get(mid).getMessageID());
+            if (midKey > key) {
+                if (max == mid) {
+                    if (key == Long.parseLong(messages.get(min).getMessageID()))
+                        return min;
+                }
+                max = mid;
+                mid = findCorrectMessage(messages, min, max, key);
+            } else if (midKey < key) {
+                if (min == mid) {
+                    if (key == Long.parseLong(messages.get(max).getMessageID()))
+                        return max;
+                }
+                min = mid;
+                mid = findCorrectMessage(messages, min, max, key);
             }
-            max = mid;
-            mid = findCorrectMessage(messages, min, max, key);
-        } else if (midKey < key) {
-            if (min == mid) {
-                if (key == Long.parseLong(messages.get(max).getMessageID()))
-                    return max;
-            }
-            min = mid;
-            mid = findCorrectMessage(messages, min, max, key);
+            if (messages.get(mid).getMessageID().equals(String.valueOf(key)))
+                return mid;
+            return -1;
+        }catch (RuntimeException e)
+        {
+            Log.e(ERROR, "findCorrectMessage: run time error", e);
+            System.out.println("min: " + min + ", max: " + max + ", key: " + key + ", messageKeyId: " + messages.get((min+max)/2).getMessageID());
+            return -1;
         }
-        if (messages.get(mid).getMessageID().equals(String.valueOf(key)))
-            return mid;
-        return -1;
     }
 
-
-    public void UpdateMessageStatus(ReadMessage message)
+    public void UpdateMessageStatus(String id,String status,String time)
     {
-        int index = findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(message.getMessageID()));
-        Message message1 = messages.get(index);
-        message1.setMessageStatus(message.getMessageStatus());
-        message1.setReadAt(Long.parseLong(message.getReadAt()));
+        Log.d("messageStatus","updating message status");
+        int index = findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(id));
+        Message message = messages.get(index);
+        message.setMessageStatus(status);
+        message.setReadAt(Long.parseLong(time));
         notifyItemChanged(index);
     }
 
@@ -187,7 +194,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ChatViewHolder holder, @SuppressLint("RecyclerView") int position) {
         final Message message = messages.get(position);
        /* if (!message.getMessageStatus().equals(ConversationActivity.MESSAGE_SEEN))
             callback.onUpdateMessageStatus(message);*/
@@ -443,7 +450,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         //show the time of the messages i sent
         if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
             try {
-                long timeSent = Long.parseLong(message.getSendingTime());
+                long timeSent;
+                if(message.getSendingTime() != null)
+                    timeSent = Long.parseLong(message.getSendingTime());
+                else
+                    timeSent = Long.parseLong(message.getMessageID());
                 calendar.setTimeInMillis(timeSent);
             } catch (NumberFormatException e) {
                 e.printStackTrace();

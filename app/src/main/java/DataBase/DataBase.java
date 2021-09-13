@@ -16,16 +16,16 @@ public class DataBase extends SQLiteOpenHelper {
     private static final String SQL_CREATE_CONVERSATIONS_TABLE =
             "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE + " (" +
                     DataBaseContract.Conversations._ID + " INTEGER PRIMARY KEY," +
-                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATIONS_BLOCK_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME + " TEXT," +
-                    DataBaseContract.Conversations.CONVERSATION_RECIPIENT_IMAGE_PATH + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_ID + " TEXT," +
+                    DataBaseContract.Conversations.MUTED + " TEXT," +
+                    DataBaseContract.Conversations.BLOCKED + " TEXT," +
+                    DataBaseContract.Conversations.LAST_MESSAGE + " TEXT," +
+                    DataBaseContract.Conversations.LAST_MESSAGE_TIME + " TEXT," +
+                    DataBaseContract.Conversations.LAST_MESSAGE_TYPE + " TEXT," +
+                    DataBaseContract.Conversations.LAST_MESSAGE_ID + " TEXT," +
+                    DataBaseContract.Conversations.RECIPIENT + " TEXT," +
+                    DataBaseContract.Conversations.RECIPIENT_NAME + " TEXT," +
+                    DataBaseContract.Conversations.IMAGE_PATH + " TEXT," +
                     DataBaseContract.Conversations.USER_UID + " TEXT," +
                     DataBaseContract.User.TOKEN + " TEXT," +
                     DataBaseContract.Conversations.CONVERSATION_INDEX + "TEXT)";
@@ -35,15 +35,15 @@ public class DataBase extends SQLiteOpenHelper {
     private static final String SQL_CREATE_MESSAGES_TABLE =
             "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE + " (" +
                     DataBaseContract.Messages._ID + " INTEGER PRIMARY KEY," +
-                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_ID + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_ID + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME + " TEXT," +
-                    DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME + " TEXT," +
+                    DataBaseContract.Messages.CONTENT + " TEXT," +
+                    DataBaseContract.Messages.RECIPIENT + " TEXT," +
+                    DataBaseContract.Messages.SENDER + " TEXT," +
+                    DataBaseContract.Messages.TIME_DELIVERED + " TEXT," +
+                    DataBaseContract.Messages.TIME_SENT + " TEXT," +
+                    DataBaseContract.Messages.TYPE + " TEXT," +
+                    DataBaseContract.Messages.STATUS + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_IMAGE_PATH + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_LONGITUDE + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_LATITUDE + " TEXT," +

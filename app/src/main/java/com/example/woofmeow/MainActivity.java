@@ -22,7 +22,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
@@ -45,8 +44,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -75,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private TabLayout tabLayout;
     private Toolbar toolbar;
     private ViewPager viewPager;
-    private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+    private String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
     public static final String ONLINE_S = "online";
     public static final String STANDBY_S = "standby";
     public static final String OFFLINE_S = "offline";
@@ -90,7 +87,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        if(currentUser == null)
+        {
+            SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
+            String uid = sharedPreferences.getString("UID","ERROR: NO UID");
+            if(!uid.equals("ERROR: NO UID"))
+                currentUser = uid;
+        }
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -189,11 +192,16 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
         profileImage = headerView.findViewById(R.id.headerImage);
         shapeableImageView = findViewById(R.id.toolbarProfileImage);
+        if(getIntent().getBooleanExtra("newUser",false))
+            user = (User) getIntent().getSerializableExtra("user");
         LoadCurrentUserImage();
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, CurrentUserProfileActivity.class).putExtra("currentUser",user));
+                Intent profileIntent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
+                profileIntent.putExtra("currentUser",user);
+                startActivity(profileIntent);
+                //startActivity(new Intent(MainActivity.this, CurrentUserProfileActivity.class).putExtra("currentUser",user));
             }
         });
         createNotificationChannel();
@@ -210,9 +218,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 }
             }
         }
-        System.out.println("getIntent:" + getIntent());
-
-
     }
 
 
@@ -325,7 +330,33 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     @Override
     public void onLoadUserFromMemory(User user){
-        this.user = user;
+        if(user!=null) {
+            this.user = user;
+            LoadCurrentUserPicture();
+        }
+    }
+
+    private void LoadCurrentUserPicture()
+    {
+        Picasso.get().load(user.getPictureLink()).into(new Target() {
+            @Override
+            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                FileManager fileManager = FileManager.getInstance();
+                fileManager.SaveUserImage(bitmap,currentUser,MainActivity.this);
+                profileImage.setImageBitmap(bitmap);//loads user image to drawer header
+                shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
+            }
+
+            @Override
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity" );
+            }
+
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+            }
+        });
     }
 
     @Override
@@ -334,14 +365,25 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             if (user.getUserUID().equals(currentUser)) {//us
                 this.user = user;
                 FirebaseMessageService.myName = user.getName();
-                SharedPreferences savedImagesPreferences = getSharedPreferences("SavedImages", Context.MODE_PRIVATE);
-                if (savedImagesPreferences.getBoolean(user.getUserUID(),false))
-                    LoadCurrentUserImage();
-                else
-                {
-                    SaveCurrentUserImage();
+                Picasso.get().load(user.getPictureLink()).into(new Target() {
+                    @Override
+                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        FileManager fileManager = FileManager.getInstance();
+                        fileManager.SaveUserImage(bitmap,currentUser,MainActivity.this);
+                        profileImage.setImageBitmap(bitmap);//loads user image to drawer header
+                        shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
+                    }
 
-                }
+                    @Override
+                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                        Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity" );
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                    }
+                });
                 currentStatus = user.getStatus();
                 onUserUpdate = true;
                 UpdateMuted(user.getMutedConversations());
@@ -354,15 +396,11 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private void LoadCurrentUserImage()
     {
-        try {
-            ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
-            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-            File imageFile = new File(directory,currentUser + "_Image");
-            Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
-            profileImage.setImageBitmap(imageBitmap);//loads user image to drawer header
-            shapeableImageView.setImageBitmap(imageBitmap);//loads user image to toolbar image
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        FileManager fileManager = FileManager.getInstance();
+        Bitmap bitmap = fileManager.getSavedImage(this,currentUser + "_Image");
+        if(bitmap != null) {
+            profileImage.setImageBitmap(bitmap);
+            shapeableImageView.setImageBitmap(bitmap);
         }
     }
 
@@ -436,6 +474,33 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             Bundle bundle = new Bundle();
             bundle.putSerializable("user", user);
             newChatFragment2.setArguments(bundle);
+        }
+    }
+
+    @Override
+    public void onNewMessage(boolean group) {
+        if(!group)
+        {
+            TabLayout.Tab tab = tabLayout.getTabAt(viewPager.getCurrentItem());
+            if(tab!=null)
+            {
+                String tabTitle =  pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
+                String[] split = tabTitle.split(" ");
+                StringBuilder builder = new StringBuilder();
+                if(split.length > 1) {
+                    int messageCount = Integer.parseInt(split[0]);
+                    builder.append(messageCount);
+
+                }
+                else
+                {
+                    builder.append("1");
+                }
+                builder.append(" ");
+                builder.append(tabTitle);
+                tab.setText(builder.toString());
+            }
+
         }
     }
 
@@ -515,7 +580,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         editor.remove("title");
         editor.remove("link");
         editor.apply();
-        System.out.println("going off");
     }
 
 

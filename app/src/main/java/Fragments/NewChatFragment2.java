@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +23,12 @@ import com.example.woofmeow.ProfileActivity2;
 import com.example.woofmeow.R;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.Objects;
 
@@ -112,13 +119,29 @@ public class NewChatFragment2 extends Fragment implements UserListAdapter.userLi
     @Override
     public void onStartConversation(User user) {
         //opens conversationActivity
-        Toast.makeText(requireContext(), "starting conversation", Toast.LENGTH_SHORT).show();
-        Intent openConversationIntent = new Intent(requireContext(), ConversationActivity.class);
-        openConversationIntent.putExtra("recipient",user.getUserUID());
-        //openConversationIntent.putExtra("conversationID",currentUser + "   " + user.getUserUID());
-        openConversationIntent.putExtra("conversationID",CreateConversationID());
-        requireActivity().getSupportFragmentManager().beginTransaction().remove(NewChatFragment2.this).commit();
-        startActivity(openConversationIntent);
+        DatabaseReference tokenReference = FirebaseDatabase.getInstance().getReference("Tokens");
+        Query tokensQuery = tokenReference.orderByKey().equalTo(user.getUserUID());//here the tokens that were retrieved are ordered by the key - which is equal to the recipients UID
+        tokensQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    String token =  dataSnapshot.getValue(String.class);
+                    Toast.makeText(requireContext(), "starting conversation", Toast.LENGTH_SHORT).show();
+                    Intent openConversationIntent = new Intent(requireContext(), ConversationActivity.class);
+                    openConversationIntent.putExtra("recipientUser",user);
+                    openConversationIntent.putExtra("recipient",user.getUserUID());
+                    openConversationIntent.putExtra("recipientToken",token);
+                    openConversationIntent.putExtra("conversationID",CreateConversationID());
+                    requireActivity().getSupportFragmentManager().beginTransaction().remove(NewChatFragment2.this).commit();
+                    startActivity(openConversationIntent);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("FireBase Error", "cancelled firebase - didn't retrieve token");
+            }
+        });
 
     }
 
@@ -136,4 +159,6 @@ public class NewChatFragment2 extends Fragment implements UserListAdapter.userLi
     {
         return "C_" + System.currentTimeMillis();
     }
+
+
 }

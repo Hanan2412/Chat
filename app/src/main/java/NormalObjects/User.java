@@ -19,6 +19,7 @@ public class User implements Serializable {
     private String phoneNumber;
     private HashMap<String,String>phoneNumbers;
     private HashMap<String,String>meetUps;
+    private String token;
 
     public User() {
         conversations = new ArrayList<>();
@@ -27,6 +28,14 @@ public class User implements Serializable {
         mutedConversations = new ArrayList<>();
         phoneNumbers = new HashMap<>();
         mutedUsersUID = new ArrayList<>();
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public User(String timeCreated) {

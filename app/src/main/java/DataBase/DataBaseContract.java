@@ -7,16 +7,16 @@ public final class DataBaseContract {
 
     public static class Conversations implements BaseColumns{
         public static final String CONVERSATIONS_TABLE = "conversations";
-        public static final String CONVERSATIONS_ID_COLUMN_NAME = "conversationID";
-        public static final String CONVERSATIONS_MUTE_COLUMN_NAME = "muted";
-        public static final String CONVERSATIONS_BLOCK_COLUMN_NAME = "blocked";
-        public static final String CONVERSATION_LAST_MESSAGE_COLUMN_NAME = "lastMessage";
-        public static final String CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME = "lastMessageTime";
-        public static final String CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME = "lastMessageType";
-        public static final String CONVERSATION_LAST_MESSAGE_ID = "messageID";
-        public static final String CONVERSATION_RECIPIENT = "recipient";
-        public static final String CONVERSATION_RECIPIENT_NAME = "recipientName";
-        public static final String CONVERSATION_RECIPIENT_IMAGE_PATH = "imagePath";
+        public static final String CONVERSATION_ID = "conversationID";
+        public static final String MUTED = "muted";
+        public static final String BLOCKED = "blocked";
+        public static final String LAST_MESSAGE = "lastMessage";
+        public static final String LAST_MESSAGE_TIME = "lastMessageTime";
+        public static final String LAST_MESSAGE_TYPE = "lastMessageType";
+        public static final String LAST_MESSAGE_ID = "messageID";
+        public static final String RECIPIENT = "recipient";
+        public static final String RECIPIENT_NAME = "recipientName";
+        public static final String IMAGE_PATH = "imagePath";
         public static final String USER_UID = "UID";
         public static final String CONVERSATION_INDEX = "index";
     }
@@ -25,13 +25,13 @@ public final class DataBaseContract {
 
         public static final String MESSAGES_TABLE = "messages";
         public static final String MESSAGE_ID = "messageID";
-        public static final String MESSAGE_SENDER_COLUMN_NAME = "sender";
-        public static final String MESSAGE_RECIPIENT_COLUMN_NAME = "recipient";
-        public static final String MESSAGE_TIME_SENT_COLUMN_NAME = "time_sent";
-        public static final String MESSAGE_TIME_DELIVERED_COLUMN_NAME = "time_delivered";
-        public static final String MESSAGE_CONTENT_COLUMN_NAME = "content";
-        public static final String MESSAGE_TYPE_COLUMN_NAME = "type";
-        public static final String MESSAGE_STATUS_COLUMN_NAME = "status";
+        public static final String SENDER = "sender";
+        public static final String RECIPIENT = "recipient";
+        public static final String TIME_SENT = "time_sent";
+        public static final String TIME_DELIVERED = "time_delivered";
+        public static final String CONTENT = "content";
+        public static final String TYPE = "type";
+        public static final String STATUS = "status";
         public static final String MESSAGE_IMAGE_PATH = "image_path";
         public static final String MESSAGE_LATITUDE = "latitude";
         public static final String MESSAGE_LONGITUDE = "longitude";

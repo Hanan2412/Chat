@@ -17,21 +17,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.provider.BaseColumns;
 import android.util.Log;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
-
 import com.example.woofmeow.ConversationActivity;
-import com.example.woofmeow.MainActivity;
 import com.example.woofmeow.R;
-import com.google.android.gms.dynamic.IFragmentWrapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -41,7 +35,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.RemoteMessage;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -54,15 +47,16 @@ import java.util.Map;
 import java.util.Objects;
 import BackgroundMessages.ReadMessage;
 import BroadcastReceivers.ReplyMessageBroadcast;
-import Consts.BackgroundMessages;
 import Consts.MessageAction;
 import Consts.MessageType;
 import Controller.CController;
 import DataBase.DataBase;
 import Model.MessageSender;
 import NormalObjects.Message;
+import NormalObjects.User;
 import Retrofit.RetrofitApi;
 import DataBase.DataBaseContract;
+import DataBase.*;
 
 public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, Notifications {
 
@@ -74,12 +68,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private RetrofitApi api;
     private CController controller;
     private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+    private DBActive dbActive;
 
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
     private final String NOTIFICATION_ERROR = "notification_Error";
     private final String NOTIFICATION_INFO = "notification_info";
     private final String SEND_MESSAGE_ERROR = "sending message error";
-    private SQLiteDatabase db = null;
+   // private SQLiteDatabase db = null;
 
     public FirebaseMessageService() {
         super();
@@ -116,103 +111,109 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-        if (remoteMessage.getData().containsKey("typing")) {
-            HandleInteractionMessage(remoteMessage);
-        }
-        else if (remoteMessage.getData().containsKey("message"))
-            HandleUserMessage(remoteMessage);
-        else if (remoteMessage.getData().containsKey("readAt"))
+        Map<String,String> data = remoteMessage.getData();
+        String action = data.get("messageKind");
+        String conversationID = data.get("conversationID");
+        if(action !=null)
+            Log.d("status message",  action);
+        else
         {
-            HandleDataMessage(remoteMessage);
+            Log.e("action is null", "action is NULL" );
         }
-        else if (remoteMessage.getData().containsKey("userStatus"))
-            HandleDataMessage(remoteMessage);
-
-       /* Log.i(NOTIFICATION_INFO,"onMessageReceived reached");
-       if(isNotificationsAllowed())
-            setUp(remoteMessage);*/
-
-    }
-
-    private void HandleInteractionMessage(RemoteMessage remoteMessage) {
-        String conversationID = remoteMessage.getData().get("conversationID");
-        String typing = remoteMessage.getData().get("typing");
-        if (isOpenConversation(conversationID))
-            if (!typing.equals("no"))
-                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
-            else
-                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
-    }
-
-    private boolean isMuted(String senderUID) {
-        SharedPreferences sharedPreferences = getSharedPreferences("muted", MODE_PRIVATE);
-        String isMuted = sharedPreferences.getString(senderUID, "not muted");
-        return isMuted.equals(senderUID);
-    }
-
-    private boolean isBlocked(String senderUID) {
-        SharedPreferences sharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE);
-        String isBlocked = sharedPreferences.getString(senderUID, "not blocked");
-        return isBlocked.equals(senderUID);
-    }
-
-    @Deprecated
-    private void setUp(RemoteMessage remoteMessage) {
-        Log.i(NOTIFICATION_INFO, "setUp reached");
-        String messageSenderUID = remoteMessage.getData().get("sender");
-        String conversationID = remoteMessage.getData().get("conversationID");
-        SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
-        String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
-        String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        if (messageSenderUID != null && messageSenderUID.equals(currentUser))
-            Log.e(NOTIFICATION_ERROR, "sender is currentUser");
-
-        //checks if the conversation is open when the notification should be displayed, if so, the notification won't be displayed
-        if (!liveConversation.equals(conversationID)) {
-
-            //checks if the user who sent the message is blocked or muted, if so, the notification won't be displayed
-            if (!isMuted(messageSenderUID) && !isBlocked(messageSenderUID)) {
-
-                //getting the information that was sent in the message
-                System.out.println("SHOULD CREATE NOTIFICATION");
-
-                String messageText = remoteMessage.getData().get("message");
-                String messageTypeString = remoteMessage.getData().get("messageType");
-                String messageRecipient = remoteMessage.getData().get("recipient");
-                String messageSenderName = remoteMessage.getData().get("senderName");
-                String messageID = remoteMessage.getData().get("messageID");
-                String messageTime = remoteMessage.getData().get("messageTime");
-
-                updateServer(messageSenderUID, conversationID, messageID);
-
-                String messageLongitude = "";
-                String messageLatitude = "";
-                String messageLocationAddress = "";
-                int messageType = MessageType.textMessage.ordinal();
-                if (messageTypeString != null) {
-                    messageType = Integer.parseInt(messageTypeString);
-                    if (messageType == MessageType.gpsMessage.ordinal()) {
-                        messageLatitude = remoteMessage.getData().get("latitude");
-                        messageLongitude = remoteMessage.getData().get("longitude");
-                        messageLocationAddress = remoteMessage.getData().get("locationAddress");
-                    }
-                }
-                InsertToDataBase(messageID, conversationID, messageText, messageSenderUID, messageRecipient, messageTime, messageTypeString);
-                createNotification(messageText, messageSenderName, messageSenderUID, messageRecipient, messageType, messageLongitude, messageLatitude, messageLocationAddress, conversationID);
-            } else {
-                Log.i(NOTIFICATION_INFO, "this user is either blocked or muted so no notification from this user");
+        if(action!=null)
+        switch (action)
+        {
+            case "newMessage":
+            {
+                HandleUserMessage(remoteMessage);
+                break;
             }
-        } else {
-            Log.i(NOTIFICATION_INFO, "current conversation - no need for notification");
+            case "typing":
+            {
+                if (isOpenConversation(conversationID))
+                {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
+                }
+                break;
+            }
+            case "not typing":
+            {
+                if (isOpenConversation(conversationID))
+                {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
+                }
+                break;
+            }
+            case "recording":
+            {
+                if (isOpenConversation(conversationID))
+                {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", false));
+                }
+                break;
+            }
+            case "not recording":
+            {
+                if (isOpenConversation(conversationID))
+                {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("not recording", false));
+                }
+                break;
+            }
+            case "read_time":
+            {
+                String messageStatus = data.get("messageStatus");
+                String readAt = data.get("readAt");
+                String messageID = data.get("messageID");
+                if (isOpenConversation(conversationID))
+                {
+                    Intent readIntent = new Intent(conversationID);
+                    readIntent.putExtra("messageStatus",messageStatus);
+                    readIntent.putExtra("readAt",readAt);
+                    readIntent.putExtra("messageID",messageID);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(readIntent);
+                    //UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
+                }
+                UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
+                break;
+            }
+            case "delete":
+            {
+                String messageID = data.get("messageID");
+                if (isOpenConversation(conversationID))
+                {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                            .putExtra("delete", false)
+                            .putExtra("messageID",messageID));
+                }
+                break;
+            }
+            case "edit":
+            {
+                if (isOpenConversation(conversationID))
+                {
+                    String e_t = data.get("editTime");
+                    String message = data.get("message");
+                    String messageID = data.get("messageID");
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                            .putExtra("edit", false)
+                    .putExtra("messageID",messageID)
+                    .putExtra("conversationID",conversationID)
+                    .putExtra("message",message)
+                    .putExtra("edit_time",e_t));
+                }
+            }
+            case "userStatus":
+            {
+                break;
+            }
+            default:
+                Log.e("received message error","default case in on message received");
         }
     }
 
     private void DataBaseSetUp() {
-        if (db == null) {
-            Log.i(NOTIFICATION_INFO, "created database");
-            DataBase dbHelper = new DataBase(this);
-            db = dbHelper.getWritableDatabase();
-        }
+        dbActive = DBActive.getInstance(this);
     }
 
     private Bitmap LoadSenderImageForNotification(String sender) {
@@ -279,70 +280,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return null;
     }
 
-    @Deprecated
-    private void InsertToDataBase(String messageID, String conversationID, String messageContent, String messageSender, String messageRecipient, String messageTime, String messageType) {
-        DataBaseSetUp();
-        if (!CheckIfExistsInDataBase(conversationID, messageID)) {
-            ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Messages.MESSAGE_ID, messageID);
-            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, conversationID);
-            values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, messageContent);
-            values.put(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME, messageRecipient);
-            values.put(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME, messageSender);
-            values.put(DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME, -1);
-            values.put(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME, messageTime);
-            values.put(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME, messageType);
-            values.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, ConversationActivity.MESSAGE_DELIVERED);
-            long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
-            if (newRowId <= 0)
-                Log.e(NOTIFICATION_ERROR, "didn't insert data to database in messagingService");
-        } else
-            Log.e(NOTIFICATION_ERROR, "message already exists, didn't insert new message");
-    }
 
-    private boolean CheckIfExistsInDataBase(String conversationID, String messageID) {
-        if (db != null) {
-            String[] projections = {
-                    BaseColumns._ID,
-                    DataBaseContract.Messages.MESSAGE_ID
-            };
-
-            //in order to not scan the database each time from the start, we should start scanning from the last message received - time. since messages
-            //come in a linear order, a message that was sent now will never arrive prior to the message that was sent before it
-            // String selection = DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME + " = ?";
-            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
-            String[] selectionArgs = {conversationID};
-            String sortOrder = DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME + " DESC LIMIT 1";
-            Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, sortOrder);
-            if (cursor.moveToNext()) {
-                String ID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
-                long id = Long.parseLong(ID);
-                long messageId = Long.parseLong(messageID);
-                cursor.close();
-                return id >= messageId;
-            } else {
-                cursor.close();
-                return false;
-            }
-        }
-        return false;
-    }
 
     private boolean isNotificationsAllowed() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         return preferences.getBoolean("allowNotifications", true);
-    }
-
-    @Deprecated
-    private void updateServer(String recipient, String conversationID, String messageID) {
-        HashMap<String, Object> statusMap = new HashMap<>();
-        statusMap.put("messageStatus", ConversationActivity.MESSAGE_DELIVERED);
-        if (controller == null) {
-            controller = CController.getController();
-            controller.setNotifications(this);
-        }
-        String recipientConversationID = RecipientConversationID(conversationID);
-        controller.onUpdateData("users/" + recipient + "/conversations/" + recipientConversationID + "/conversationInfo/conversationMessages/" + messageID, statusMap);
     }
 
     @Override
@@ -372,7 +314,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         tapOnNotificationIntent.putExtra("conversationID", conversationID);
         tapOnNotificationIntent.putExtra("tapMessageNotification", true);
         tapOnNotificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, notificationID, tapOnNotificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, notificationID, tapOnNotificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         //allow to send reply from notification
         ReplyMessageBroadcast replyMessageBroadcast = new ReplyMessageBroadcast();
@@ -390,7 +332,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         messageReplyIntent.putExtra("conversationID", conversationID);
         messageReplyIntent.putExtra("MyName", myName);
         messageReplyIntent.putExtra("tokens", recipientTokens);
-        PendingIntent replyPendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), notificationID, messageReplyIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent replyPendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), notificationID, messageReplyIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationCompat.Action action = new NotificationCompat.Action.Builder(android.R.drawable.ic_media_play, "reply", replyPendingIntent)
                 .addRemoteInput(remoteInput)
                 .build();
@@ -432,7 +374,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             Intent openMapBroadcastIntent = new Intent(this, ReplyMessageBroadcast.class);
             openMapBroadcastIntent.putExtra("geoString", geoString);
             openMapBroadcastIntent.putExtra("notificationID", notificationID);
-            PendingIntent openMap = PendingIntent.getBroadcast(this, notificationID, openMapBroadcastIntent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent openMap = PendingIntent.getBroadcast(this, notificationID, openMapBroadcastIntent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             builder.addAction(android.R.drawable.sym_action_chat, "open map", openMap);
         }
         inboxStyle.addLine(messageText);
@@ -481,18 +423,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return i;
     }
 
-    @Deprecated
-    private String RecipientConversationID(String conversationID) {
-        String[] conversationIDSplit = conversationID.split(" {3}");
-        String recipientConversationID;
-        if (currentUser.equals(conversationIDSplit[0])) {
-            recipientConversationID = conversationIDSplit[1] + "   " + conversationIDSplit[0];
-        } else {
-            recipientConversationID = conversationIDSplit[0] + "   " + conversationIDSplit[1];
-        }
-        return recipientConversationID;
-    }
-
     @Override
     public void onReply(int notificationID) {
         if (notificationID != -1) {
@@ -526,48 +456,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
-    /**
-     * Handles the special data message that is being sent. this is not a message that a user is sending
-     * this is a message that the app is sending depending on the user interaction with the app
-     *
-     * @param remoteMessage - message object that is received from fcm
-     */
-    private void HandleDataMessage(RemoteMessage remoteMessage) {
-        Map<String, String> data = remoteMessage.getData();
-        if (data.containsKey("messageStatus")) {
-            String messageStatus = data.get("messageStatus");
-            String readAt = data.get("readAt");
-            String conversationID = data.get("conversationID");
-            String messageID = data.get("messageID");
-            if (isOpenConversation(conversationID))
-                UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
-            UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
-        } /*else if (data.containsKey("typing") || data.containsKey("recording")) {
-            String conversationID = data.get("conversationID");
-            String typing = data.get("typing");
-            String recording = data.get("recording");
-            if (typing != null)
-                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
-            else if (recording != null)
-                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", true));
-        }*/
-
-
-        /*String userID = remoteMessage.getData().get("userID");
-        DataMessage dataMessage = new DataMessage(userID);
-        String status = remoteMessage.getData().get("userStatus");
-        String typing = remoteMessage.getData().get("typing");
-        String token = remoteMessage.getData().get("token");
-        String conversationID = remoteMessage.getData().get("conversationID");
-        dataMessage.setUserStatus(status);
-        dataMessage.setToken(token);
-        dataMessage.setTyping(typing);
-        dataMessage.setConversationID(conversationID);
-        if (typing!=null)
-            AlertTyping(typing.equals("1"),conversationID);
-        UpdateConversationToken(conversationID,token);*/
-    }
-
     private void UpdateMessageLive(String conversationID, String messageID, String messageStatus, String readAt) {
         ReadMessage readMessage = new ReadMessage(messageID, conversationID);
         readMessage.setMessageStatus(messageStatus);
@@ -576,29 +464,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void UpdateMessageMetaDataInDataBase(String messageID, String messageStatus, String readAt) {
-        if (db != null) {
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(DataBaseContract.Messages.MESSAGE_READ_TIME, readAt);
-            contentValues.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, messageStatus);
-            String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
-            String[] selectionArgs = {messageID};
-            int numRowUpdate = db.update(DataBaseContract.Messages.MESSAGES_TABLE, contentValues, selection, selectionArgs);
-            if (numRowUpdate != 1)
-                Log.e(NOTIFICATION_ERROR, "updated more than 1 row of messageStatus");
-        }
+        dbActive.UpdateMessageMetaData(messageID, messageStatus, readAt);
+
     }
 
-    /**
-     * alerts an active conversation determined by the conversationID param that the other party is typing
-     * will only update the active conversation,once the conversation is inactive, the broadcast will not be send
-     *
-     * @param typing         - indicates if the other party is typing
-     * @param conversationID - the conversation id of the conversation the sender is typing at
-     */
-    private void AlertTyping(boolean typing, String conversationID) {
-        if (isOpenConversation(conversationID))
-            LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", typing));
-    }
 
     /**
      * saves the user token that is being sent with each message and updates it in the database per conversation
@@ -607,15 +476,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param token          - the token of the user who sent the message
      */
     private void UpdateConversationToken(String conversationID, String token) {
-        if (db != null) {
-            ContentValues conversationValues = new ContentValues();
-            conversationValues.put(DataBaseContract.User.TOKEN, token);
-            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " LIKE ?";
-            String[] selectionArgs = {conversationID};
-            long newConversationRowId = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, conversationValues, selection, selectionArgs);
-            if (newConversationRowId != 1)
-                Log.e(NOTIFICATION_ERROR, "updating conversation recipient token failed - updated to many rows");
-        }
+        dbActive.UpdateConversationToken(conversationID, token);
+
     }
 
     /**
@@ -632,7 +494,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             String content = remoteMessage.getData().get("message");
             String senderUID = remoteMessage.getData().get("sender");
             String senderName = remoteMessage.getData().get("senderName");
-            String sendingTime = remoteMessage.getData().get("messageTime");
+            String sendingTime = remoteMessage.getData().get("sendingTime");
             String quote = remoteMessage.getData().get("quoteMessage");
             String quoteMessageID = remoteMessage.getData().get("quotedMessageID");
             String recipientName = remoteMessage.getData().get("recipientName");
@@ -647,6 +509,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             if (action.equals("new_message"))
                 message.setMessageAction(MessageAction.new_message);
             String senderToken = remoteMessage.getData().get("senderToken");
+            String contactName = remoteMessage.getData().get("contactName");
+            String contactPhone = remoteMessage.getData().get("contactPhone");
+            message.setContactPhone(contactPhone);
+            message.setContactName(contactName);
             message.setConversationID(conversationID);
             message.setMessageID(messageID);
             message.setMessage(content);
@@ -668,27 +534,18 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             message.setEditTime(editMessageTime);
             message.setSenderToken(senderToken);
             message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-            MarkAsReceived(messageID, conversationID, message.getSenderToken());
+            //MarkAsReceived(messageID, conversationID, message.getSenderToken());
             SendBroadcast(conversationID, message);
         }
     }
 
     private void MarkAsReceived(String messageID, String conversationID, String... tokenToSendTo) {
-        ReadMessage readMessage = new ReadMessage(messageID,conversationID);
-        readMessage.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-        readMessage.setReadAt(System.currentTimeMillis() + "");
-        MessageSender.getInstance().SendMessage(readMessage, BackgroundMessages.read,tokenToSendTo);
-    }
-
-
-    private String getMyToken() {
-        SharedPreferences sharedPreferences = getSharedPreferences("Token", MODE_PRIVATE);
-        String token = sharedPreferences.getString("token", "no token");
-        if (!token.equals("no token"))
-            return token;
-        else
-            Log.e("TOKEN ERROR", "no token for current user");
-        return null;
+        Message message = new Message();
+        message.setMessageID(messageID);
+        message.setConversationID(conversationID);
+        message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
+        message.setArrivingTime(System.currentTimeMillis() + "");
+        MessageSender.getInstance().SendMessage(message,tokenToSendTo);
     }
 
     /**
@@ -697,33 +554,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param message - the message that was sent by the user
      */
     private void SaveToDataBase(Message message) {
-        if (db != null) {
-            ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, message.getConversationID());
-            values.put(DataBaseContract.Messages.MESSAGE_CONTENT_COLUMN_NAME, message.getMessage());
-            values.put(DataBaseContract.Messages.MESSAGE_SENDER_COLUMN_NAME, message.getSender());
-            values.put(DataBaseContract.Messages.MESSAGE_TIME_DELIVERED_COLUMN_NAME, System.currentTimeMillis() + "");
-            values.put(DataBaseContract.Messages.MESSAGE_TIME_SENT_COLUMN_NAME, message.getSendingTime());
-            values.put(DataBaseContract.Messages.MESSAGE_STATUS_COLUMN_NAME, ConversationActivity.MESSAGE_DELIVERED);
-            values.put(DataBaseContract.Messages.MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
-            if (message.getMessageType() == MessageType.webMessage.ordinal())
-                values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
-            values.put(DataBaseContract.Messages.MESSAGE_SENDER_NAME, message.getSenderName());
-            values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
-            values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE, message.getLongitude());
-            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
-            values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH, message.getImagePath());
-            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
-            values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE, message.getLongitude());
-            values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
-            values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
-            values.put(DataBaseContract.Messages.MESSAGE_RECIPIENT_COLUMN_NAME, message.getRecipient());
-            long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
-            if (newRowId == -1)
-                Log.e(NOTIFICATION_ERROR, "inserted more than 1 row");
-            UpdateConversationToken(message.getConversationID(), message.getSenderToken());
-        }
+        if(!dbActive.CheckIfExist(message.getMessageID(),false))
+        dbActive.SaveMessage(message);
+
     }
 
     /**
@@ -739,7 +572,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     /**
-     * sends the message to the correct activity or fragment. it also saves the message if it's destanation is not an active conversation
+     * sends the message to the correct activity or fragment. it also saves the message if it's destination is not an active conversation
      *
      * @param conversationID - the conversation identifier
      * @param message        - the message being sent
@@ -780,32 +613,47 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return sharedPreferences.getString("currentUser", "no user");
     }
 
+    /**
+     * creates a new conversation that wasn't initiated by the current user and saves the sending party to the database
+     * @param message - the first message in a new conversation
+     */
     private void CreateNewConversation(Message message) {
-        if (db != null) {
-            ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME, message.getConversationID());
-            values.put(DataBaseContract.Conversations.USER_UID, LoadCurrentUser());
-            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_COLUMN_NAME, message.getMessage());
-            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TYPE_COLUMN_NAME, message.getMessageType());
-            values.put(DataBaseContract.Conversations.CONVERSATION_LAST_MESSAGE_TIME_COLUMN_NAME, message.getArrivingTime());
-            values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT_NAME, message.getRecipientName());
-            values.put(DataBaseContract.Conversations.CONVERSATION_RECIPIENT,message.getSender());
-            values.put(DataBaseContract.User.TOKEN,message.getSenderToken());
-            values.put(DataBaseContract.Conversations.CONVERSATIONS_MUTE_COLUMN_NAME, false);
-            long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
-            if (newConversationID == -1)
-                Log.e(NOTIFICATION_ERROR, "inserted more than 1 row");
+        dbActive.CreateNewConversation(message);
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference reference = database.getReference("users/" + message.getSender());
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                @SuppressWarnings("unchecked")
+                HashMap<String, Object> userMap = (HashMap<String, Object>)snapshot.getValue();
+                if (userMap != null) {
+                    String name = (String) userMap.get("name");
+                    User user = new User();
+                    user.setPictureLink((String) userMap.get("pictureLink"));
+                    user.setName(name);
+                    user.setLastName((String) userMap.get("lastName"));
+                    user.setUserUID(snapshot.getKey());
+                    reference.removeEventListener(this);
+                    dbActive.InsertUser(user);
+                    Log.d("fcm user save", "saved new user from new conversation to database");
+                }
 
-        }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                error.toException().printStackTrace();
+            }
+        });
     }
 
     private boolean isConversationExists(String conversationID) {
-        if (db != null) {
+        return dbActive.isConversationExists(conversationID);
+        /*if (db != null) {
             String[] projections = {
-                    DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME
+                    DataBaseContract.Conversations.CONVERSATION_ID
             };
-            String selection = DataBaseContract.Conversations.CONVERSATIONS_ID_COLUMN_NAME + " = ?";
+            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " = ?";
             String[] selectionArgs = {conversationID};
             Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
             if (cursor.getCount() == 1) {
@@ -817,7 +665,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             } else
                 Log.e(NOTIFICATION_ERROR, "isConversationExists function presents an error - > more than 1 rows retrieved");
         }
-        return false;
+        return false;*/
     }
 
     private void DisableActiveNotification()

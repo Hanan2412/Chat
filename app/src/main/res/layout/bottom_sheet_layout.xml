@@ -91,7 +91,7 @@
             app:drawableTopCompat="@drawable/ic_baseline_contacts_24"
             android:textColor="@android:color/black"
             android:id="@+id/contact"
-            android:visibility="gone"
+            android:visibility="visible"
             />
 
         <TextView

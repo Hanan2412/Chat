@@ -1,5 +1,5 @@
 package Consts;
 
 public enum MessageType {
-    gpsMessage,textMessage,fileMessage,photoMessage,callPhone,VoiceMessage,webMessage,videoMessage
+    gpsMessage,textMessage,fileMessage,photoMessage,callPhone,VoiceMessage,webMessage,videoMessage,contact
 }

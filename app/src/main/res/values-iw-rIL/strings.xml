@@ -12,4 +12,15 @@
     <string name="unmute">בטל השתקה</string>
     <string name="block">חסום</string>
     <string name="unblock">בטל חסימה</string>
+    <string name="search">חפש</string>
+    <string name="scroll">גלול</string>
+    <string name="previewImage">תמונה</string>
+    <string name="quote">ציטוט</string>
+    <string name="link">לינק</string>
+    <string name="playAudio">נגן קול</string>
+    <string name="removeRecording">הסר הקלטה</string>
+    <string name="time">זמן</string>
+    <string name="location">מיקום</string>
+    <string name="back">חזור</string>
+    <string name="userStatus">מצב</string>
 </resources>
