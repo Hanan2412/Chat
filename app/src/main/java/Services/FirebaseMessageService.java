@@ -555,8 +555,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      */
     private void SaveToDataBase(Message message) {
         if(!dbActive.CheckIfExist(message.getMessageID(),false))
-        dbActive.SaveMessage(message);
-
+            dbActive.SaveMessage(message);
     }
 
     /**
@@ -578,7 +577,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param message        - the message being sent
      */
     private void SendBroadcast(String conversationID, Message message) {
-
+        SaveToDataBase(message);
         //if this is the current on going conversation
         if (isOpenConversation(conversationID)) {
             Intent newMessageIntent = new Intent(conversationID);
@@ -594,14 +593,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             updateConversationIntent.putExtra("Message Action", message.getMessageAction());
             updateConversationIntent.putExtra("message", message);
             LocalBroadcastManager.getInstance(this).sendBroadcast(updateConversationIntent);
-            SaveToDataBase(message);
+            //SaveToDataBase(message);
         } else {//brand new conversation
             if (isNotificationsAllowed())
                 createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getRecipient(),
                         message.getMessageType(), message.getLongitude(), message.getLatitude(),
                         message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
             CreateNewConversation(message);
-            SaveToDataBase(message);
+            //SaveToDataBase(message);
             Intent newConversationIntent = new Intent("New Conversation");
             newConversationIntent.putExtra("conversationID", conversationID);
             LocalBroadcastManager.getInstance(this).sendBroadcast(newConversationIntent);

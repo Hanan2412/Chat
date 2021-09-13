@@ -2471,18 +2471,18 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void init(String conversationID) {
         DataBaseSetUp();
-        LoadCurrentUserID();
+        //LoadCurrentUserID();
         LoadCurrentUserFromDataBase();
         LoadMessages(conversationID);
         ReceiveMessages(conversationID);
        // RequestRecipientsStatus();
     }
 
-    private void LoadCurrentUserID() {
+    /*private void LoadCurrentUserID() {
         String currentUser;
         SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
         currentUser = sharedPreferences.getString("currentUser", "no user");
-    }
+    }*/
 
     private void LoadCurrentUserFromDataBase() {
        user = dbActive.LoadUserFromDataBase(currentUser);
@@ -2609,7 +2609,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             //  System.out.println("the recipient Token: " + recipientToken);
             String[] recipientsTokens = {recipientToken};//one recipient
             //String[] recipientsToken = recipientsTokens.toArray(new String[0]);
-            messageSender.SendMessage(message, token);
+            messageSender.SendMessage(message, token);//sends to myself - for debug only
+            SaveMessage(message);
             //messageSender.SendMessage(message, recipientsTokens);
             ShowMessageOnScreen(message, message.getMessageAction());
 
@@ -2713,7 +2714,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 }
                 chatAdapter.addNewMessage(message);
                 recyclerView.scrollToPosition(amount - 1);
-                SaveMessage(message);
                 UpdateConversation(message);
                 break;
             case edit_message:
@@ -2735,11 +2735,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void CreateNewConversation(Message message) {
         dbActive.CreateNewConversation(message);
-        SharedPreferences sharedPreferences = getSharedPreferences("New Conversation", MODE_PRIVATE);
+        /*SharedPreferences sharedPreferences = getSharedPreferences("New Conversation", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("new conversation", conversationID);
-        editor.apply();
-
+        editor.apply();*/
     }
 
     private void UpdateConversation(Message message) {
@@ -2874,12 +2873,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         return null;
     }
 
-    private void RequestRecipientsStatus()
+    /*private void RequestRecipientsStatus()
     {
         RequestMessage requestMessage = new RequestMessage(Requests.status);
         String[] recipientsToken = recipientsTokens.toArray(new String[0]);
         MessageSender.getInstance().SendMessage(requestMessage,BackgroundMessages.request,recipientsToken);
-    }
+    }*/
 
 
 }

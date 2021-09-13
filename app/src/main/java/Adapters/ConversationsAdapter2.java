@@ -89,9 +89,21 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     public void setConversation(Conversation conversation,int position)
     {
         init();
-        conversations.add(position,conversation);
-        notifyItemInserted(position);
-        notifyItemRangeChanged(0,conversations.size());
+        if(conversation!=null) {
+            conversations.add(position, conversation);
+            notifyItemInserted(position);
+            notifyItemRangeChanged(0, conversations.size());
+           /* int index = FindCorrectConversationIndex(conversation.getConversationID());
+            if (index == -1) {
+                conversations.add(position, conversation);
+                notifyItemInserted(position);
+                notifyItemRangeChanged(0, conversations.size());
+            } else {
+                conversations.remove(index);
+                conversations.add(0, conversation);
+                notifyItemMoved(index, 0);
+            }*/
+        }
     }
     private void init()
     {
