@@ -17,17 +17,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints=""
-            android:hint="search"
-            android:inputType="textMultiLine"
+            android:hint="@string/search"
+            android:inputType="textMultiLine|textNoSuggestions"
             android:visibility="visible"
             android:gravity="center"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/searchBtn"
-            android:text="Search"
+            android:text="@string/search"
             android:layout_gravity="center"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
             />
     </LinearLayout>
 

@@ -13,8 +13,10 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.MainActivity;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,7 +38,7 @@ public class FileManager {
         return fileManager;
     }
 
-    public void SaveUserImage(Bitmap bitmap,String userUID,Context context)
+    public String SaveUserImage(Bitmap bitmap,String userUID,Context context)
     {
         ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
         File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
@@ -52,7 +54,10 @@ public class FileManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return Path.getAbsolutePath();
     }
+
+
 
     //save image to app directory and returns the path to that image
     public String saveImage(Bitmap bitmap, Context context)
@@ -70,7 +75,7 @@ public class FileManager {
             try {
                 if (imageUri != null) {
                     out = resolver.openOutputStream(imageUri);
-                    path = imageUri.getPath();
+                    path = imageUri.toString();
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -122,13 +127,66 @@ public class FileManager {
         return imageFile.getAbsolutePath();
     }
 
-    public void sendFile()
+    public String SaveVideo(File file,Context context)
     {
+        String path = null;
+        String fileName = file.getName();
+        OutputStream out = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentResolver resolver = context.getApplicationContext().getContentResolver();
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Video.Media.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Video.Media.MIME_TYPE, "video/*");
+            values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES);
+            Uri videoUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            try {
+                if (videoUri != null) {
+                    out = resolver.openOutputStream(videoUri);
+                    path = videoUri.getPath();
+                    File imageDirectory = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+                    File videoFile = new File(imageDirectory, fileName);
+                    try {
+                        out = new FileOutputStream(videoFile);
+                        path = videoFile.getAbsolutePath();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            File imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
+            File videoFile = new File(imageDirectory, fileName);
+            try {
+                out = new FileOutputStream(videoFile);
+                path = videoFile.getAbsolutePath();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
 
-    }
+        if (out != null) {
+            int size = (int) file.length();
+            byte[] bytes = new byte[size];
+            try {
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+                int bytesLength = bufferedInputStream.read(bytes, 0, bytes.length);
+                if (bytesLength != size)
+                    Log.e("save video error", "writing file wasn't complete");
+                bufferedInputStream.close();
+                out.write(bytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
-    private void receiveFile()
-    {
-
+        return path;
     }
 }

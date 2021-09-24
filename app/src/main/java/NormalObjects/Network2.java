@@ -60,5 +60,4 @@ public class Network2 extends ConnectivityManager.NetworkCallback {
         callback.onChangedNetworkType();
         Log.i(NETWORK_CLASS,"onCapabilitiesChange");
     }
-
 }

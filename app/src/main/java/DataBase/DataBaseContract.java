@@ -45,6 +45,8 @@ public final class DataBaseContract {
         public static final String MESSAGE_FILE_PATH = "file_path";
         public static final String MESSAGE_SENDER_NAME = "sender_name";
         public static final String MESSAGE_READ_TIME = "read_time";
+        public static final String QUOTE = "quote";
+        public static final String QUOTE_ID = "quote_id";
     }
 
     public static class User implements BaseColumns{
@@ -58,6 +60,7 @@ public final class DataBaseContract {
         public static final String USER_PHONE_NUMBER = "phone_number";
         public static final String USER_LAST_STATUS = "status";
         public static final String TOKEN = "token";
+        public static final String BLOCKED = "block";
     }
 
     public static class  BlockedUsers implements BaseColumns{

@@ -2,12 +2,7 @@ package Adapters;
 
 
 import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,11 +26,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 
 
@@ -48,7 +38,7 @@ import NormalObjects.Message;
 public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAdapter2.ConversationsViewHolder> {
 
 
-    private FileManager fileManager;
+    private final FileManager fileManager;
 
     public interface onPressed {
         void onLongPressed(boolean selected, Conversation conversation);
@@ -139,22 +129,22 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         notifyItemChanged(index);
     }
 
-    public boolean BlockedConversation(String conversationID)
+    public Conversation findConversation(String conversationID)
     {
         int index = FindCorrectConversationIndex(conversationID);
-        Conversation conversation = conversations.get(index);
-        conversation.setBlocked(conversation.isBlocked());
-        notifyItemChanged(index);
-        return conversation.isBlocked();
+        return conversations.get(index);
     }
-    public boolean MuteConversation(String conversationID)
+
+    public void MuteConversation(String conversationID,boolean mute)
     {
-        int index = FindCorrectConversationIndex(conversationID);
+        int index =  FindCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
-        conversation.setMuted(!conversation.isMuted());
+        conversation.setMuted(mute);
         notifyItemChanged(index);
-        return conversation.isMuted();
     }
+
+
+
     public void DeleteConversation(String conversationID)
     {
         int index = FindCorrectConversationIndex(conversationID);
@@ -184,13 +174,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         return new ConversationsAdapter2.ConversationsViewHolder(view);
     }
 
-    public void SetBackUp() {
-        backUp = new ArrayList<>();
-        backUp.addAll(conversations);
-    }
-
+    @SuppressLint("NotifyDataSetChanged")
     public void Reset() {
-        conversations = backUp;
+        conversations = new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -225,22 +211,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                     Picasso.get().load(pictureLink).into(new Target() {
                         @Override
                         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            ContextWrapper contextWrapper = new ContextWrapper(holder.itemView.getContext().getApplicationContext());
-                            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                            if (!directory.exists())
-                                if (!directory.mkdir()) {
-                                    Log.e("error", "couldn't create a directory in conversationAdapter2");
-                                }
-                            File Path = new File(directory, conversation.getRecipient() + "_Image");
-                            conversations.get(position).setRecipientImagePath(Path.getAbsolutePath());
+                            String path = fileManager.SaveUserImage(bitmap,conversation.getRecipient(),holder.itemView.getContext().getApplicationContext());
+                            conversations.get(position).setRecipientImagePath(path);
                             callback.onImageDownloaded(conversations.get(position),true);
-                            try {
-                                FileOutputStream fileOutputStream = new FileOutputStream(Path);
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                                fileOutputStream.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
                         }
 
                         @Override
@@ -265,74 +238,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 }
             });
         }
-        /*SharedPreferences savedImagesPreferences = holder.itemView.getContext().getSharedPreferences("SavedImages",Context.MODE_PRIVATE);
-        //image exists in the app
-        if (savedImagesPreferences.getBoolean(conversation.getRecipient(),false))
-        {
-            try {
-                ContextWrapper contextWrapper = new ContextWrapper(holder.itemView.getContext().getApplicationContext());
-                File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                File imageFile = new File(directory,conversation.getRecipient() + "_Image");
-                Bitmap imageBitmap = BitmapFactory.decodeStream(new FileInputStream(imageFile));
-                holder.profileImage.setImageBitmap(imageBitmap);
-                conversation.setRecipientImagePath(imageFile.getAbsolutePath());
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/pictureLink");
-            reference.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String pictureLink = snapshot.getValue(String.class);
-                    Picasso.get().load(pictureLink).into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            ContextWrapper contextWrapper = new ContextWrapper(holder.itemView.getContext().getApplicationContext());
-                            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                            if (!directory.exists())
-                                if (!directory.mkdir()) {
-                                    Log.e("error", "couldn't create a directory in conversationAdapter2");
-                                }
-                            File Path = new File(directory, conversation.getRecipient() + "_Image");
-                            conversations.get(position).setRecipientImagePath(Path.getAbsolutePath());
-                            callback.onImageDownloaded(conversations.get(position),true);
-                            try {
-                                FileOutputStream fileOutputStream = new FileOutputStream(Path);
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                                fileOutputStream.close();
-                                SharedPreferences.Editor editor = savedImagesPreferences.edit();
-                                editor.putBoolean(conversation.getRecipient(),true);
-                                editor.apply();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                            Log.e("Error","couldn't load image");
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                        }
-                    });
-                    Picasso.get().load(pictureLink).into(holder.profileImage);
-                    reference.removeEventListener(this);
-
-
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    error.toException().printStackTrace();
-                }
-            });
-        }*/
         DatabaseReference statusReference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/status");
         statusReference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -375,6 +280,21 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 return true;
             }
         });
+        if(conversation.isMuted())
+        {
+            holder.conversationStatus.setVisibility(View.VISIBLE);
+            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_volume_off_24,holder.itemView.getContext().getTheme()));
+        }
+        if(conversation.isBlocked())
+        {
+            holder.conversationStatus.setVisibility(View.VISIBLE);
+            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_block_white,holder.itemView.getContext().getTheme()));
+        }
+        if(!conversation.isMuted() && !conversation.isBlocked())
+        {
+            holder.conversationStatus.setVisibility(View.GONE);
+            holder.conversationStatus.setImageDrawable(null);
+        }
     }
 
 
@@ -390,7 +310,13 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         recipientsNames.add(recipientName);
     }*/
 
-
+    public void BlockConversation(boolean blocked,String conversationID)
+    {
+        int index =  FindCorrectConversationIndex(conversationID);
+        Conversation conversation = conversations.get(index);
+        conversation.setBlocked(blocked);
+        notifyItemChanged(index);
+    }
 
 
     public ArrayList<Integer> getSelectedPosition() {
@@ -430,4 +356,16 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     }
 
+    public void Search(String search)
+    {
+        ArrayList<Conversation> conversationsCopy = new ArrayList<>();
+        for(Conversation conversation : conversations)
+        {
+            if(conversation.getRecipientName().toLowerCase().contains(search.toLowerCase()))
+            {
+                conversationsCopy.add(conversation);
+            }
+        }
+        conversations = conversationsCopy;
+    }
 }

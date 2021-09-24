@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,7 +17,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.example.woofmeow.R;
 
-
+import DataBase.DBActive;
 
 
 @SuppressWarnings({"ConstantConditions", "Convert2Lambda"})
@@ -43,7 +44,16 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
                 return true;
             }
         });
-
+        Preference resetDB = findPreference("resetDB");
+        resetDB.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                DBActive dbActive = DBActive.getInstance(requireContext());
+                dbActive.ResetDB();
+                Toast.makeText(requireContext(), "Database reset has been done", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
 
 
     }

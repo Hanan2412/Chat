@@ -9,7 +9,6 @@
             android:summaryOn="The dark side welcomes you, we have cookies!"
             android:title="Lights off" />
 
-
     </PreferenceCategory>
     <PreferenceCategory android:title="Communication">
         <Preference
@@ -38,8 +37,14 @@
     <PreferenceCategory android:title="App">
         <Preference
             android:key="version"
-            android:summary="version 21/05/21  \ndeveloped by Hanan Dorfman"
+            android:summary="version 19/09/21  \ndeveloped by Hanan Dorfman"
             android:title="Version" />
+        <Preference
+            android:key="resetDB"
+            android:summary="reset database - deletes all the data from the database"
+            android:title="Database"
+            />
+
     </PreferenceCategory>
 
 

@@ -20,6 +20,7 @@ public class User implements Serializable {
     private HashMap<String,String>phoneNumbers;
     private HashMap<String,String>meetUps;
     private String token;
+    private boolean blocked;
 
     public User() {
         conversations = new ArrayList<>();
@@ -28,6 +29,15 @@ public class User implements Serializable {
         mutedConversations = new ArrayList<>();
         phoneNumbers = new HashMap<>();
         mutedUsersUID = new ArrayList<>();
+        blocked = false;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
     }
 
     public String getToken() {

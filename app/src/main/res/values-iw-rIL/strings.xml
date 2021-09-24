@@ -23,4 +23,5 @@
     <string name="location">מיקום</string>
     <string name="back">חזור</string>
     <string name="userStatus">מצב</string>
+    <string name="action_btn">כפתור פעולה</string>
 </resources>

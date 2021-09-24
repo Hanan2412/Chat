@@ -1,5 +1,7 @@
 package NormalObjects;
 
+import android.util.Log;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -42,7 +44,12 @@ public class Conversation implements Serializable {
     }
 
     public void setRecipient(String recipient) {
-        this.recipient = recipient;
+        if(recipient != null) {
+            if (!recipient.equals(this.recipient))
+                Log.d("recipientChangeConversation", "recipient was changed in conversation. new recipient: " + recipient);
+            this.recipient = recipient;
+        }else
+            Log.e("NULL", "conversation.java setting recipient is null" );
     }
 
     public String getLastMessage() {
@@ -76,9 +83,11 @@ public class Conversation implements Serializable {
     }
     public void setLastMessageTimeFormatted(String lastMessageTime)
     {
-        if(!lastMessageTime.contains("/"))
-            parseTime(lastMessageTime);
-        else this.lastMessageTime = lastMessageTime;
+        if(lastMessageTime!=null) {
+            if (!lastMessageTime.contains("/"))
+                parseTime(lastMessageTime);
+            else this.lastMessageTime = lastMessageTime;
+        }
     }
 
     public String getRecipientImagePath() {
@@ -86,7 +95,7 @@ public class Conversation implements Serializable {
     }
 
     public void setRecipientImagePath(String recipientImagePath) {
-        this.recipientImagePath = recipientImagePath;
+       this.recipientImagePath = recipientImagePath;
     }
 
     public ArrayList<Message> getMessages() {
@@ -196,7 +205,7 @@ public class Conversation implements Serializable {
         parseTime(message.getArrivingTime());
         //lastMessageTime = message.getArrivingTime();
         messageType = message.getMessageType();
-        recipientName = message.getRecipientName();
+        recipientName = message.getSenderName();
         recipientToken = message.getSenderToken();
     }
 

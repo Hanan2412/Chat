@@ -177,7 +177,7 @@ public class CController implements IConversationController,IMainController, Ser
     }
 
 
-
+    @Deprecated
     @Override
     public void onDownloadMessages(Context context, String conversationID, int amount) {
         server2.DownloadMessages2(context, conversationID, amount);

@@ -55,6 +55,9 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Messages.MESSAGE_STAR + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_FILE_PATH + " TEXT," +
+                    DataBaseContract.Messages.MESSAGE_READ_TIME + " TEXT," +
+                    DataBaseContract.Messages.QUOTE + " TEXT," +
+                    DataBaseContract.Messages.QUOTE_ID + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_SENDER_NAME + " TEXT)";
 
 
@@ -68,6 +71,7 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.User.USER_PICTURE_LINK + " TEXT," +
                     DataBaseContract.User.USER_PHONE_NUMBER + " TEXT," +
                     DataBaseContract.User.USER_LAST_STATUS + " TEXT," +
+                    DataBaseContract.User.BLOCKED + " TEXT," +
                     DataBaseContract.User.TOKEN + " TEXT)";
 
 

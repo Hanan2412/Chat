@@ -23,6 +23,9 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -218,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 }
             }
         }
+        ConnectedToInternet();
     }
 
 
@@ -462,11 +466,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
     @Override
-    public void onConversationAction() {
-
-    }
-
-    @Override
     public void onUserQuery(User user) {
         Fragment fragment = getSupportFragmentManager().findFragmentByTag("tag");
         if (fragment instanceof NewChatFragment2) {
@@ -604,6 +603,39 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     }
 
+    private void ConnectedToInternet() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkRequest.Builder builder = new NetworkRequest.Builder();
+        builder.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        builder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI).addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                .addTransportType(NetworkCapabilities.TRANSPORT_VPN);
+        NetworkRequest request = builder.build();
+        Network2 network2 = Network2.getInstance();
+        network2.setListener(new NetworkChange() {
+            @Override
+            public void onNetwork() {
+                Toast.makeText(MainActivity.this, "Internet connection established", Toast.LENGTH_SHORT).show();
+            }
 
+            @Override
+            public void onNoNetwork() {
+                Toast.makeText(MainActivity.this, "Internet connection is down", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNetworkLost() {
+                Toast.makeText(MainActivity.this, "Lost network", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onChangedNetworkType() {
+
+            }
+        });
+        if (connectivityManager != null)
+            connectivityManager.registerNetworkCallback(request, network2);
+
+    }
 
 }

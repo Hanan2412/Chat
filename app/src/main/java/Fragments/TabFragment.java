@@ -4,7 +4,6 @@ package Fragments;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,8 +14,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,7 +56,7 @@ import Consts.MessageAction;
 import Consts.Tabs;
 import Controller.CController;
 
-import DataBase.DataBaseContract;
+import Model.MessageSender;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationTouch;
 import NormalObjects.Message;
@@ -78,22 +75,17 @@ public class TabFragment extends Fragment implements MainGUI {
     private static final String tabNumber = "tabNumber";
     private String currentUser;
     private ArrayList<Conversation> conversations = new ArrayList<>();
-    private ArrayList<String> recipientsName = new ArrayList<>();
     private CController controller;
     private User user;
     private String currentStatus = ONLINE_S;
-    private String link, title;
     private boolean openingActivity = false;
     private ConversationsAdapter2 conversationsAdapter2;
     private int selected = 0;
     private ArrayList<Conversation> selectedConversations = new ArrayList<>();
     private RecyclerView recyclerView;
     private final String FCM_ERROR = "fcm error";
-
     private View view;
     private LinearLayout searchLayout;
-    private boolean search;
-
     private DBActive dbActive;
 
     public static TabFragment newInstance(int tabNumber, String currentUser) {
@@ -109,8 +101,6 @@ public class TabFragment extends Fragment implements MainGUI {
         void onUserUpdate(User user);
 
         void onLoadUserFromMemory(User user);
-
-        void onConversationAction();
 
         void onUserQuery(User user);
 
@@ -153,7 +143,6 @@ public class TabFragment extends Fragment implements MainGUI {
         view = null;
         assert getArguments() != null;
         currentUser = getArguments().getString("currentUser");
-        //controller.onDownloadUser(requireContext(), currentUser);
         setHasOptionsMenu(true);
         conversationsAdapter2 = new ConversationsAdapter2();
         init();
@@ -164,40 +153,11 @@ public class TabFragment extends Fragment implements MainGUI {
                 searchLayout = view.findViewById(R.id.searchLayout);
                 Button searchBtn = view.findViewById(R.id.searchBtn);
                 EditText searchQuery = view.findViewById(R.id.searchText);
-                searchQuery.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        if (s.toString().equals("")) {
-                            conversationsAdapter2.Reset();
-                        } else {
-                            int i = 0;
-                            for (String name : recipientsName) {
-                                if (!name.contains(s.toString())) {
-                                    if (i < conversations.size()) {
-                                        conversationsAdapter2.deleteConversation(conversations.get(i));
-                                        conversationsAdapter2.notifyItemRemoved(i);
-                                    }
-                                }
-                                i++;
-                            }
-                        }
-                    }
-                });
                 searchBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        String searchThis = searchQuery.getText().toString();
-                        Toast.makeText(requireContext(), "searching this: " + searchThis, Toast.LENGTH_SHORT).show();
+                        String search = searchQuery.getText().toString();
+                        conversationsAdapter2.Search(search);
                     }
                 });
                 recyclerView = view.findViewById(R.id.recycle_view);
@@ -271,11 +231,12 @@ public class TabFragment extends Fragment implements MainGUI {
                         startConversationIntent.putExtra("recipient", conversation.getRecipient());
                         startConversationIntent.putExtra("recipientPhone", conversation.getRecipientPhoneNumber());
                         startConversationIntent.putExtra("recipientImagePath", conversation.getRecipientImagePath());
-                        startConversationIntent.putExtra("recipientToken",conversation.getRecipientToken());
+                        startConversationIntent.putExtra("recipientToken",recipient.getToken());
                         startConversationIntent.putExtra("recipientUser",recipient);
                         SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
                         String title = sharedPreferences.getString("title", "noTitle");
                         String link = sharedPreferences.getString("link", "noLink");
+                        Log.d("tabFragment", "link: " + link);
                         if (!link.equals("noLink")) {
                             startConversationIntent.putExtra("title", title);
                             startConversationIntent.putExtra("link", link);
@@ -338,8 +299,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 searchLayout.setVisibility(View.VISIBLE);
                 searchLayout.startAnimation(in);
                 recyclerView.startAnimation(in);
-                conversationsAdapter2.SetBackUp();
-                search = true;
+
             } else {
                 new Handler().postDelayed(new Runnable() {
                     @Override
@@ -349,8 +309,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 }, out.getDuration());
                 searchLayout.startAnimation(out);
                 recyclerView.startAnimation(out);
-                conversationsAdapter2.Reset();
-                search = false;
+                LoadConversations();
             }
         } else if (item.getItemId() == R.id.status) {
             switch (currentStatus) {
@@ -378,40 +337,19 @@ public class TabFragment extends Fragment implements MainGUI {
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        boolean status = preferences.getBoolean("status", true);
-        if (status) {
-            if (user != null) {
+        boolean status = preferences.getBoolean("status", true);//settings preference - allow contacts to see your online status
+        if(user!=null)
+            if(status)
+            {
                 user.setStatus(currentStatus);
-                UpdateUser(user);
+                editor.putString("status",currentStatus);
             }
-            editor.putString("status", currentStatus);
-            //controller.onUpdateData("users/" + currentUser + "/status", currentStatus);
-        } else {
-            if (user != null) {
+            else
+            {
                 user.setStatus(OFFLINE_S);
-                UpdateUser(user);
+                editor.putString("status",OFFLINE_S);
             }
-            editor.putString("status", OFFLINE_S);
-            //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
-        }
         editor.apply();
-    }
-
-    private String getMyToken() {
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Token", MODE_PRIVATE);
-        String token = sharedPreferences.getString("token", "no token");
-        if (!token.equals("no token"))
-            return token;
-        else
-            Log.e("TOKEN ERROR", "no token for current user");
-        return null;
-    }
-
-    public String[] getRecipientsList() {
-        //tmp implementation
-        String[] recipientsTokens = new String[1];
-        recipientsTokens[0] = "eZ6xrJiQQNWGIPAZhSpVK6:APA91bFLWs47d-xN_-FGVtx5ixyCEkTczIycjnjO5AIEKh2aDlGbnq4MDwPlJYp8s1juJyQb9y4Wx3l09XIA5Hl9GqWE85hXafwcao7Op0uGqoNxdGtH61ri--Td9Jwu5SU0oKUHe07L";
-        return recipientsTokens;
     }
 
     @Override
@@ -493,50 +431,23 @@ public class TabFragment extends Fragment implements MainGUI {
 
     private void DataBaseSetUp() {
         dbActive = DBActive.getInstance(requireContext());
-       // dbActive.ResetDB();
-       // if (db == null) {
-
-            /*DataBase dbHelper = new DataBase(requireContext());
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Callable<SQLiteDatabase>callable = new Callable<SQLiteDatabase>() {
-                @Override
-                public SQLiteDatabase call() throws Exception {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
-                    return db;
-                }
-            };
-            Future<SQLiteDatabase> future = executorService.submit(callable);
-            try {
-                db = future.get();
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
+        //dbActive.ResetDB();
+       /* dbActive.setListener(new DBActive.onResetDB() {
+            @Override
+            public void onReset() {
+                conversationsAdapter2.Reset();
             }
-            executorService.shutdown();*/
-
-
-          /*  DataBase dbHelper = new DataBase(requireContext());
-            db = dbHelper.getWritableDatabase();*/
-            // dbHelper.onUpgrade(db,db.getVersion(),db.getVersion()+1);
-           /* db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
-            db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
-            db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);*/
-            // dbHelper.onDowngrade(db,db.getVersion(),db.getVersion()-1);
-           // dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
-            //db.execSQL("CREATE TABLE IF NOT EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
-        //}
+        });*/
     }
 
     //called only if user doesn't exists - the first lunch of the app
     private void InsertUser(User user) {
         dbActive.CheckIfUserExist(user);
-
     }
 
     //on each login, the user table is updated with the current login user
     private void UpdateUser(User user) {
         dbActive.UpdateUser(user);
-
     }
 
     //if the user exists in the database - load it, if not - download it from firebase database
@@ -553,7 +464,8 @@ public class TabFragment extends Fragment implements MainGUI {
     public void onReceiveUser(User user) {
         if (user.getUserUID().equals(currentUser)) {//us - the user login
            // CheckIfUserExist(user);
-            dbActive.CheckIfUserExist(user);
+            InsertUser(user);
+            //dbActive.CheckIfUserExist(user);
             this.user = user;
             //sends the data to mainActivity
             callback.onUserUpdate(user);
@@ -601,11 +513,13 @@ public class TabFragment extends Fragment implements MainGUI {
         }
     }
 
+    @Deprecated
     @Override
     public void onChangedConversation(Conversation conversation) {
         UpdateConversationsInDataBase(conversation, false);
     }
 
+    @Deprecated
     @Override
     public void onRemoveConversation(Conversation conversation) {
         conversationsAdapter2.deleteConversation(conversation);
@@ -697,30 +611,18 @@ public class TabFragment extends Fragment implements MainGUI {
 
     }
 
-    private void onSharedLinkIN() {
-        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                title = intent.getStringExtra("title");
-                link = intent.getStringExtra("link");
 
-            }
-        };
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(broadcastReceiver, new IntentFilter("sharedDataIN"));
-    }
     //---------------------------------------------------------------------------------------------------------------------------------------------//
 
     //calls all the functions needed to start the fragment
     private void init() {
         DataBaseSetUp();
         NullifyData();
-        //LoadCurrentUserID();
         LoadCurrentUserFromDataBase();
         LoadConversations();
         TokenUpdate();
         onNewConversation();
         onUpdateConversation();
-        onSharedLinkIN();
     }
 
     private void NullifyData() {
@@ -730,21 +632,6 @@ public class TabFragment extends Fragment implements MainGUI {
         editor.apply();
     }
 
-    private void LoadCurrentUserID() {
-        String currentUser;
-        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("CurrentUser", MODE_PRIVATE);
-        currentUser = sharedPreferences.getString("currentUser", "no user");
-        if (!currentUser.equals("no user"))
-            this.currentUser = currentUser;
-        else {
-            this.currentUser = "sDhl6ueP20WwMTKJW3fKK5FK5Nk2";//emulator
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("currentUser", this.currentUser);
-            editor.apply();
-            //this.currentUser = "pfghXKWGCja8i8YPQz71DuXxyTI2";//phone
-            Toast.makeText(requireContext(), "error fetching user information", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void onNewConversation() {
         BroadcastReceiver newConversationReceiver = new BroadcastReceiver() {
@@ -771,9 +658,8 @@ public class TabFragment extends Fragment implements MainGUI {
                     }
                     MessageAction messageAction = message.getMessageAction();
                     if (messageAction == MessageAction.new_message) {
-                        Conversation conversation = new Conversation(message.getConversationID());
+                        Conversation conversation = conversationsAdapter2.findConversation(message.getConversationID());//new Conversation(message.getConversationID());
                         conversation.setConversationMetaData(message);
-                        callback.onNewMessage(false);
                         UpdateConversationsInDataBase(conversation, false);
                     }
                     if (messageAction == MessageAction.edit_message) {
@@ -810,54 +696,44 @@ public class TabFragment extends Fragment implements MainGUI {
 
     }
 
-
-    private void UpdateConversation(String conversationID) {
-        Message lastMessage = RetrieveLastMessage(conversationID);
-        conversationsAdapter2.UpdateConversation(lastMessage, conversationID);
-    }
-
-    //called when the fragment is lunched to update conversation view
-    private Message RetrieveLastMessage(String conversationID) {
-        String selection = DataBaseContract.Conversations.CONVERSATION_ID + " = ?";
-        return RetrieveMessage(conversationID, selection);
-    }
-
-    //retrieves the last message in a conversation or a message by its id
-    private Message RetrieveMessage(String id, String selection) {
-        return dbActive.RetrieveMessage(id,selection);
-
-    }
-
     private void MuteConversation(String conversationID) {
-        boolean muted = conversationsAdapter2.MuteConversation(conversationID);
-        dbActive.Mute(conversationID,muted);
-        if (muted)
-            Snackbar.make(requireContext(), recyclerView, "Conversation Was Muted", Snackbar.LENGTH_SHORT)
-                    .setAction("undo", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            MuteConversation(conversationID);
-                        }
-                    }).show();
+        boolean mute = dbActive.MuteUser(conversationID);
+        String dialog;
+        if(mute)
+            dialog = "Conversation was Muted";
         else
-            Snackbar.make(requireContext(), recyclerView, "Conversation was unMuted", Snackbar.LENGTH_SHORT)
-                    .setAction("undo", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            MuteConversation(conversationID);
-                        }
-                    }).show();
-
+            dialog = "Conversation was unMuted";
+        Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)
+                .setAction("undo", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        MuteConversation(conversationID);
+                    }
+                }).show();
+        conversationsAdapter2.MuteConversation(conversationID,mute);
     }
 
     private void BlockUser(String uid, String conversationID) {
-        boolean blocked = conversationsAdapter2.BlockedConversation(conversationID);
-        dbActive.Block(uid,conversationID,blocked);
+        boolean blocked =  dbActive.BlockUser(uid);
+        conversationsAdapter2.BlockConversation(blocked,conversationID);
     }
 
     private void DeleteConversation(String conversationID) {
         conversationsAdapter2.DeleteConversation(conversationID);
         dbActive.DeleteConversation(conversationID);
+    }
 
+    public void RequestStatus()
+    {
+        for(Conversation conversation : conversations)
+        {
+            String token = conversation.getRecipientToken();
+            Message message = new Message();
+            message.setMessage(currentStatus);
+            message.setMessageKind("requestStatus");
+           // message.setMessageType(MessageType.requestStatus.ordinal());
+            MessageSender sender = MessageSender.getInstance();
+            sender.SendMessage(message,token);
+        }
     }
 }

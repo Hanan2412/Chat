@@ -515,6 +515,7 @@ public class Server {
             messagesQuery.removeEventListener(messagesChildEventListener);
     }
 
+    @Deprecated
     public static void DownloadMessages2(Context context, String conversationID,int amount) {
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUserUID = FirebaseAuth.getInstance().getCurrentUser().getUid();

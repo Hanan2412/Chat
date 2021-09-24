@@ -49,4 +49,5 @@
     <string name="location">Location</string>
     <string name="back">Back</string>
     <string name="userStatus">status</string>
+    <string name="action_btn">actionBtn</string>
 </resources>

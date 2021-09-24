@@ -1,31 +1,39 @@
 package Services;
 
+import static com.example.woofmeow.ConversationActivity.MESSAGE_SEEN;
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
+
 import android.net.Uri;
 import android.util.Log;
+
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
+
 import com.example.woofmeow.ConversationActivity;
+import com.example.woofmeow.MainActivity;
 import com.example.woofmeow.R;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -33,31 +41,42 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.RemoteMessage;
+import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import BackgroundMessages.ReadMessage;
+
+
+import javax.net.ssl.HttpsURLConnection;
+
 import BroadcastReceivers.ReplyMessageBroadcast;
 import Consts.MessageAction;
 import Consts.MessageType;
 import Controller.CController;
-import DataBase.DataBase;
+
 import Model.MessageSender;
+import NormalObjects.FileManager;
 import NormalObjects.Message;
 import NormalObjects.User;
-import Retrofit.RetrofitApi;
-import DataBase.DataBaseContract;
+
+
 import DataBase.*;
 
+@SuppressWarnings("Convert2Lambda")
 public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, Notifications {
 
     private final String CHANNEL_ID = "MessagesChannel";
@@ -65,16 +84,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     public static ArrayList<String> conversations;
     private static ArrayList<NotificationCompat.Builder> builders;
     public static String myName = "";
-    private RetrofitApi api;
     private CController controller;
-    private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+    private String currentUser;
     private DBActive dbActive;
-
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
-    private final String NOTIFICATION_ERROR = "notification_Error";
     private final String NOTIFICATION_INFO = "notification_info";
-    private final String SEND_MESSAGE_ERROR = "sending message error";
-   // private SQLiteDatabase db = null;
 
     public FirebaseMessageService() {
         super();
@@ -87,8 +101,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             buildersHashMap = new HashMap<>();
         controller = CController.getController();
         controller.setNotifications(this);
-        DisableActiveNotification();
-
+        //DisableActiveNotification();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null)
+            currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        try {
+            DisableActiveNotification();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -111,105 +131,103 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-        Map<String,String> data = remoteMessage.getData();
+        DataBaseSetUp();
+        Map<String, String> data = remoteMessage.getData();
         String action = data.get("messageKind");
         String conversationID = data.get("conversationID");
-        if(action !=null)
-            Log.d("status message",  action);
-        else
-        {
-            Log.e("action is null", "action is NULL" );
+        if (action != null)
+            Log.d("status message", action);
+        else {
+            Log.e("action is null", "action is NULL");
         }
-        if(action!=null)
-        switch (action)
-        {
-            case "newMessage":
-            {
-                HandleUserMessage(remoteMessage);
-                break;
-            }
-            case "typing":
-            {
-                if (isOpenConversation(conversationID))
-                {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
+        if (action != null)
+            switch (action) {
+                case "newMessage": {
+                    HandleUserMessage(remoteMessage);
+                    break;
                 }
-                break;
-            }
-            case "not typing":
-            {
-                if (isOpenConversation(conversationID))
-                {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
+                case "typing": {
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
+                    }
+                    break;
                 }
-                break;
-            }
-            case "recording":
-            {
-                if (isOpenConversation(conversationID))
-                {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", false));
+                case "not typing": {
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
+                    }
+                    break;
                 }
-                break;
-            }
-            case "not recording":
-            {
-                if (isOpenConversation(conversationID))
-                {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("not recording", false));
+                case "recording": {
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", false));
+                    }
+                    break;
                 }
-                break;
-            }
-            case "read_time":
-            {
-                String messageStatus = data.get("messageStatus");
-                String readAt = data.get("readAt");
-                String messageID = data.get("messageID");
-                if (isOpenConversation(conversationID))
-                {
-                    Intent readIntent = new Intent(conversationID);
-                    readIntent.putExtra("messageStatus",messageStatus);
-                    readIntent.putExtra("readAt",readAt);
-                    readIntent.putExtra("messageID",messageID);
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(readIntent);
-                    //UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
+                case "not recording": {
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("not recording", false));
+                    }
+                    break;
                 }
-                UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
-                break;
-            }
-            case "delete":
-            {
-                String messageID = data.get("messageID");
-                if (isOpenConversation(conversationID))
-                {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
-                            .putExtra("delete", false)
-                            .putExtra("messageID",messageID));
-                }
-                break;
-            }
-            case "edit":
-            {
-                if (isOpenConversation(conversationID))
-                {
-                    String e_t = data.get("editTime");
-                    String message = data.get("message");
+                case "read_time": {
+                    String messageStatus = data.get("messageStatus");
+                    String readAt = data.get("readAt");
                     String messageID = data.get("messageID");
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
-                            .putExtra("edit", false)
-                    .putExtra("messageID",messageID)
-                    .putExtra("conversationID",conversationID)
-                    .putExtra("message",message)
-                    .putExtra("edit_time",e_t));
+                    if (isOpenConversation(conversationID)) {
+                        Intent readIntent = new Intent(conversationID);
+                        readIntent.putExtra("messageStatus", messageStatus);
+                        readIntent.putExtra("readAt", readAt);
+                        readIntent.putExtra("messageID", messageID);
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(readIntent);
+                        //UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
+                    }
+                    UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
+                    break;
                 }
+                case "delete": {
+                    String messageID = data.get("messageID");
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                                .putExtra("delete", false)
+                                .putExtra("messageID", messageID));
+                    }
+                    break;
+                }
+                case "edit": {
+                    if (isOpenConversation(conversationID)) {
+                        String e_t = data.get("editTime");
+                        String message = data.get("message");
+                        String messageID = data.get("messageID");
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                                .putExtra("edit", false)
+                                .putExtra("messageID", messageID)
+                                .putExtra("conversationID", conversationID)
+                                .putExtra("message", message)
+                                .putExtra("edit_time", e_t));
+                    }
+                }
+                case "status": {
+                    SharedPreferences sharedPreferences = getSharedPreferences("Status",MODE_PRIVATE);
+                    String currentStatus = sharedPreferences.getString("status", MainActivity.OFFLINE_S);
+                    String token = data.get("senderToken");
+                    SendStatusMessage(currentStatus,token,conversationID);
+                    break;
+                }
+                case "statusResponse":
+                {
+                    if(isOpenConversation(conversationID))
+                    {
+                        String status = data.get("messageStatus");
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("userStatus").putExtra("status",status));
+                    }
+                    else
+                        Log.d("statusResponse","conversation isn't open - no need to display user status");
+                    break;
+                }
+                default:
+                    Log.e("received message error", "default case in on message received");
             }
-            case "userStatus":
-            {
-                break;
-            }
-            default:
-                Log.e("received message error","default case in on message received");
-        }
     }
 
     private void DataBaseSetUp() {
@@ -279,7 +297,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         }
         return null;
     }
-
 
 
     private boolean isNotificationsAllowed() {
@@ -456,16 +473,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
-    private void UpdateMessageLive(String conversationID, String messageID, String messageStatus, String readAt) {
-        ReadMessage readMessage = new ReadMessage(messageID, conversationID);
-        readMessage.setMessageStatus(messageStatus);
-        readMessage.setReadAt(readAt);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("read", readMessage));
-    }
-
     private void UpdateMessageMetaDataInDataBase(String messageID, String messageStatus, String readAt) {
         dbActive.UpdateMessageMetaData(messageID, messageStatus, readAt);
-
     }
 
 
@@ -486,66 +495,194 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param remoteMessage - message object that is received from fcm
      */
     private void HandleUserMessage(RemoteMessage remoteMessage) {
-        DataBaseSetUp();
         Message message = new Message();
         String conversationID = remoteMessage.getData().get("conversationID");
         String messageID = remoteMessage.getData().get("messageID");
         if (messageID != null) {
-            String content = remoteMessage.getData().get("message");
-            String senderUID = remoteMessage.getData().get("sender");
-            String senderName = remoteMessage.getData().get("senderName");
-            String sendingTime = remoteMessage.getData().get("sendingTime");
-            String quote = remoteMessage.getData().get("quoteMessage");
-            String quoteMessageID = remoteMessage.getData().get("quotedMessageID");
-            String recipientName = remoteMessage.getData().get("recipientName");
-            String latitude = remoteMessage.getData().get("latitude");
-            String longitude = remoteMessage.getData().get("longitude");
-            String address = remoteMessage.getData().get("locationAddress");
-            String imagePath = remoteMessage.getData().get("imagePath");
-            String recordingPath = remoteMessage.getData().get("recordingPath");
-            String editMessageTime = remoteMessage.getData().get("editTime");
-            int type = Integer.parseInt(remoteMessage.getData().get("messageType"));
-            String action = remoteMessage.getData().get("messageAction");
-            if (action.equals("new_message"))
-                message.setMessageAction(MessageAction.new_message);
-            String senderToken = remoteMessage.getData().get("senderToken");
-            String contactName = remoteMessage.getData().get("contactName");
-            String contactPhone = remoteMessage.getData().get("contactPhone");
-            message.setContactPhone(contactPhone);
-            message.setContactName(contactName);
-            message.setConversationID(conversationID);
-            message.setMessageID(messageID);
-            message.setMessage(content);
-            message.setSender(senderUID);
-            message.setSenderName(senderName);
-            message.setSendingTime(sendingTime);
-            message.setArrivingTime(System.currentTimeMillis() + "");
-            message.setQuotedMessageID(quoteMessageID);
-            message.setQuoteMessage(quote);
-            message.setMessageType(type);
-            message.setRecipient(currentUser);
-            message.setRecipientName(recipientName);
-            message.setArrivingTime(System.currentTimeMillis() + "");
-            message.setLatitude(latitude);
-            message.setLongitude(longitude);
-            message.setLocationAddress(address);
-            message.setImagePath(imagePath);
-            message.setRecordingPath(recordingPath);
-            message.setEditTime(editMessageTime);
-            message.setSenderToken(senderToken);
-            message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-            //MarkAsReceived(messageID, conversationID, message.getSenderToken());
-            SendBroadcast(conversationID, message);
+            String status = remoteMessage.getData().get("messageStatus");
+            if (!status.equals(ConversationActivity.MESSAGE_SENT)) {//message status update
+                dbActive.UpdateMessageStatus(messageID, status);
+                if (isOpenConversation(conversationID)) {
+                    Intent intent = new Intent("messageStatus");
+                    intent.putExtra("status", status);
+                    intent.putExtra("messageID", messageID);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                }
+            } else {//new message
+                String content = remoteMessage.getData().get("message");
+                String senderUID = remoteMessage.getData().get("sender");
+                String senderName = remoteMessage.getData().get("senderName");
+                String sendingTime = remoteMessage.getData().get("sendingTime");
+                String quote = remoteMessage.getData().get("quoteMessage");
+                String quoteMessageID = remoteMessage.getData().get("quotedMessageID");
+                String recipientName = remoteMessage.getData().get("recipientName");
+                String latitude = remoteMessage.getData().get("latitude");
+                String longitude = remoteMessage.getData().get("longitude");
+                String address = remoteMessage.getData().get("locationAddress");
+                String imagePath = remoteMessage.getData().get("imagePath");
+                //String recordingPath = remoteMessage.getData().get("recordingPath");
+                String editMessageTime = remoteMessage.getData().get("editTime");
+                int type = Integer.parseInt(remoteMessage.getData().get("messageType"));
+                String action = remoteMessage.getData().get("messageAction");
+                if (action.equals("new_message"))
+                    message.setMessageAction(MessageAction.new_message);
+                String senderToken = remoteMessage.getData().get("senderToken");
+                String contactName = remoteMessage.getData().get("contactName");
+                String contactPhone = remoteMessage.getData().get("contactPhone");
+                String filePath = remoteMessage.getData().get("filePath");
+                message.setContactPhone(contactPhone);
+                message.setContactName(contactName);
+                message.setConversationID(conversationID);
+                message.setMessageID(messageID);
+                message.setMessage(content);
+                message.setSender(senderUID);
+                message.setSenderName(senderName);
+                message.setSendingTime(sendingTime);
+                message.setArrivingTime(System.currentTimeMillis() + "");
+                message.setQuotedMessageID(quoteMessageID);
+                message.setQuoteMessage(quote);
+                message.setMessageType(type);
+                message.setRecipient(currentUser);
+                message.setRecipientName(recipientName);
+                message.setArrivingTime(System.currentTimeMillis() + "");
+                message.setLatitude(latitude);
+                message.setLongitude(longitude);
+                message.setLocationAddress(address);
+                message.setImagePath(imagePath);
+                //message.setRecordingPath(recordingPath);
+                message.setEditTime(editMessageTime);
+                message.setSenderToken(senderToken);
+                message.setFilePath(filePath);
+                message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
+                if (type == MessageType.VoiceMessage.ordinal()) {
+                    DownloadVoiceMessage(message);
+                } else if (type == MessageType.photoMessage.ordinal()) {
+                    DownloadImageMassage(message);
+                } else if (type == MessageType.videoMessage.ordinal()) {
+                    DownloadVideoMessage(message);
+                }
+                SendBroadcast(conversationID, message);
+            }
         }
     }
 
-    private void MarkAsReceived(String messageID, String conversationID, String... tokenToSendTo) {
-        Message message = new Message();
-        message.setMessageID(messageID);
-        message.setConversationID(conversationID);
+    private void DownloadVoiceMessage(Message message) {
+        if (message.getFilePath() != null) {
+            StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
+            try {
+                File file = File.createTempFile("recording" + message.getMessageID(), ".3gpp");
+                downloadAudioFile.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                        String path = file.getAbsolutePath();
+                        message.setRecordingPath(path);
+                        dbActive.UpdateMessage(message);
+                        Log.d("downloaded voice","voice message was downloaded");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("file download error", "error downloading voice message file");
+                        e.printStackTrace();
+                    }
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            Log.e("file path doesn't exist", "cant download voice message - path is null");
+        }
+    }
+
+    private void DownloadImageMassage(Message message) {
+        Thread downloadPic = new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    URL url = new URL(message.getFilePath());
+                    HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+                    httpsURLConnection.connect();
+                    int responseCode = httpsURLConnection.getResponseCode();
+                    if (responseCode == 200) {
+                        InputStream inputStream = httpsURLConnection.getInputStream();
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        FileManager manager = FileManager.getInstance();
+                        String path = manager.saveImage(bitmap, FirebaseMessageService.this);
+                        if (path != null) {
+                            message.setImagePath(path);
+                            dbActive.UpdateMessage(message);
+                            Log.d("download image","image message was downloaded");
+                            if(isOpenConversation(message.getConversationID()))
+                                LocalBroadcastManager.getInstance(FirebaseMessageService.this).sendBroadcast(new Intent("DownloadedImage").putExtra("messageID",message.getMessageID()));
+                        }
+                    } else
+                        Log.e("error picture download", "response code is not 200: " + responseCode);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        downloadPic.setName("downloading picture");
+        downloadPic.start();
+        Log.d("downloadPic thread", "started downloading pic");
+    }
+
+    private void DownloadVideoMessage(Message message) {
+        StorageReference downloadVideoFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
+        try {
+            File file = File.createTempFile("recording" + message.getMessageID(), ".mp4");
+            downloadVideoFile.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    //Uri videoUri = Uri.fromFile(file);
+                    FileManager manager = FileManager.getInstance();
+                    String path = manager.SaveVideo(file, FirebaseMessageService.this);
+                    if (path == null)
+                        Log.e("saved video", "saved video path is null");
+                    else {
+                        message.setRecordingPath(path);
+                        dbActive.UpdateMessage(message);
+                    }
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(FirebaseMessageService.this, "error happened while downloading video message", Toast.LENGTH_SHORT).show();
+                    Log.e("DOWNLOAD_ERROR", "error happened while downloading video file");
+                    e.printStackTrace();
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void markAsDelivered(Message message) {
         message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-        message.setArrivingTime(System.currentTimeMillis() + "");
-        MessageSender.getInstance().SendMessage(message,tokenToSendTo);
+        MessageSender sender = MessageSender.getInstance();
+        //String token = getRecipientToken(message.getSender());
+        sender.SendMessage(message, message.getSenderToken());
+        dbActive.UpdateMessageStatus(message.getMessageID(),ConversationActivity.MESSAGE_DELIVERED);
+    }
+
+    private void markAsSeen(Message message)
+    {
+        message.setMessageStatus(MESSAGE_SEEN);
+        MessageSender sender = MessageSender.getInstance();
+        sender.SendMessage(message, message.getSenderToken());
+        dbActive.UpdateMessageStatus(message.getMessageID(),MESSAGE_SEEN);
+    }
+
+    private void SendStatusMessage(String status,String token,String conversationID)
+    {
+        Message message = new Message();
+        message.setConversationID(conversationID);
+        message.setMessageKind("statusResponse");
+        message.setMessageStatus(status);
+        MessageSender sender = MessageSender.getInstance();
+        sender.SendMessage(message,token);
     }
 
     /**
@@ -554,8 +691,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param message - the message that was sent by the user
      */
     private void SaveToDataBase(Message message) {
-        if(!dbActive.CheckIfExist(message.getMessageID(),false))
-            dbActive.SaveMessage(message);
+       // if (!dbActive.CheckIfExist(message.getMessageID(), false))
+        dbActive.SaveMessage(message);
     }
 
     /**
@@ -577,22 +714,32 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
      * @param message        - the message being sent
      */
     private void SendBroadcast(String conversationID, Message message) {
-        SaveToDataBase(message);
+
         //if this is the current on going conversation
         if (isOpenConversation(conversationID)) {
-            Intent newMessageIntent = new Intent(conversationID);
-            newMessageIntent.putExtra("message", message);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
+            if (!isBlocked(message.getSender())) {
+                message.setMessageStatus(MESSAGE_SEEN);
+                SaveToDataBase(message);
+                Intent newMessageIntent = new Intent(conversationID);
+                newMessageIntent.putExtra("message", message);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
+                markAsSeen(message);
+            }
         }//is the conversation exist at all
         else if (isConversationExists(conversationID)) {
             if (isNotificationsAllowed())
-                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getRecipient()
-                        , message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                        message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+                if (!isMuted(message.getConversationID()))
+                    if (!isBlocked(message.getSender()))
+                        createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getRecipient()
+                                , message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                                message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+            markAsDelivered(message);
+            SaveToDataBase(message);
             Intent updateConversationIntent = new Intent("Update Conversation");
             updateConversationIntent.putExtra("Message Action", message.getMessageAction());
             updateConversationIntent.putExtra("message", message);
             LocalBroadcastManager.getInstance(this).sendBroadcast(updateConversationIntent);
+
             //SaveToDataBase(message);
         } else {//brand new conversation
             if (isNotificationsAllowed())
@@ -600,32 +747,32 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         message.getMessageType(), message.getLongitude(), message.getLatitude(),
                         message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
             CreateNewConversation(message);
+            markAsDelivered(message);
             //SaveToDataBase(message);
             Intent newConversationIntent = new Intent("New Conversation");
             newConversationIntent.putExtra("conversationID", conversationID);
             LocalBroadcastManager.getInstance(this).sendBroadcast(newConversationIntent);
         }
-    }
 
-    private String LoadCurrentUser() {
-        SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
-        return sharedPreferences.getString("currentUser", "no user");
     }
 
     /**
      * creates a new conversation that wasn't initiated by the current user and saves the sending party to the database
+     *
      * @param message - the first message in a new conversation
      */
     private void CreateNewConversation(Message message) {
         dbActive.CreateNewConversation(message);
+        SaveToDataBase(message);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference reference = database.getReference("users/" + message.getSender());
         reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 @SuppressWarnings("unchecked")
-                HashMap<String, Object> userMap = (HashMap<String, Object>)snapshot.getValue();
+                HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
                 if (userMap != null) {
+
                     String name = (String) userMap.get("name");
                     User user = new User();
                     user.setPictureLink((String) userMap.get("pictureLink"));
@@ -644,31 +791,32 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 error.toException().printStackTrace();
             }
         });
+
+            DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
+            ValueEventListener tokenListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String token = (String) snapshot.getValue();
+                    if (token != null) {
+                        dbActive.UpdateUserToken(message.getSender(), token);
+                        tokenReference.removeEventListener(this);
+                    } else Log.e("NULL", "Recipient Token from fb is null");
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("FIREBASE_ERROR","cancelled recipient token retrieval");
+                }
+            };
+            tokenReference.addValueEventListener(tokenListener);
+
     }
 
     private boolean isConversationExists(String conversationID) {
         return dbActive.isConversationExists(conversationID);
-        /*if (db != null) {
-            String[] projections = {
-                    DataBaseContract.Conversations.CONVERSATION_ID
-            };
-            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " = ?";
-            String[] selectionArgs = {conversationID};
-            Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
-            if (cursor.getCount() == 1) {
-                cursor.close();
-                return true;
-            } else if (cursor.getCount() == 0) {
-                cursor.close();
-                return false;
-            } else
-                Log.e(NOTIFICATION_ERROR, "isConversationExists function presents an error - > more than 1 rows retrieved");
-        }
-        return false;*/
     }
 
-    private void DisableActiveNotification()
-    {
+    private void DisableActiveNotification() {
         BroadcastReceiver disableNotificationReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -681,6 +829,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 }
             }
         };
-        LocalBroadcastManager.getInstance(this).registerReceiver(disableNotificationReceiver,new IntentFilter("disableNotifications"));
+        LocalBroadcastManager.getInstance(this).registerReceiver(disableNotificationReceiver, new IntentFilter("disableNotifications"));
+    }
+
+    private boolean isMuted(String conversationID) {
+        return dbActive.isMuted(conversationID);
+    }
+
+    private boolean isBlocked(String uid) {
+        return dbActive.isBlocked(uid);
     }
 }

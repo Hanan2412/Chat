@@ -132,6 +132,7 @@ public class NewChatFragment2 extends Fragment implements UserListAdapter.userLi
                     openConversationIntent.putExtra("recipient",user.getUserUID());
                     openConversationIntent.putExtra("recipientToken",token);
                     openConversationIntent.putExtra("conversationID",CreateConversationID());
+                    tokensQuery.removeEventListener(this);
                     requireActivity().getSupportFragmentManager().beginTransaction().remove(NewChatFragment2.this).commit();
                     startActivity(openConversationIntent);
                 }

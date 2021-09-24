@@ -2,30 +2,35 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-   >
+    android:orientation="vertical">
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/buttonLayout"
-        android:background="@android:color/white"
-        >
+        android:background="@android:color/white">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            >
+            android:orientation="vertical">
 
             <TextView
+                android:id="@+id/title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="Pick the time and date to send a message"
                 android:textColor="@android:color/black"
-                android:textSize="30sp"
-                android:id="@+id/title"/>
+                android:textSize="30sp" />
+
+            <EditText
+                android:id="@+id/delayedMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:hint="@string/message_hint"
+                android:inputType="textNoSuggestions|text" />
 
             <TimePicker
                 android:id="@+id/timePicker"

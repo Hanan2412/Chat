@@ -10,7 +10,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 
 import androidx.annotation.NonNull;
@@ -21,6 +23,7 @@ import com.example.woofmeow.R;
 
 import java.util.Arrays;
 import java.util.Calendar;
+
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -38,7 +41,7 @@ public class PickerFragment extends Fragment {
     }
 
     public interface onPickerClick{
-        void onPicked(int[] time);
+        void onPicked(int[] time,String text);
         void onCancelPick();
     }
 
@@ -68,7 +71,7 @@ public class PickerFragment extends Fragment {
         DatePicker datePicker = view.findViewById(R.id.datePicker);
         Button sendDelayMessageBtn = view.findViewById(R.id.sendDelayMessageBtn);
         Button cancelBtn = view.findViewById(R.id.cancelBtn);
-
+        EditText editText = view.findViewById(R.id.delayedMessage);
         timePicker.setIs24HourView(true);
         timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
             @Override
@@ -82,12 +85,11 @@ public class PickerFragment extends Fragment {
             public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
                 time[0] = year;
                 time[1] = monthOfYear;
-                time[3] = dayOfMonth;
+                time[2] = dayOfMonth;
             }
         });
 
         datePicker.setMinDate(System.currentTimeMillis() - 1000);
-
         sendDelayMessageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -102,7 +104,14 @@ public class PickerFragment extends Fragment {
                     time[3] = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                 if(time[4] == -1)
                     time[4] = Calendar.getInstance().get(Calendar.MINUTE);
-                callback.onPicked(time);
+                String message = editText.getText().toString();
+                if(message!=null && !message.equals(""))
+                {
+                    callback.onPicked(time,message);
+                    callback.onCancelPick();
+                }
+                else
+                    Toast.makeText(requireContext(), "can't send an empty message", Toast.LENGTH_SHORT).show();
             }
         });
         cancelBtn.setOnClickListener(new View.OnClickListener() {
