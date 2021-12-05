@@ -42,6 +42,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import javax.net.ssl.HttpsURLConnection;
 import Consts.MessageType;
 import Consts.Messaging;
@@ -180,21 +186,78 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.playRecordingLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.photoMessage.ordinal()) {
             holder.previewImage.setVisibility(View.VISIBLE);
-            if (message.getImagePath()!=null){
-                Bitmap bitmap = null;
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                {
-                    ContentResolver resolver = holder.itemView.getContext().getApplicationContext().getContentResolver();
-                    try {
-                        bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(message.getImagePath())));
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            if (message.getImagePath()!=null) {
+                ExecutorService executorService = Executors.newSingleThreadExecutor();
+                Callable<Bitmap> bitmapCallable = new Callable<Bitmap>() {
+                    @Override
+                    public Bitmap call() {
+                        Bitmap bitmap = null;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            ContentResolver resolver = holder.itemView.getContext().getApplicationContext().getContentResolver();
+                            try {
+                                bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(message.getImagePath())));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } else
+                            bitmap = BitmapFactory.decodeFile(message.getImagePath());
+                        if (bitmap != null) {
+                            float ratio = (float) bitmap.getWidth() / (float) bitmap.getHeight();
+                            int width = 540;
+                            int height;
+                            if (bitmap.getWidth() > bitmap.getHeight())
+                                height = (int) (width / ratio);
+                            else
+                                height = (int) (width * ratio);
+
+                            bitmap = Bitmap.createScaledBitmap(bitmap, width, height, false);
+                        }
+                        return bitmap;
                     }
-                }
-                else
-                    bitmap = BitmapFactory.decodeFile(message.getImagePath());
-                holder.previewImage.setImageBitmap(bitmap);
-                }
+                };
+                Future<Bitmap> bitmapFuture = executorService.submit(bitmapCallable);
+                Thread doneThread = new Thread(){
+                    @Override
+                    public void run() {
+                        super.run();
+                        while(!bitmapFuture.isDone())
+                        {
+                            /*
+                            * waiting for the picture to load
+                            * since get method blocks and makes the app freeze until the image is loaded
+                            * noticeable with multiple images
+                            * */
+                        }
+                        try {
+                            Bitmap bitmap = bitmapFuture.get();
+                            new Handler(holder.itemView.getContext().getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    holder.previewImage.setImageBitmap(bitmap);
+                                }
+                            });
+                        } catch (ExecutionException | InterruptedException e) {
+                            e.printStackTrace();
+                        } finally {
+                            executorService.shutdown();
+                        }
+
+                    }
+                };
+                doneThread.setName("doneThread");
+                doneThread.start();
+                /*try {
+                    Bitmap bitmap = bitmapFuture.get();
+                    holder.previewImage.setImageBitmap(bitmap);
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    executorService.shutdown();
+                }*/
+
+
+            }
+
             holder.playRecordingLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.VoiceMessage.ordinal()) {
 
@@ -490,13 +553,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     return true;
                 }
             });
-
-
         }
-
-
     }
-
     @Override
     public int getItemViewType(int position) {
         if (messages.get(position).getSender().equals(currentUserUID))

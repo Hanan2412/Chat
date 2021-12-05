@@ -50,4 +50,8 @@
     <string name="back">Back</string>
     <string name="userStatus">status</string>
     <string name="action_btn">actionBtn</string>
+    <string name="contact">send contact</string>
+    <string name="camera">open camera</string>
+    <string name="gallery">open gallery</string>
+    <string name="delay">delayed message</string>
 </resources>

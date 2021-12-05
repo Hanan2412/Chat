@@ -7,12 +7,15 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
-import com.example.woofmeow.ConversationActivity;
+
 import com.google.firebase.auth.FirebaseAuth;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.Message;
@@ -29,112 +32,77 @@ public class DBActive {
     private User user;
     private static DBActive active = null;
 
-    public static DBActive getInstance(Context context)
-    {
-        if(active == null)
-        {
+    public static DBActive getInstance(Context context) {
+        if (active == null) {
             active = new DBActive(context);
         }
         return active;
     }
 
-    private DBActive(Context context)
-    {
+    private DBActive(Context context) {
         dbHelper = new DataBase(context);
         db = dbHelper.getWritableDatabase();
+        //resetDB();
+       // dbHelper.onCreate(db);
+        printTablesColumns(DataBaseContract.Messages.MESSAGES_TABLE);
+        printTablesColumns(DataBaseContract.Conversations.CONVERSATIONS_TABLE);
+        printTablesColumns(DataBaseContract.User.USER_TABLE);
     }
 
-
-
-    //gets all the conversations from the database
-    public List<Conversation> getConversations()
-    {
-        List<Conversation>conversationList = new ArrayList<>();
-
+    public List<User> loadUsers(String conversationID) {
+        Log.i("loading users", "loading users for group");
+        List<User> recipients = new ArrayList<>();
+        if (isConversationExists(conversationID)) {
             if (db != null) {
-                String[] projections = {
-                        BaseColumns._ID,
+                String[] groupProjections = {
                         DataBaseContract.Conversations.CONVERSATION_ID,
-                        DataBaseContract.Conversations.LAST_MESSAGE,
-                        DataBaseContract.Conversations.LAST_MESSAGE_TIME,
-                        DataBaseContract.Conversations.LAST_MESSAGE_TYPE,
-                        DataBaseContract.Conversations.LAST_MESSAGE_ID,
-                        DataBaseContract.Conversations.RECIPIENT,
-                        DataBaseContract.Conversations.MUTED,
-                        DataBaseContract.Conversations.USER_UID,
-                        DataBaseContract.Conversations.RECIPIENT_NAME,
-                        DataBaseContract.Conversations.IMAGE_PATH,
-                        DataBaseContract.User.TOKEN,
-                        DataBaseContract.Conversations.BLOCKED
-                        //DataBaseContract.Conversations.CONVERSATION_INDEX
+                        DataBaseContract.User.USER_UID
                 };
-                String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
-                String orderBy = DataBaseContract.Conversations.LAST_MESSAGE_TIME + " DESC";
-                if (user != null && user.getUserUID() != null) {
-                    String[] selectionArgs = {user.getUserUID()};
-                    Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, orderBy);
+                String groupSelection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
+                String[] groupSelectionArgs = {conversationID};
+                Cursor cursor = db.query(DataBaseContract.Group.GroupTable, groupProjections, groupSelection, groupSelectionArgs, null, null, null);
+                if (cursor.getCount() > 0) {
                     while (cursor.moveToNext()) {
-                        String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
-                        String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE));
-                        String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TIME));
-                        int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TYPE));
-                        String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT));
-                        String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
-                        String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME));
-                        String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.IMAGE_PATH));
-                        String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
-                        String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
-                        String blocked = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.BLOCKED));
-                        Conversation conversation = new Conversation(conversationIDs);
-                        conversation.setLastMessageTimeFormatted(lastMessageTime);
-                        conversation.setLastMessage(lastMessage);
-                        conversation.setMessageType(lastMessageType);
-                        conversation.setLastMessageID(lastMessageID);
-                        conversation.setRecipient(recipient);
-                        conversation.setRecipientImagePath(imagePath);
-                        conversation.setSenderName(recipientName);
-                        conversation.setRecipientName(recipientName);
-                        if(muted!=null)
-                            conversation.setMuted(muted.equals("muted"));
-                        else
-                            conversation.setMuted(false);
-                        if(blocked!=null)
-                            conversation.setBlocked(blocked.equals("blocked"));
-                        else
-                            conversation.setBlocked(false);
-                        conversation.setRecipientToken(recipientToken);
-                        conversationList.add(conversation);
+                        String userID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID));
+                        recipients.add(loadUserFromDataBase(userID));
                     }
-                    cursor.close();
-                    return conversationList;
                 }
+                else {
+                    recipients.add(loadUserFromDataBase("pfghXKWGCja8i8YPQz71DuXxyTI2"));
+                }
+                cursor.close();
             }
-        return conversationList;
+        }
+        else {
+            Log.e(DataBaseError,"conversation doesn't exists - can't load users");
+        }
+        return recipients;
     }
-
-    public Conversation getNewConversation(String conversationID)
-    {
-        Conversation conversation = null;
-
-            if (db != null) {
-                String[] projections = {
-                        BaseColumns._ID,
-                        DataBaseContract.Conversations.CONVERSATION_ID,
-                        DataBaseContract.Conversations.LAST_MESSAGE,
-                        DataBaseContract.Conversations.LAST_MESSAGE_TIME,
-                        DataBaseContract.Conversations.LAST_MESSAGE_TYPE,
-                        DataBaseContract.Conversations.LAST_MESSAGE_ID,
-                        DataBaseContract.Conversations.RECIPIENT,
-                        DataBaseContract.Conversations.MUTED,
-                        DataBaseContract.Conversations.USER_UID,
-                        DataBaseContract.Conversations.RECIPIENT_NAME,
-                        DataBaseContract.Conversations.IMAGE_PATH,
-                        DataBaseContract.User.TOKEN,
-                        //DataBaseContract.Conversations.CONVERSATION_INDEX
-                };
-                String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
-                String[] selectionArgs = {conversationID};
-                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+    //gets all the conversations from the database
+    public List<Conversation> getConversations() {
+        List<Conversation> conversationList = new ArrayList<>();
+        if (db != null) {
+            String[] projections = {
+                    BaseColumns._ID,
+                    DataBaseContract.Conversations.CONVERSATION_ID,
+                    DataBaseContract.Conversations.LAST_MESSAGE,
+                    DataBaseContract.Conversations.LAST_MESSAGE_TIME,
+                    DataBaseContract.Conversations.LAST_MESSAGE_TYPE,
+                    DataBaseContract.Conversations.LAST_MESSAGE_ID,
+                    DataBaseContract.Conversations.RECIPIENT,
+                    DataBaseContract.Conversations.MUTED,
+                    DataBaseContract.Conversations.USER_UID,
+                    DataBaseContract.Conversations.RECIPIENT_NAME,
+                    DataBaseContract.Conversations.IMAGE_PATH,
+                    DataBaseContract.User.TOKEN,
+                    DataBaseContract.Conversations.BLOCKED,
+                    DataBaseContract.Conversations.GROUP_NAME
+            };
+            String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
+            String orderBy = DataBaseContract.Conversations.LAST_MESSAGE_TIME + " DESC";
+            if (user != null && user.getUserUID() != null) {
+                String[] selectionArgs = {user.getUserUID()};
+                Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, orderBy);
                 while (cursor.moveToNext()) {
                     String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
                     String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE));
@@ -146,9 +114,11 @@ public class DBActive {
                     String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.IMAGE_PATH));
                     String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
                     String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
-                    //int position = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_INDEX));
-                    conversation = new Conversation(conversationIDs);
+                    String blocked = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.BLOCKED));
+                    String groupName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
+                    Conversation conversation = new Conversation(conversationIDs);
                     conversation.setLastMessageTimeFormatted(lastMessageTime);
+                    conversation.setGroupName(groupName);
                     conversation.setLastMessage(lastMessage);
                     conversation.setMessageType(lastMessageType);
                     conversation.setLastMessageID(lastMessageID);
@@ -156,18 +126,79 @@ public class DBActive {
                     conversation.setRecipientImagePath(imagePath);
                     conversation.setSenderName(recipientName);
                     conversation.setRecipientName(recipientName);
-                    conversation.setMuted(muted.equals("1"));
+                    if (muted != null)
+                        conversation.setMuted(muted.equals("muted"));
+                    else
+                        conversation.setMuted(false);
+                    if (blocked != null)
+                        conversation.setBlocked(blocked.equals("blocked"));
+                    else
+                        conversation.setBlocked(false);
                     conversation.setRecipientToken(recipientToken);
+                    conversationList.add(conversation);
                 }
                 cursor.close();
+                return conversationList;
+            }
+        }
+        return conversationList;
+    }
+
+    public Conversation getNewConversation(String conversationID) {
+        Conversation conversation = null;
+
+        if (db != null) {
+            String[] projections = {
+                    BaseColumns._ID,
+                    DataBaseContract.Conversations.CONVERSATION_ID,
+                    DataBaseContract.Conversations.LAST_MESSAGE,
+                    DataBaseContract.Conversations.LAST_MESSAGE_TIME,
+                    DataBaseContract.Conversations.LAST_MESSAGE_TYPE,
+                    DataBaseContract.Conversations.LAST_MESSAGE_ID,
+                    DataBaseContract.Conversations.RECIPIENT,
+                    DataBaseContract.Conversations.MUTED,
+                    DataBaseContract.Conversations.USER_UID,
+                    DataBaseContract.Conversations.RECIPIENT_NAME,
+                    DataBaseContract.Conversations.IMAGE_PATH,
+                    DataBaseContract.User.TOKEN,
+                    DataBaseContract.Conversations.GROUP_NAME
+            };
+            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
+            String[] selectionArgs = {conversationID};
+            Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+            while (cursor.moveToNext()) {
+                String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
+                String lastMessage = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE));
+                String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TIME));
+                int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TYPE));
+                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT));
+                String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
+                String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME));
+                String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.IMAGE_PATH));
+                String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
+                String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
+                String group = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
+                conversation = new Conversation(conversationIDs);
+                conversation.setLastMessageTimeFormatted(lastMessageTime);
+                conversation.setLastMessage(lastMessage);
+                conversation.setMessageType(lastMessageType);
+                conversation.setLastMessageID(lastMessageID);
+                conversation.setRecipient(recipient);
+                conversation.setRecipientImagePath(imagePath);
+                conversation.setSenderName(recipientName);
+                conversation.setRecipientName(recipientName);
+                conversation.setMuted(muted.equals("1"));
+                conversation.setRecipientToken(recipientToken);
+                conversation.setGroupName(group);
+            }
+            cursor.close();
 
         }
         return conversation;
     }
 
-    public void InsertConversationToDataBase(Conversation conversation) {
+    public void insertConversationToDataBase(Conversation conversation) {
         String conversationID = conversation.getConversationID();
-
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.Conversations.CONVERSATION_ID, conversationID);
         values.put(DataBaseContract.Conversations.MUTED, conversation.isMuted());
@@ -179,13 +210,14 @@ public class DBActive {
         values.put(DataBaseContract.Conversations.IMAGE_PATH, conversation.getRecipientImagePath());
         values.put(DataBaseContract.Conversations.RECIPIENT_NAME, conversation.getSenderName());
         values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
+        values.put(DataBaseContract.Conversations.GROUP_NAME,conversation.getGroupName());
         long newRowId = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
         if (newRowId == -1)
             Log.e(DataBaseError, "error inserting data to database");
 
     }
 
-    public void UpdateConversation(Conversation conversation) {
+    public void updateConversation(Conversation conversation) {
 
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.Conversations.CONVERSATION_ID, conversation.getConversationID());
@@ -195,7 +227,7 @@ public class DBActive {
         values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, conversation.getLastMessageTime());
         values.put(DataBaseContract.Conversations.IMAGE_PATH, conversation.getRecipientImagePath());
         values.put(DataBaseContract.Conversations.RECIPIENT_NAME, conversation.getSenderName());
-        values.put(DataBaseContract.Conversations.RECIPIENT,conversation.getRecipient());
+        values.put(DataBaseContract.Conversations.RECIPIENT, conversation.getRecipient());
         values.put(DataBaseContract.Conversations.MUTED, conversation.isMuted());
         values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
         values.put(DataBaseContract.User.TOKEN, conversation.getRecipientToken());
@@ -203,16 +235,14 @@ public class DBActive {
         String[] selectionArgs = {conversation.getConversationID()};
         int count = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
         if (count == -1)
-            Log.e(DataBaseError,"updated more than 1 row in conversation update");
+            Log.e(DataBaseError, "updated more than 1 row in conversation update");
 
     }
 
-    public void UpdateConversationLastMessage(String conversationID,String message)
-    {
-        if(db!=null)
-        {
+    public void updateConversationLastMessage(String conversationID, String message) {
+        if (db != null) {
             ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE,message);
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message);
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
             long updatedRowNum = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
@@ -221,7 +251,7 @@ public class DBActive {
         }
     }
 
-    public void UpdateConversation(Message message) {
+    public void updateConversation(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
@@ -230,11 +260,7 @@ public class DBActive {
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
-            if(!message.getRecipient().equals(user.getUserUID())) {
-                values.put(DataBaseContract.Conversations.RECIPIENT_NAME, message.getRecipientName());
-                values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipient());
-            }
-            values.put(DataBaseContract.User.TOKEN, message.getSenderToken());
+            values.put(DataBaseContract.Conversations.GROUP_NAME,message.getGroupName());
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {message.getConversationID()};
             long updatedRowNum = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
@@ -242,7 +268,6 @@ public class DBActive {
                 Log.e(DataBaseError, "updated more than 1 row");
         }
     }
-
 
 
     public boolean isConversationExists(String conversationID) {
@@ -264,51 +289,20 @@ public class DBActive {
         return false;
     }
 
-    private void PrintUserTable(String currentUser)
-    {
-        String[] projections = {
-                DataBaseContract.User._ID,
-                DataBaseContract.User.USER_UID,
-                DataBaseContract.User.USER_NAME,
-                DataBaseContract.User.USER_LAST_NAME,
-                DataBaseContract.User.USER_PICTURE_LINK,
-                DataBaseContract.User.USER_TIME_CREATED,
-                DataBaseContract.User.USER_PHONE_NUMBER,
-                DataBaseContract.User.USER_LAST_STATUS
-        };
-        String selection = DataBaseContract.User.USER_UID + " LIKE ?";
-        String[] selectionArgs = {currentUser};
-        Cursor cursor = db.query(DataBaseContract.User.USER_TABLE, null, null, null, null, null, null);
-
-        while (cursor.moveToNext()) {
-            String uid = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID));
-            String name = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_NAME));
-            String lastName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_NAME));
-            String pictureLink = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PICTURE_LINK));
-            String timeCreated = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_TIME_CREATED));
-            String phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_PHONE_NUMBER));
-            String status = cursor.getColumnName(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_STATUS));
-            print(uid);
-            print(name);
-            print(lastName);
-            print(pictureLink);
-            print(timeCreated);
-            print(phoneNumber);
-            print(status);
-        }
-        cursor.close();
+    private void println(String s) {
+        System.out.println(s);
     }
 
     private void print(String s)
     {
-        System.out.println(s);
+        System.out.print(s);
     }
 
-    public User LoadUserFromDataBase(String userUID) {
-        if(userUID == null)
+
+    public User loadUserFromDataBase(String userUID) {
+        if (userUID == null)
             Log.e("DBActive", "user UID is null");
         else {
-            PrintUserTable(userUID);
             if (db != null) {
                 String[] projections = {
                         DataBaseContract.User._ID,
@@ -362,37 +356,22 @@ public class DBActive {
         return null;
     }
 
-    /*public void MarkAsRead(String messageID) {
+    public void updateMessageStatus(String id, String status) {
         if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Messages.STATUS, status);
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
-            String[] selectionArgs = {messageID};
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(DataBaseContract.Messages.STATUS, ConversationActivity.MESSAGE_SEEN);
-            db.update(DataBaseContract.Messages.MESSAGES_TABLE, contentValues, selection, selectionArgs);
+            String[] selectionArgs = {id};
+            long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
+            if (updatedRow != 1)
+                Log.e(DataBaseError, "error updating status - updated more than 1 row");
         }
-    }*/
-
-    public void UpdateMessageStatus(String id,String status)
-    {
-     if(db!=null)
-     {
-         ContentValues values = new ContentValues();
-         values.put(DataBaseContract.Messages.STATUS,status);
-         String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
-         String[] selectionArgs = {id};
-         long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
-         if (updatedRow != 1)
-             Log.e(DataBaseError, "error updating status - updated more than 1 row");
-     }
     }
 
-    public void UpdateMessage(String messageID,String content,String time)
-    {
-        if(db!=null)
-        {
+    public void updateMessage(String messageID, String content, String time) {
+        if (db != null) {
             ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Messages.CONTENT,content);
-            //values.put(DataBaseContract.Messages.TIME_SENT,time);
+            values.put(DataBaseContract.Messages.CONTENT, content);
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
             String[] selectionArgs = {messageID};
             long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
@@ -401,27 +380,26 @@ public class DBActive {
         }
     }
 
-    public void UpdateMessage(@NonNull Message message) {
+    public void updateMessage(@NonNull Message message) {
 
         if (db != null) {
             ContentValues values = new ContentValues();
-            if(message.getMessage()!=null)
+            if (message.getMessage() != null)
                 values.put(DataBaseContract.Messages.CONTENT, message.getMessage());
-            if(message.getRecordingPath()!=null)
-                values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH,message.getRecordingPath());
-            if(message.getImagePath()!=null)
-                values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH,message.getImagePath());
-            values.put(DataBaseContract.Messages.MESSAGE_STAR,message.isStar());
+            if (message.getRecordingPath() != null)
+                values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
+            if (message.getImagePath() != null)
+                values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH, message.getImagePath());
+            values.put(DataBaseContract.Messages.MESSAGE_STAR, message.isStar());
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
             String[] selectionArgs = {message.getMessageID()};
             long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
             if (updatedRow != 1)
                 Log.e(DataBaseError, "updated more than 1 message");
         }
-        //LoadMessage(messageID, DataBaseContract.Messages.MESSAGE_ID + " = ?", "Edit Message");
     }
 
-    public void DeleteMessage(@NonNull String messageID) {
+    public void deleteMessage(@NonNull String messageID) {
 
         if (db != null) {
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
@@ -432,7 +410,7 @@ public class DBActive {
         }
     }
 
-    public void DeleteConversation(String conversationID) {
+    public void deleteConversation(String conversationID) {
         if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " = ?";
             String[] selectionArgs = {conversationID};
@@ -441,13 +419,30 @@ public class DBActive {
                 Log.e(DataBaseError, "deleting conversation failed, more than 1 conversations were deleted or none were");
         }
     }
-    public void SaveMessage(Message message) {
+
+    //for debug only
+    private void printTablesColumns(String tableName)
+    {
+        println("table " + tableName + " columns");
+       Cursor cursor = db.query(tableName,null,null,null,null,null,null);
+       String[] columnNames = cursor.getColumnNames();
+       for (String columnName : columnNames)
+       {
+           if (columnName.equals(DataBaseContract.Conversations.GROUP_NAME))
+               System.out.print("aaaaaaa");
+           print(columnName + " ");
+       }
+       println("");
+       cursor.close();
+    }
+
+    public void saveMessage(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
             values.put(DataBaseContract.Messages.CONTENT, message.getMessage());
-            values.put(DataBaseContract.Messages.RECIPIENT, message.getRecipient());
+            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
             values.put(DataBaseContract.Messages.SENDER, message.getSender());
             values.put(DataBaseContract.Messages.TIME_DELIVERED, message.getArrivingTime());
             values.put(DataBaseContract.Messages.TIME_SENT, message.getSendingTime());
@@ -458,9 +453,9 @@ public class DBActive {
             values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
             values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
             values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
-            values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH,message.getFilePath());
-            values.put(DataBaseContract.Messages.QUOTE,message.getQuoteMessage());
-            values.put(DataBaseContract.Messages.QUOTE_ID,message.getQuotedMessageID());
+            values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH, message.getFilePath());
+            values.put(DataBaseContract.Messages.QUOTE, message.getQuoteMessage());
+            values.put(DataBaseContract.Messages.QUOTE_ID, message.getQuotedMessageID());
             if (message.getMessageType() == MessageType.webMessage.ordinal())
                 values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
             long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
@@ -469,7 +464,7 @@ public class DBActive {
         }
     }
 
-   public void CreateNewConversation(Message message) {
+    public void createNewConversation(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
@@ -478,28 +473,76 @@ public class DBActive {
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
-            if(currentUserUID.equals(message.getSender())){
-                values.put(DataBaseContract.Conversations.RECIPIENT_NAME, message.getRecipientName());
-                values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipient());
-            }
-            else
-            {
-                values.put(DataBaseContract.Conversations.RECIPIENT_NAME, message.getSenderName());
-                values.put(DataBaseContract.Conversations.RECIPIENT,message.getSender());
-            }
-            //values.put(DataBaseContract.Conversations.RECIPIENT_NAME, message.getSenderName());
-            //values.put(DataBaseContract.Conversations.RECIPIENT,message.getSender());
+            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
             values.put(DataBaseContract.Conversations.MUTED, false);
             long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
             if (newConversationID == -1)
                 Log.e(DataBaseError, "inserted more than 1 row");
+            printConversationTable();
+            createNewGroup(message.getConversationID(),message.getRecipients());
         }
     }
 
+    private void createNewGroup(String conversationID,List<String>recipients)
+    {
+        ContentValues groupValues = new ContentValues();
+        for (int i = 0;i< recipients.size();i++)//its a hashMap
+        {
+            groupValues.put(DataBaseContract.Conversations.CONVERSATION_ID,conversationID);
+            groupValues.put(DataBaseContract.User.USER_UID,recipients.get(i));
+            long code = db.insert(DataBaseContract.Group.GroupTable,null,groupValues);
+            if(code == -1)
+                Log.e(DataBaseError,"new group wasn't created");
+        }
+        printGroupTable();
+    }
 
+    private void printConversationTable()
+    {
+        println("conversation table data");
+        Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE,null,null,null,null,null,null);
+        while (cursor.moveToNext())
+        {
+            for(int i = 0;i < cursor.getColumnCount();i++)
+            {
+                println(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME)));
+            }
+        }
+        cursor.close();
+    }
 
-    public List<Message> LoadMessages(@NonNull final String id, @NonNull final String selection) {
-        List<Message>messages = new ArrayList<>();
+    private void printGroupTable()
+    {
+        println("group table data");
+        String[] projections = {
+                DataBaseContract.Conversations.CONVERSATION_ID,
+                DataBaseContract.User.USER_UID
+        };
+        Cursor cursor = db.query(DataBaseContract.Group.GroupTable, projections, null, null, null, null, null);
+        while(cursor.moveToNext())
+        {
+            println(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID)));
+            println(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID)));
+        }
+        cursor.close();
+    }
+
+    public String loadConversationName(String conversationID)
+    {
+        String[]projections = {
+          DataBaseContract.Conversations.GROUP_NAME
+        };
+        String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";;
+        String[] selectionArgs = {conversationID};
+        Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE,projections,selection,selectionArgs,null,null,null);
+        cursor.moveToNext();
+        String gName =  cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
+        cursor.close();
+        return gName;
+    }
+
+    public List<Message> loadMessages(@NonNull final String id, @NonNull final String selection) {
+        List<Message> messages = new ArrayList<>();
         if (db != null) {
 
             String[] projections = {
@@ -525,7 +568,8 @@ public class DBActive {
                     DataBaseContract.Messages.TYPE,
                     DataBaseContract.Messages.MESSAGE_IMAGE_PATH,
                     DataBaseContract.Messages.QUOTE_ID,
-                    DataBaseContract.Messages.QUOTE
+                    DataBaseContract.Messages.QUOTE,
+                    DataBaseContract.Conversations.GROUP_NAME
             };
             String[] selectionArgs = {id};
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, null);
@@ -537,7 +581,7 @@ public class DBActive {
                 String timeDelivered = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_DELIVERED));
                 String timeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_SENT));
                 String senderName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_NAME));
-                String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME));
+                //String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME));
                 String filePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_FILE_PATH));
                 String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
                 String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
@@ -545,12 +589,13 @@ public class DBActive {
                 String link = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LINK));
                 String star = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STAR));
                 String status = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.STATUS));
-                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.RECIPIENT));
+                //String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.RECIPIENT));
                 String recordingPath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECORDING_PATH));
                 int type = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TYPE));
                 String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_IMAGE_PATH));
                 String quote = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.QUOTE));
                 String quoteID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.QUOTE_ID));
+                String group = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
                 Message message = new Message();
                 message.setMessageID(messageID);
                 message.setMessage(content);
@@ -559,8 +604,7 @@ public class DBActive {
                 message.setSender(senderUID);
                 message.setArrivingTime(timeDelivered);
                 message.setSenderName(senderName);
-                message.setRecipient(recipient);
-                message.setRecipientName(recipientName);
+                message.setGroupName(group);
                 message.setFilePath(filePath);
                 message.setLocationAddress(address);
                 message.setLongitude(longitude);
@@ -583,31 +627,30 @@ public class DBActive {
         return null;
     }
 
-    public void UpdateUserToken(String uid,String token)
-    {
+    public void updateUserToken(String uid, String token) {
         ContentValues values = new ContentValues();
-        values.put(DataBaseContract.User.TOKEN,token);
+        values.put(DataBaseContract.User.TOKEN, token);
         String where = DataBaseContract.User.USER_UID + " LIKE ?";
         String[] whereArgs = {uid};
-        int count = db.update(DataBaseContract.User.USER_TABLE,values,where,whereArgs);
-        if(count !=1)
-            Log.e(DataBaseError,"updated more than 1 token: count:" + count);
+        int count = db.update(DataBaseContract.User.USER_TABLE, values, where, whereArgs);
+        if (count != 1)
+            Log.e(DataBaseError, "updated more than 1 token: count:" + count);
     }
 
     //called only if user doesn't exists - the first lunch of the app
-    public void InsertUser(User user) {
-        if(user.getUserUID().equals(currentUserUID))
+    public void insertUser(User user) {
+        if (user.getUserUID().equals(currentUserUID))
             this.user = user;
-        ContentValues values = CreateUserValues(user);
+        ContentValues values = createUserValues(user);
         long rowID = db.insert(DataBaseContract.User.USER_TABLE, null, values);
-        PrintUserTable(user.getUserUID());
+        //printUserTable(user.getUserUID());
         if (rowID == -1)
             Log.e(DataBaseError, "error inserting user to database");
     }
 
     //on each login, the user table is updated with the current login user
-    public void UpdateUser(User user) {
-        ContentValues values = CreateUserValues(user);
+    public void updateUser(User user) {
+        ContentValues values = createUserValues(user);
         String where = DataBaseContract.User.USER_UID + " LIKE ?";
         String[] whereArgs = {user.getUserUID()};
         int count = db.update(DataBaseContract.User.USER_TABLE, values, where, whereArgs);
@@ -615,7 +658,7 @@ public class DBActive {
             Log.e(DataBaseError, "more than 1 or 0 rows were updated in the user table");
     }
 
-    private ContentValues CreateUserValues(User user) {
+    private ContentValues createUserValues(User user) {
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.User.USER_UID, user.getUserUID());
         values.put(DataBaseContract.User.USER_NAME, user.getName());
@@ -625,12 +668,12 @@ public class DBActive {
         if (user.getPhoneNumber() != null)
             values.put(DataBaseContract.User.USER_PHONE_NUMBER, user.getPhoneNumber());
         values.put(DataBaseContract.User.USER_LAST_STATUS, user.getStatus());
-        values.put(DataBaseContract.User.TOKEN,user.getToken());
-        values.put(DataBaseContract.User.BLOCKED,"");
+        values.put(DataBaseContract.User.TOKEN, user.getToken());
+        values.put(DataBaseContract.User.BLOCKED, "");
         return values;
     }
 
-    public void CheckIfUserExist(User user) {
+    public void checkIfUserExist(User user) {
         if (db != null) {
             String[] projections = {
                     DataBaseContract.User._ID,
@@ -642,23 +685,22 @@ public class DBActive {
             if (cursor.getCount() > 1)
                 Log.e(DataBaseError, "cursor contains more than 1 user entry for user: " + user.getUserUID());
             else if (cursor.moveToNext())
-                UpdateUser(user);
+                updateUser(user);
             else
-                InsertUser(user);
+                insertUser(user);
             cursor.close();
         }
     }
 
-    public void ResetDB()
-    {
+    public void resetDB() {
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
-        dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
+        //dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
 
     }
 
-    public boolean CheckIfExist(String ID, boolean idType) {
+    public boolean checkIfExist(String ID, boolean idType) {
         if (ID != null) {
             if (db != null) {
                 String[] projections = {
@@ -690,76 +732,8 @@ public class DBActive {
         return false;
     }
 
-    public Message RetrieveMessage(String id, String selection) {
-        if (db != null) {
-            String[] projections = {
-                    DataBaseContract.Messages.MESSAGE_ID,
-                    DataBaseContract.Conversations.CONVERSATION_ID,
-                    DataBaseContract.Messages.CONTENT,
-                    DataBaseContract.Messages.SENDER,
-                    DataBaseContract.Messages.MESSAGE_SENDER_NAME,
-                    DataBaseContract.Messages.RECIPIENT,
-                    DataBaseContract.Messages.TIME_DELIVERED,
-                    DataBaseContract.Messages.TIME_SENT,
-                    DataBaseContract.Messages.TYPE,
-                    DataBaseContract.Messages.STATUS,
-                    DataBaseContract.Messages.MESSAGE_IMAGE_PATH,
-                    DataBaseContract.Messages.MESSAGE_LONGITUDE,
-                    DataBaseContract.Messages.MESSAGE_LATITUDE,
-                    DataBaseContract.Messages.MESSAGE_ADDRESS,
-                    DataBaseContract.Messages.MESSAGE_RECORDING_PATH,
-                    DataBaseContract.Messages.MESSAGE_STAR,
-                    DataBaseContract.Messages.MESSAGE_FILE_PATH,
-                    DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME
-            };
-            String sortOrder = DataBaseContract.Messages.TIME_SENT + " DESC LIMIT 1";
-            String[] selectionArgs = {id};
-            Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, sortOrder);
-            Message message = new Message();
-            while (cursor.moveToNext()) {
-                String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
-                String messageContent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.CONTENT));
-                String messageSender = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.SENDER));
-                String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.RECIPIENT));
-                long messageTimeDelivered = cursor.getLong(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_DELIVERED));
-                String messageTimeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_SENT));
-                int messageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TYPE));
-                String messageStatus = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.STATUS));
-                String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_IMAGE_PATH));
-                String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LONGITUDE));
-                String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_LATITUDE));
-                String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
-                String recordingPath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECORDING_PATH));
-                String star = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_STAR));
-                String senderName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_NAME));
-                String filePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_FILE_PATH));
-                message.setMessageID(id);
-                message.setMessage(messageContent);
-                message.setConversationID(conversationID);
-                message.setRecipient(recipient);
-                message.setSender(messageSender);
-                message.setMessageType(messageType);
-                message.setMessageTime(messageTimeSent);
-                message.setReadAt(messageTimeDelivered);
-                message.setMessageStatus(messageStatus);
-                message.setImagePath(imagePath);
-                message.setLongitude(longitude);
-                message.setLatitude(latitude);
-                message.setLocationAddress(address);
-                message.setRecordingPath(recordingPath);
-                message.setFilePath(filePath);
-                message.setSenderName(senderName);
-                if (star != null)
-                    message.setStar(star.equals("1"));
-                message.setMessageID(id);
-            }
-            cursor.close();
-            return message;
-        } else
-            return null;
-    }
 
-    public void UpdateMessageMetaData(String messageID, String messageStatus, String readAt) {
+    public void updateMessageMetaData(String messageID, String messageStatus, String readAt) {
 
         if (db != null) {
             ContentValues contentValues = new ContentValues();
@@ -773,21 +747,7 @@ public class DBActive {
         }
     }
 
-    public void UpdateConversationToken(String conversationID, String token) {
-        if (db != null) {
-            ContentValues conversationValues = new ContentValues();
-            conversationValues.put(DataBaseContract.User.TOKEN, token);
-            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
-            String[] selectionArgs = {conversationID};
-            long newConversationRowId = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, conversationValues, selection, selectionArgs);
-            if (newConversationRowId != 1)
-                Log.e(DataBaseError, "updating conversation recipient token failed - updated to many rows");
-        }
-    }
-
-
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public boolean CheckIfExistsInDataBase(Message message) {
+    public boolean checkIfExistsInDataBase(Message message) {
         if (db != null) {
             String[] projections = {
                     BaseColumns._ID,
@@ -815,92 +775,65 @@ public class DBActive {
         return false;
     }
 
-    public void PrintConversation(String conversationID) {
-        if (db != null) {
-            String[] projection = {
-                    BaseColumns._ID,
-                    DataBaseContract.Messages.MESSAGE_ID,
-                    DataBaseContract.Conversations.CONVERSATION_ID,
-                    DataBaseContract.Messages.CONTENT,
-                    DataBaseContract.Messages.RECIPIENT,
-                    DataBaseContract.Messages.SENDER,
-                    DataBaseContract.Messages.TIME_DELIVERED,
-                    DataBaseContract.Messages.TIME_SENT,
-                    DataBaseContract.Messages.TYPE,
-                    DataBaseContract.Messages.STATUS
-            };
-            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
-            String[] selectionArgs = {conversationID};
-            Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projection, selection, selectionArgs, null, null, null);
-            List<String> MessagesIDs = new ArrayList<>();
-            List<String> MessagesContent = new ArrayList<>();
-            List<String> MessagesRecipient = new ArrayList<>();
-            List<String> MessagesSender = new ArrayList<>();
-            List<String> MessageTimeDelivered = new ArrayList<>();
-            List<String> MessagesTimeSent = new ArrayList<>();
-            List<String> MessagesTypes = new ArrayList<>();
-            List<String> MessagesStatus = new ArrayList<>();
-
-            while (cursor.moveToNext()) {
-                String messageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
-                MessagesIDs.add(messageID);
-                String messageContent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.CONTENT));
-                MessagesContent.add(messageContent);
-                String messagesRecipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.RECIPIENT));
-                MessagesRecipient.add(messagesRecipient);
-                String messagesSender = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.SENDER));
-                MessagesSender.add(messagesSender);
-                String messageTimeDelivered = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_DELIVERED));
-                MessageTimeDelivered.add(messageTimeDelivered);
-                String messageTimeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_SENT));
-                MessagesTimeSent.add(messageTimeSent);
-                String messagesType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TYPE));
-                MessagesTypes.add(messagesType);
-                String messagesStatus = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.STATUS));
-                MessagesStatus.add(messagesStatus);
-            }
-            cursor.close();
-
-            System.out.println("the messages: " + MessagesContent);
-            System.out.println("messages IDs: " + MessagesIDs);
-            System.out.println(MessagesRecipient);
-            System.out.println(MessagesSender);
-            System.out.println(MessageTimeDelivered);
-            System.out.println(MessagesTimeSent);
-            System.out.println(MessagesTypes);
-            System.out.println(MessagesStatus);
-        }
-    }
-
-    public boolean BlockUser(String userUID)
+    public boolean blockConversation(String conversationID)
     {
         if(db!=null)
         {
-            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
-            String[] selectionArgs = {userUID};
+            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
+            String[] selectionArgs = {conversationID};
             ContentValues values = new ContentValues();
-            boolean blocked = false;
-            if(isBlocked(userUID))
+            boolean blocked;
+            if ((blocked = isConversationBlocked(conversationID)))
             {
-                //unblocks the user
-                values.put(DataBaseContract.User.BLOCKED,"");
+                values.put(DataBaseContract.Conversations.BLOCKED,"false");
             }
             else
             {
-                //blocks the user
-                values.put(DataBaseContract.User.BLOCKED,"blocked");
-                blocked = true;
+                values.put(DataBaseContract.Conversations.BLOCKED,"true");
             }
-            db.update(DataBaseContract.User.USER_TABLE,values,selection,selectionArgs);
+            db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE,values,selection,selectionArgs);
             return blocked;
         }
         return false;
     }
 
-    public boolean isBlocked(String userUID)
+    public boolean isConversationBlocked(String conversationID)
     {
-        if(db!=null)
-        {
+        String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
+        String[] selectionArgs = {conversationID};
+        String[] projections = {
+                DataBaseContract.Conversations.BLOCKED
+        };
+        Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+        cursor.moveToNext();
+        String blocked = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.BLOCKED));
+        cursor.close();
+        return blocked.equals("true");
+    }
+
+
+    public boolean blockUser(String userUID) {
+        if (db != null) {
+            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
+            String[] selectionArgs = {userUID};
+            ContentValues values = new ContentValues();
+            boolean blocked = false;
+            if (isBlocked(userUID)) {
+                //unblocks the user
+                values.put(DataBaseContract.User.BLOCKED, "");
+            } else {
+                //blocks the user
+                values.put(DataBaseContract.User.BLOCKED, "blocked");
+                blocked = true;
+            }
+            db.update(DataBaseContract.User.USER_TABLE, values, selection, selectionArgs);
+            return blocked;
+        }
+        return false;
+    }
+
+    public boolean isBlocked(String userUID) {
+        if (db != null) {
             String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {userUID};
             String[] projections = {
@@ -909,14 +842,12 @@ public class DBActive {
                     DataBaseContract.User.USER_UID
             };
             Cursor cursor = db.query(DataBaseContract.User.USER_TABLE, projections, selection, selectionArgs, null, null, null);
-            while (cursor.moveToNext())
-            {
+            while (cursor.moveToNext()) {
                 String blocked = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.BLOCKED));
                 String uid = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID));
-                if(uid.equals(userUID))
-                {
+                if (uid.equals(userUID)) {
                     cursor.close();
-                    if(blocked == null)
+                    if (blocked == null)
                         return false;
                     return blocked.equals("blocked");
                 }
@@ -926,49 +857,40 @@ public class DBActive {
         return false;
     }
 
-    public boolean MuteUser(String conversationID)
-    {
-        if(db!=null)
-        {
+    public boolean MuteUser(String conversationID) {
+        if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
             ContentValues values = new ContentValues();
             boolean muted = false;
-            if(isMuted(conversationID))
-            {
+            if (isMuted(conversationID)) {
                 //unMutes the user
-                values.put(DataBaseContract.Conversations.MUTED,"");
-            }
-            else
-            {
+                values.put(DataBaseContract.Conversations.MUTED, "");
+            } else {
                 //mutes the user
-                values.put(DataBaseContract.Conversations.MUTED,"muted");
+                values.put(DataBaseContract.Conversations.MUTED, "muted");
                 muted = true;
             }
-            db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE,values,selection,selectionArgs);
+            db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
             return muted;
         }
         return false;
     }
 
-    public boolean isMuted(String conversationID)
-    {
-        if(db!=null)
-        {
+    public boolean isMuted(String conversationID) {
+        if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
             String[] projections = {
-                   DataBaseContract.Conversations._ID,
+                    DataBaseContract.Conversations._ID,
                     DataBaseContract.Conversations.CONVERSATION_ID,
                     DataBaseContract.Conversations.MUTED
             };
             Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
-            while (cursor.moveToNext())
-            {
+            while (cursor.moveToNext()) {
                 String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
                 String uid = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
-                if(uid.equals(conversationID))
-                {
+                if (uid.equals(conversationID)) {
                     cursor.close();
                     return muted.equals("muted");
                 }
@@ -978,25 +900,4 @@ public class DBActive {
         return false;
     }
 
-    // if (db == null) {
-
-            /*DataBase dbHelper = new DataBase(requireContext());
-            ExecutorService executorService = Executors.newSingleThreadExecutor();
-            Callable<SQLiteDatabase>callable = new Callable<SQLiteDatabase>() {
-                @Override
-                public SQLiteDatabase call() throws Exception {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
-                    return db;
-                }
-            };
-            Future<SQLiteDatabase> future = executorService.submit(callable);
-            try {
-                db = future.get();
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
-            }
-            executorService.shutdown();*/
-
-    //}
 }

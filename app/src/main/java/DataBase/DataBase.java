@@ -28,6 +28,7 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Conversations.IMAGE_PATH + " TEXT," +
                     DataBaseContract.Conversations.USER_UID + " TEXT," +
                     DataBaseContract.User.TOKEN + " TEXT," +
+                    DataBaseContract.Conversations.GROUP_NAME + " TEXT," +
                     DataBaseContract.Conversations.CONVERSATION_INDEX + "TEXT)";
 
     private static final String SQL_DELETE_CONVERSATIONS_TABLE = "DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE;
@@ -41,6 +42,7 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Messages.RECIPIENT + " TEXT," +
                     DataBaseContract.Messages.SENDER + " TEXT," +
                     DataBaseContract.Messages.TIME_DELIVERED + " TEXT," +
+                    DataBaseContract.Conversations.GROUP_NAME + " TEXT," +
                     DataBaseContract.Messages.TIME_SENT + " TEXT," +
                     DataBaseContract.Messages.TYPE + " TEXT," +
                     DataBaseContract.Messages.STATUS + " TEXT," +
@@ -75,10 +77,12 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.User.TOKEN + " TEXT)";
 
 
-    private static final String SQL_CREATE_BLOCKED_USERS_TABLE =
-            "CREATE TABLE IF NOT EXISTS " + DataBaseContract.BlockedUsers.BLOCKED_USERS_TABLE + " (" +
-                    DataBaseContract.BlockedUsers._ID + " INTEGER PRIMARY KEY," +
-                    DataBaseContract.BlockedUsers.USER_UID + " TEXT)";
+    private static final String SQL_CREATE_GROUP_TABLE =
+            "CREATE TABLE IF NOT EXISTS " + DataBaseContract.Group.GroupTable + " (" +
+                    DataBaseContract.Group._ID + " INTEGER PRIMARY KEY," +
+                    DataBaseContract.Conversations.CONVERSATION_ID + " TEXT," +
+                    DataBaseContract.User.USER_UID + " TEXT)";
+
 
     public static final int DATABASE_VERSION = 1;
     public static final String DATABASE_NAME = "CHAT_DATABASE.db";
@@ -107,7 +111,7 @@ public class DataBase extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_CONVERSATIONS_TABLE);
         db.execSQL(SQL_CREATE_MESSAGES_TABLE);
         db.execSQL(SQL_CREATE_USER_TABLE);
-        db.execSQL(SQL_CREATE_BLOCKED_USERS_TABLE);
+        db.execSQL(SQL_CREATE_GROUP_TABLE);
     }
 
     @Override

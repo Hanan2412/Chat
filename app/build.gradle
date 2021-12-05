@@ -55,7 +55,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-basement:17.6.0'
     implementation 'com.google.firebase:firebase-messaging-directboot:22.0.0'
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-
+    implementation 'com.dropbox.core:dropbox-core-sdk:4.0.1'
     implementation 'androidx.emoji:emoji:1.1.0'
     implementation 'androidx.emoji:emoji-appcompat:1.1.0'
     implementation 'androidx.emoji:emoji-bundled:1.1.0'
@@ -66,5 +66,4 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-
 }

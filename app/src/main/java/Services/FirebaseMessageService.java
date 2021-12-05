@@ -57,8 +57,10 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 
 import javax.net.ssl.HttpsURLConnection;
@@ -106,7 +108,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
         try {
             DisableActiveNotification();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -208,21 +210,18 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     }
                 }
                 case "status": {
-                    SharedPreferences sharedPreferences = getSharedPreferences("Status",MODE_PRIVATE);
+                    SharedPreferences sharedPreferences = getSharedPreferences("Status", MODE_PRIVATE);
                     String currentStatus = sharedPreferences.getString("status", MainActivity.OFFLINE_S);
                     String token = data.get("senderToken");
-                    SendStatusMessage(currentStatus,token,conversationID);
+                    SendStatusMessage(currentStatus, token, conversationID);
                     break;
                 }
-                case "statusResponse":
-                {
-                    if(isOpenConversation(conversationID))
-                    {
+                case "statusResponse": {
+                    if (isOpenConversation(conversationID)) {
                         String status = data.get("messageStatus");
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("userStatus").putExtra("status",status));
-                    }
-                    else
-                        Log.d("statusResponse","conversation isn't open - no need to display user status");
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("userStatus").putExtra("status", status));
+                    } else
+                        Log.d("statusResponse", "conversation isn't open - no need to display user status");
                     break;
                 }
                 default:
@@ -474,26 +473,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
     private void UpdateMessageMetaDataInDataBase(String messageID, String messageStatus, String readAt) {
-        dbActive.UpdateMessageMetaData(messageID, messageStatus, readAt);
+        dbActive.updateMessageMetaData(messageID, messageStatus, readAt);
     }
 
-
-    /**
-     * saves the user token that is being sent with each message and updates it in the database per conversation
-     *
-     * @param conversationID - the conversation identifier
-     * @param token          - the token of the user who sent the message
-     */
-    private void UpdateConversationToken(String conversationID, String token) {
-        dbActive.UpdateConversationToken(conversationID, token);
-
-    }
-
-    /**
-     * Handles the user sent message
-     *
-     * @param remoteMessage - message object that is received from fcm
-     */
     private void HandleUserMessage(RemoteMessage remoteMessage) {
         Message message = new Message();
         String conversationID = remoteMessage.getData().get("conversationID");
@@ -501,7 +483,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         if (messageID != null) {
             String status = remoteMessage.getData().get("messageStatus");
             if (!status.equals(ConversationActivity.MESSAGE_SENT)) {//message status update
-                dbActive.UpdateMessageStatus(messageID, status);
+                dbActive.updateMessageStatus(messageID, status);
                 if (isOpenConversation(conversationID)) {
                     Intent intent = new Intent("messageStatus");
                     intent.putExtra("status", status);
@@ -509,13 +491,31 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
                 }
             } else {//new message
+                List<String> list = new ArrayList<>();
+                Set<String> set = remoteMessage.getData().keySet();
+                for (String s : set) {
+                    if (s.equals("recipients")) {
+                        String q = remoteMessage.getData().get(s);
+                        String q1 = q.replaceAll("\"", "");
+                        String q2 = q1.replace("[", "");
+                        q2 = q2.replace("]", "");
+                        StringBuilder builder = new StringBuilder();
+                        for (int k = 0; k < q2.length(); k++) {
+                            if (q2.charAt(k) != ',')
+                                builder.append(q2.charAt(k));
+                            else {
+                                list.add(builder.toString());
+                                builder.delete(0, builder.length());
+                            }
+                        }
+                    }
+                }
                 String content = remoteMessage.getData().get("message");
                 String senderUID = remoteMessage.getData().get("sender");
                 String senderName = remoteMessage.getData().get("senderName");
                 String sendingTime = remoteMessage.getData().get("sendingTime");
                 String quote = remoteMessage.getData().get("quoteMessage");
                 String quoteMessageID = remoteMessage.getData().get("quotedMessageID");
-                String recipientName = remoteMessage.getData().get("recipientName");
                 String latitude = remoteMessage.getData().get("latitude");
                 String longitude = remoteMessage.getData().get("longitude");
                 String address = remoteMessage.getData().get("locationAddress");
@@ -530,6 +530,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 String contactName = remoteMessage.getData().get("contactName");
                 String contactPhone = remoteMessage.getData().get("contactPhone");
                 String filePath = remoteMessage.getData().get("filePath");
+                String group = remoteMessage.getData().get("groupName");
+                message.setGroupName(group);
                 message.setContactPhone(contactPhone);
                 message.setContactName(contactName);
                 message.setConversationID(conversationID);
@@ -542,8 +544,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 message.setQuotedMessageID(quoteMessageID);
                 message.setQuoteMessage(quote);
                 message.setMessageType(type);
-                message.setRecipient(currentUser);
-                message.setRecipientName(recipientName);
+                message.setRecipients(list);
                 message.setArrivingTime(System.currentTimeMillis() + "");
                 message.setLatitude(latitude);
                 message.setLongitude(longitude);
@@ -576,8 +577,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
                         String path = file.getAbsolutePath();
                         message.setRecordingPath(path);
-                        dbActive.UpdateMessage(message);
-                        Log.d("downloaded voice","voice message was downloaded");
+                        dbActive.updateMessage(message);
+                        Log.d("downloaded voice", "voice message was downloaded");
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
@@ -612,10 +613,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         String path = manager.saveImage(bitmap, FirebaseMessageService.this);
                         if (path != null) {
                             message.setImagePath(path);
-                            dbActive.UpdateMessage(message);
-                            Log.d("download image","image message was downloaded");
-                            if(isOpenConversation(message.getConversationID()))
-                                LocalBroadcastManager.getInstance(FirebaseMessageService.this).sendBroadcast(new Intent("DownloadedImage").putExtra("messageID",message.getMessageID()));
+                            dbActive.updateMessage(message);
+                            Log.d("download image", "image message was downloaded");
+                            if (isOpenConversation(message.getConversationID()))
+                                LocalBroadcastManager.getInstance(FirebaseMessageService.this).sendBroadcast(new Intent("DownloadedImage").putExtra("messageID", message.getMessageID()));
                         }
                     } else
                         Log.e("error picture download", "response code is not 200: " + responseCode);
@@ -643,7 +644,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         Log.e("saved video", "saved video path is null");
                     else {
                         message.setRecordingPath(path);
-                        dbActive.UpdateMessage(message);
+                        dbActive.updateMessage(message);
                     }
                 }
             }).addOnFailureListener(new OnFailureListener() {
@@ -664,55 +665,37 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         MessageSender sender = MessageSender.getInstance();
         //String token = getRecipientToken(message.getSender());
         sender.SendMessage(message, message.getSenderToken());
-        dbActive.UpdateMessageStatus(message.getMessageID(),ConversationActivity.MESSAGE_DELIVERED);
+        dbActive.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
     }
 
-    private void markAsSeen(Message message)
-    {
+    private void markAsSeen(Message message) {
         message.setMessageStatus(MESSAGE_SEEN);
         MessageSender sender = MessageSender.getInstance();
         sender.SendMessage(message, message.getSenderToken());
-        dbActive.UpdateMessageStatus(message.getMessageID(),MESSAGE_SEEN);
+        dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_SEEN);
     }
 
-    private void SendStatusMessage(String status,String token,String conversationID)
-    {
+    private void SendStatusMessage(String status, String token, String conversationID) {
         Message message = new Message();
         message.setConversationID(conversationID);
         message.setMessageKind("statusResponse");
         message.setMessageStatus(status);
         MessageSender sender = MessageSender.getInstance();
-        sender.SendMessage(message,token);
+        sender.SendMessage(message, token);
     }
 
-    /**
-     * saves the message received to the database
-     *
-     * @param message - the message that was sent by the user
-     */
     private void SaveToDataBase(Message message) {
-       // if (!dbActive.CheckIfExist(message.getMessageID(), false))
-        dbActive.SaveMessage(message);
+        dbActive.saveMessage(message);
     }
 
-    /**
-     * Determines whether the conversation is currently active
-     *
-     * @param conversationID - the conversation id of the conversation the message that was sent belongs to
-     * @return true if the conversation is open, false otherwise
-     */
+
     private boolean isOpenConversation(String conversationID) {
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
         return liveConversation.equals(conversationID);
     }
 
-    /**
-     * sends the message to the correct activity or fragment. it also saves the message if it's destination is not an active conversation
-     *
-     * @param conversationID - the conversation identifier
-     * @param message        - the message being sent
-     */
+
     private void SendBroadcast(String conversationID, Message message) {
 
         //if this is the current on going conversation
@@ -728,11 +711,12 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         }//is the conversation exist at all
         else if (isConversationExists(conversationID)) {
             if (isNotificationsAllowed())
-                if (!isMuted(message.getConversationID()))
-                    if (!isBlocked(message.getSender()))
-                        createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getRecipient()
-                                , message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                                message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+                if (!isConversationBlocked(message.getConversationID()))
+                    if (!isMuted(message.getConversationID()))
+                        if (!isBlocked(message.getSender()))
+                            createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
+                                    , message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                                    message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
             markAsDelivered(message);
             SaveToDataBase(message);
             Intent updateConversationIntent = new Intent("Update Conversation");
@@ -743,7 +727,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             //SaveToDataBase(message);
         } else {//brand new conversation
             if (isNotificationsAllowed())
-                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getRecipient(),
+                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName(),
                         message.getMessageType(), message.getLongitude(), message.getLatitude(),
                         message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
             CreateNewConversation(message);
@@ -756,13 +740,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     }
 
-    /**
-     * creates a new conversation that wasn't initiated by the current user and saves the sending party to the database
-     *
-     * @param message - the first message in a new conversation
-     */
     private void CreateNewConversation(Message message) {
-        dbActive.CreateNewConversation(message);
+        dbActive.createNewConversation(message);
         SaveToDataBase(message);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference reference = database.getReference("users/" + message.getSender());
@@ -780,7 +759,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     user.setLastName((String) userMap.get("lastName"));
                     user.setUserUID(snapshot.getKey());
                     reference.removeEventListener(this);
-                    dbActive.InsertUser(user);
+                    dbActive.insertUser(user);
                     Log.d("fcm user save", "saved new user from new conversation to database");
                 }
 
@@ -792,23 +771,23 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             }
         });
 
-            DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
-            ValueEventListener tokenListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String token = (String) snapshot.getValue();
-                    if (token != null) {
-                        dbActive.UpdateUserToken(message.getSender(), token);
-                        tokenReference.removeEventListener(this);
-                    } else Log.e("NULL", "Recipient Token from fb is null");
-                }
+        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
+        ValueEventListener tokenListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String token = (String) snapshot.getValue();
+                if (token != null) {
+                    dbActive.updateUserToken(message.getSender(), token);
+                    tokenReference.removeEventListener(this);
+                } else Log.e("NULL", "Recipient Token from fb is null");
+            }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Log.e("FIREBASE_ERROR","cancelled recipient token retrieval");
-                }
-            };
-            tokenReference.addValueEventListener(tokenListener);
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
+            }
+        };
+        tokenReference.addValueEventListener(tokenListener);
 
     }
 
@@ -836,7 +815,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return dbActive.isMuted(conversationID);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isBlocked(String uid) {
         return dbActive.isBlocked(uid);
+    }
+
+    private boolean isConversationBlocked(String conversationID)
+    {
+        return dbActive.isConversationBlocked(conversationID);
     }
 }

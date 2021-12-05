@@ -5,6 +5,7 @@ import android.util.Log;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 //Chat2 Object - a more up to date object to save a conversation at
 
 public class Conversation implements Serializable {
@@ -24,11 +25,25 @@ public class Conversation implements Serializable {
     private String recipientPhoneNumber;
     private boolean blocked = false;
     private String recipientToken;
+    private List<String> recipients;
+    private List<String>tokens;
+    private String lastMessageRecipient;
+    private String groupName;
 
     public Conversation(String conversationID)
     {
         this.ConversationID = conversationID;
         messages = new ArrayList<>();
+        tokens = new ArrayList<>();
+        recipients = new ArrayList<>();
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 
     public String getConversationID() {
@@ -90,6 +105,38 @@ public class Conversation implements Serializable {
         }
     }
 
+    public void addRecipient(String uid){
+        recipients.add(uid);
+    }
+
+    public void addToken(String token)
+    {
+        tokens.add(token);
+    }
+    public List<String> getRecipients() {
+        return recipients;
+    }
+
+    public void setRecipients(List<String> recipients) {
+        this.recipients = recipients;
+    }
+
+    public List<String> getTokens() {
+        return tokens;
+    }
+
+    public void setTokens(List<String> tokens) {
+        this.tokens = tokens;
+    }
+
+    public String getLastMessageRecipient() {
+        return lastMessageRecipient;
+    }
+
+    public void setLastMessageRecipient(String lastMessageRecipient) {
+        this.lastMessageRecipient = lastMessageRecipient;
+    }
+
     public String getRecipientImagePath() {
         return recipientImagePath;
     }
@@ -118,7 +165,7 @@ public class Conversation implements Serializable {
 
     public void setLastMessage(Message lastMessage)
     {
-        recipient = lastMessage.getRecipient();
+        lastMessageRecipient = lastMessage.getSender();
         this.lastMessage = lastMessage.getMessage();
         lastMessageTime = lastMessage.getMessageTime();
     }

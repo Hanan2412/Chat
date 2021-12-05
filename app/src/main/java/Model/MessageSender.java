@@ -32,14 +32,14 @@ public class MessageSender {
         api = RetrofitClient.getRetrofitClient("https://fcm.googleapis.com/").create(RetrofitApi.class);
     }
 
-    public synchronized void SendMessage(Message message,String... recipientsTokens)
+    public void SendMessage(Message message,String... recipientsTokens)
     {
         for (String token : recipientsTokens) {
             if(token!=null)
                 Log.d("sending to token",token);
             else
                 Log.e("null","message sender - token is null");
-            ObjectToSend toSend = new ObjectToSend(message, token);
+            ObjectToSend toSend = new ObjectToSend(message, message.getSenderToken());//for debug/testing reasons, change to token for regular operations
             api.sendMessage(toSend).enqueue(new Callback<TryMyResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<TryMyResponse> call, @NonNull Response<TryMyResponse> response) {
@@ -49,12 +49,15 @@ public class MessageSender {
                         assert response.body() != null;
                         if (response.body().success != 1) {
                             Log.e(RETROFIT_ERROR, "Couldn't send the message");
+                            Log.e(RETROFIT_ERROR,"Number of messages that could not be processed: " + response.body().failure);
+                            Log.e(RETROFIT_ERROR,"Array of objects representing the status of the messages processed: " + response.body().results.toString());
                         }
                     }
                 }
                 @Override
                 public void onFailure(@NonNull Call<TryMyResponse> call, @NonNull Throwable t) {
-                    Log.e(RETROFIT_ERROR, "retrofit failed!!!");
+                    Log.e(RETROFIT_ERROR, "retrofit failed!!!" + t.getMessage());
+                    t.printStackTrace();
                 }
             });
         }

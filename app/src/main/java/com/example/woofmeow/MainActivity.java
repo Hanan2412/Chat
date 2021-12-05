@@ -11,13 +11,12 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -33,32 +32,34 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.android.Auth;
+import com.dropbox.core.oauth.DbxCredential;
+import com.dropbox.core.v2.DbxClientV2;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 import Consts.Tabs;
 import Fragments.NewChatFragment2;
 import Fragments.TabFragment;
 import NormalObjects.*;
+
 import Services.FirebaseMessageService;
+
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
 
 //this app is to be published
@@ -80,21 +81,20 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     public static final String STANDBY_S = "standby";
     public static final String OFFLINE_S = "offline";
     private String currentStatus = ONLINE_S;
-
     private boolean search = false;
 
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
+
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(currentUser == null)
-        {
+        if (currentUser == null) {
             SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
-            String uid = sharedPreferences.getString("UID","ERROR: NO UID");
-            if(!uid.equals("ERROR: NO UID"))
+            String uid = sharedPreferences.getString("UID", "ERROR: NO UID");
+            if (!uid.equals("ERROR: NO UID"))
                 currentUser = uid;
         }
         drawerLayout = findViewById(R.id.drawerLayout);
@@ -111,29 +111,25 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         // actionBar.setDisplayShowTitleEnabled(false);
         View headerView = navigationView.getHeaderView(0);
         floatingActionButton = findViewById(R.id.floatingActionButton);
-
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                if (item.getItemId() == R.id.profile)
-                {
-                    Intent intent = new Intent(MainActivity.this,  CurrentUserProfileActivity.class);
+                if (item.getItemId() == R.id.profile) {
+                    Intent intent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
                     intent.putExtra("currentUser", user);
                     startActivity(intent);
                     drawerLayout.closeDrawer(GravityCompat.START);
-                }
-                else if (item.getItemId() == R.id.disconnect)
-                {
+                } else if (item.getItemId() == R.id.disconnect) {
                     FirebaseMessaging.getInstance().deleteToken();
                     FirebaseAuth.getInstance().signOut();
                     Intent intent = new Intent(MainActivity.this, FirstPageActivity.class);
                     startActivity(intent);
                     finish();
-                }
-                else if (item.getItemId() == R.id.settings)
-                {
+                } else if (item.getItemId() == R.id.settings) {
                     startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
                     drawerLayout.closeDrawer(GravityCompat.START);
+                } else if (item.getItemId() == R.id.backUp) {
+                    UploadFileToDropbox();
                 }
                 return false;
             }
@@ -145,17 +141,15 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 switch (tab) {
 
                     case chat:
-                        NewChatFragment2 chatFragment2 = NewChatFragment2.newInstance();
-                        FragmentManager fragmentManager = getSupportFragmentManager();
-                        FragmentTransaction transaction = fragmentManager.beginTransaction();
-                        transaction.add(R.id.drawerLayout, chatFragment2, "tag");
-                        transaction.addToBackStack(null);
-                        transaction.commit();
+                        Intent singleChat = new Intent(MainActivity.this, NewGroupChat.class);
+                        startActivity(singleChat);
 
                         break;
-                    case groups:
-                    {
+                    case somethingElse: {
 
+                        Intent intent = new Intent(MainActivity.this, NewGroupChat.class);
+                        startActivity(intent);
+                        break;
                     }
                     default:
                 }
@@ -180,8 +174,8 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     case chat:
                         floatingActionButton.setImageResource(R.drawable.ic_baseline_message_24);
                         break;
-                    case groups:
-                    {
+                    case somethingElse: {
+                        floatingActionButton.setImageResource(R.drawable.ic_baseline_group_24);
                         break;
                     }
                 }
@@ -195,14 +189,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
         profileImage = headerView.findViewById(R.id.headerImage);
         shapeableImageView = findViewById(R.id.toolbarProfileImage);
-        if(getIntent().getBooleanExtra("newUser",false))
+        if (getIntent().getBooleanExtra("newUser", false))
             user = (User) getIntent().getSerializableExtra("user");
         LoadCurrentUserImage();
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent profileIntent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
-                profileIntent.putExtra("currentUser",user);
+                profileIntent.putExtra("currentUser", user);
                 startActivity(profileIntent);
                 //startActivity(new Intent(MainActivity.this, CurrentUserProfileActivity.class).putExtra("currentUser",user));
             }
@@ -222,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             }
         }
         ConnectedToInternet();
+        //DropBox();
     }
 
 
@@ -272,6 +267,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     }
 
+
+    private void DropBox() {
+        ArrayList<String> scopes = new ArrayList<>();
+        scopes.add("account_info.read");
+        scopes.add("files.content.write");
+        Auth.startOAuth2PKCE(this, "lc09zc1m7qr0ubu", DbxRequestConfig.newBuilder("try").build(), scopes);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -289,10 +292,28 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             tabLayout.setTabTextColors(ColorStateList.valueOf(getResources().getColor(android.R.color.darker_gray, getTheme())));
         }
         tabLayout.setSelectedTabIndicatorColor(getResources().getColor(android.R.color.white, getTheme()));
+        /* DbxCredential credentials =  Auth.getDbxCredential();
+        if(credentials!=null) {
+            String clientIdentifier = "try";
+            DbxRequestConfig config = new DbxRequestConfig(clientIdentifier);
+            DbxClientV2 dbxClientV2 = new DbxClientV2(config, credentials);
+            System.out.println("credentials" + credentials.toString());
+            System.out.println("dbxClientV2" + dbxClientV2.toString());
+            //should save to memory
 
-
+        }*/
     }
 
+
+    private void UploadFileToDropbox() {
+        String clientIdentifier = "try";
+        DbxRequestConfig config = new DbxRequestConfig(clientIdentifier);
+        DbxCredential credentials = Auth.getDbxCredential();
+        if (credentials != null) {
+            DbxClientV2 dbxClientV2 = new DbxClientV2(config, credentials);
+
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -333,27 +354,26 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
     @Override
-    public void onLoadUserFromMemory(User user){
-        if(user!=null) {
+    public void onLoadUserFromMemory(User user) {
+        if (user != null) {
             this.user = user;
             LoadCurrentUserPicture();
         }
     }
 
-    private void LoadCurrentUserPicture()
-    {
+    private void LoadCurrentUserPicture() {
         Picasso.get().load(user.getPictureLink()).into(new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 FileManager fileManager = FileManager.getInstance();
-                fileManager.SaveUserImage(bitmap,currentUser,MainActivity.this);
+                fileManager.SaveUserImage(bitmap, currentUser, MainActivity.this);
                 profileImage.setImageBitmap(bitmap);//loads user image to drawer header
                 shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
             }
 
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity" );
+                Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity");
             }
 
             @Override
@@ -373,14 +393,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         FileManager fileManager = FileManager.getInstance();
-                        fileManager.SaveUserImage(bitmap,currentUser,MainActivity.this);
+                        fileManager.SaveUserImage(bitmap, currentUser, MainActivity.this);
                         profileImage.setImageBitmap(bitmap);//loads user image to drawer header
                         shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
                     }
 
                     @Override
                     public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity" );
+                        Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity");
                     }
 
                     @Override
@@ -398,71 +418,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }
     }
 
-    private void LoadCurrentUserImage()
-    {
+    private void LoadCurrentUserImage() {
         FileManager fileManager = FileManager.getInstance();
-        Bitmap bitmap = fileManager.getSavedImage(this,currentUser + "_Image");
-        if(bitmap != null) {
+        Bitmap bitmap = fileManager.getSavedImage(this, currentUser + "_Image");
+        if (bitmap != null) {
             profileImage.setImageBitmap(bitmap);
             shapeableImageView.setImageBitmap(bitmap);
         }
-    }
-
-    private void SaveCurrentUserImage()
-    {
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + currentUser + "/pictureLink");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String pictureLink = snapshot.getValue(String.class);
-                Picasso.get().load(pictureLink).into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-
-                        profileImage.setImageBitmap(bitmap);//loads user image to drawer header
-                        shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
-
-                        ContextWrapper contextWrapper = new ContextWrapper(MainActivity.this.getApplicationContext());
-                        File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                        if (!directory.exists())
-                            if (!directory.mkdir()) {
-                                Log.e("error", "couldn't create a directory in conversationAdapter2");
-                            }
-                        File Path = new File(directory, currentUser + "_Image");
-                        try {
-                            FileOutputStream fileOutputStream = new FileOutputStream(Path);
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                            fileOutputStream.close();
-                            SharedPreferences savedImagesPreferences = getSharedPreferences("SavedImages", Context.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = savedImagesPreferences.edit();
-                            editor.putBoolean(currentUser,true);
-                            editor.apply();
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        Log.e("Error","couldn't load image");
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                    }
-                });
-                reference.removeEventListener(this);
-
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                error.toException().printStackTrace();
-            }
-        });
     }
 
     @Override
@@ -478,21 +440,17 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     @Override
     public void onNewMessage(boolean group) {
-        if(!group)
-        {
+        if (!group) {
             TabLayout.Tab tab = tabLayout.getTabAt(viewPager.getCurrentItem());
-            if(tab!=null)
-            {
-                String tabTitle =  pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
+            if (tab != null) {
+                String tabTitle = pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
                 String[] split = tabTitle.split(" ");
                 StringBuilder builder = new StringBuilder();
-                if(split.length > 1) {
+                if (split.length > 1) {
                     int messageCount = Integer.parseInt(split[0]);
                     builder.append(messageCount);
 
-                }
-                else
-                {
+                } else {
                     builder.append("1");
                 }
                 builder.append(" ");
@@ -530,8 +488,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         List<Fragment> fragmentList = getSupportFragmentManager().getFragments();
         for (Fragment fragment : fragmentList) {
             if (!search)
-                if (fragment instanceof TabFragment)
-                {
+                if (fragment instanceof TabFragment) {
                     fragment.setArguments(bundle);
                     search = true;
                 }
@@ -637,5 +594,4 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             connectivityManager.registerNetworkCallback(request, network2);
 
     }
-
 }

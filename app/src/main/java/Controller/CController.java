@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.example.woofmeow.ConversationGUI;
+import com.example.woofmeow.FoundUsers;
 import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.PreferencesUpdate;
 import com.example.woofmeow.ProfileGUI;
@@ -20,7 +21,7 @@ import Services.Notifications;
 
 
 //@SuppressWarnings("unchecked")
-public class CController implements IConversationController,IMainController, Server2.ServerData, IPreferenceInterface,INewUser {
+public class CController implements IConversationController,IMainController, Server2.ServerData, IPreferenceInterface,INewUser,INewChat {
 
     private ConversationGUI conversationGUI;
     private  MainGUI mainGUI;
@@ -31,7 +32,7 @@ public class CController implements IConversationController,IMainController, Ser
     private PreferencesUpdate preferencesUpdate;
     private UserCreationGUI userCreationGUI;
     private ArrayList<Conversation>waitingConversations = new ArrayList<>();
-
+    private FoundUsers newUser;
     private CController()
     {
         //singleton design pattern is implemented so each view won't go null when views are changed
@@ -93,6 +94,13 @@ public class CController implements IConversationController,IMainController, Ser
         server2.setServerData(this);
     }
 
+    public void setFoundUsers(FoundUsers IUser)
+    {
+        newUser = IUser;
+        server2 = Server2.getServer();
+        server2.setServerData(this);
+    }
+
     public void removeInterface(int interfaceToRemove)
     {
         switch (interfaceToRemove)
@@ -106,6 +114,8 @@ public class CController implements IConversationController,IMainController, Ser
             case 2:
                 notifications = null;
                 break;
+            case 6:
+                newUser = null;
         }
     }
 
@@ -268,6 +278,8 @@ public class CController implements IConversationController,IMainController, Ser
     public void onFoundUserQuery(User user) {
             if(mainGUI!=null)
                 mainGUI.onReceiveUsersQuery(user);
+            if(newUser!=null)
+                newUser.onUserFound(user);
     }
 
     @Override
@@ -283,5 +295,10 @@ public class CController implements IConversationController,IMainController, Ser
     @Override
     public void onNewUser(String name, String lastName, String nickname, Bitmap userImage,Context context) {
         server2.createNewUser(name,lastName,nickname,userImage,context);
+    }
+
+    @Override
+    public void onFindUser(String query,Context context) {
+        server2.SearchForUsers(query,context);
     }
 }

@@ -83,16 +83,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             conversations.add(position, conversation);
             notifyItemInserted(position);
             notifyItemRangeChanged(0, conversations.size());
-           /* int index = FindCorrectConversationIndex(conversation.getConversationID());
-            if (index == -1) {
-                conversations.add(position, conversation);
-                notifyItemInserted(position);
-                notifyItemRangeChanged(0, conversations.size());
-            } else {
-                conversations.remove(index);
-                conversations.add(0, conversation);
-                notifyItemMoved(index, 0);
-            }*/
         }
     }
     private void init()
@@ -125,7 +115,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         Conversation conversation = conversations.get(index);
         conversation.setLastMessageTime(message.getArrivingTime());
         conversation.setLastMessage(message.getMessage());
-        conversation.setRecipientName(message.getRecipientName());
+        conversation.setRecipientName(message.getGroupName());
         notifyItemChanged(index);
     }
 
@@ -188,12 +178,11 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         else
             holder.lastMessage.setText(conversation.getLastMessage());
         holder.lastMessageTime.setText(conversation.getLastMessageTime());
-        holder.recipientName.setText(conversation.getSenderName());
+        holder.recipientName.setText(conversation.getGroupName());
         if (conversation.isMuted())
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
             holder.conversationStatus.setVisibility(View.GONE);
-        holder.recipientName.setText(conversation.getRecipientName());
         Bitmap bitmap = fileManager.getSavedImage(holder.itemView.getContext().getApplicationContext(), conversation.getRecipient() + "_Image");
         if (bitmap!=null)
         {
@@ -325,7 +314,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
 
     public Conversation getConversation(int position) {
-        return conversations.get(position);
+        if(position>-1 && position < getItemCount())
+            return conversations.get(position);
+        else return null;
     }
 
 

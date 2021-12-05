@@ -1,5 +1,7 @@
 package NormalObjects;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import Consts.MessageAction;
 
@@ -7,7 +9,7 @@ public class Message implements Serializable {
 
     private String message;
     private String sender;
-    private String recipient;
+    //private String recipient;
     private String senderName;
     private String latitude;
     private String longitude;
@@ -29,13 +31,43 @@ public class Message implements Serializable {
     private long readAt=-1;
     private boolean star = false;
     private String starTime;
-    private String recipientName;
+    //private String recipientName;
     private MessageAction messageAction = MessageAction.new_message;
     private String filePath;
     private String editTime;
     private String senderToken;
     private String messageKind = "newMessage";
     private String contactName,contactPhone;
+    private List<String>recipients;
+    private List<String>recipientNames;
+    private String groupName;
+
+    public Message()
+    {
+        recipients = new ArrayList<>();
+        recipientNames = new ArrayList<>();
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setRecipients(List<String>recipients){this.recipients = recipients;}
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
+    public void addRecipient(String recipient){
+        recipients.add(recipient);
+    }
+
+    public String getRecipient(int i){
+        return recipients.get(i);
+    }
+
+    public List<String> getRecipients(){
+        return recipients;
+    }
 
     public String getContactName() {
         return contactName;
@@ -77,14 +109,14 @@ public class Message implements Serializable {
         this.sender = sender;
     }
 
-    public String getRecipient() {
+    /*public String getRecipient() {
         return recipient;
     }
 
     public void setRecipient(String recipient) {
         this.recipient = recipient;
     }
-
+*/
     public String getLatitude() {
         return latitude;
     }
@@ -255,13 +287,26 @@ public class Message implements Serializable {
         this.arrivingTime = arrivingTime;
     }
 
-    public String getRecipientName() {
+    public List<String>getRecipientNames()
+    {
+        return recipientNames;
+    }
+
+    public void addRecipientName(String name)
+    {
+        recipientNames.add(name);
+    }
+
+    public String getRecipientName(int i){
+        return recipientNames.get(i);
+    }
+    /*public String getRecipientName() {
         return recipientName;
     }
 
     public void setRecipientName(String recipientName) {
         this.recipientName = recipientName;
-    }
+    }*/
 
     public MessageAction getMessageAction() {
         return messageAction;
@@ -293,5 +338,45 @@ public class Message implements Serializable {
 
     public void setSenderToken(String senderToken) {
         this.senderToken = senderToken;
+    }
+
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "message='" + message + '\'' +
+                ", sender='" + sender + '\'' +
+                ", senderName='" + senderName + '\'' +
+                ", latitude='" + latitude + '\'' +
+                ", longitude='" + longitude + '\'' +
+                ", locationAddress='" + locationAddress + '\'' +
+                ", messageID='" + messageID + '\'' +
+                ", to='" + to + '\'' +
+                ", conversationID='" + conversationID + '\'' +
+                ", messageTime='" + messageTime + '\'' +
+                ", sendingTime='" + sendingTime + '\'' +
+                ", arrivingTime='" + arrivingTime + '\'' +
+                ", imagePath='" + imagePath + '\'' +
+                ", quoteMessage='" + quoteMessage + '\'' +
+                ", messageType=" + messageType +
+                ", hasBeenRead=" + hasBeenRead +
+                ", messageStatus='" + messageStatus + '\'' +
+                ", recordingPath='" + recordingPath + '\'' +
+                ", quotedMessagePosition=" + quotedMessagePosition +
+                ", quotedMessageID='" + quotedMessageID + '\'' +
+                ", readAt=" + readAt +
+                ", star=" + star +
+                ", starTime='" + starTime + '\'' +
+                ", messageAction=" + messageAction +
+                ", filePath='" + filePath + '\'' +
+                ", editTime='" + editTime + '\'' +
+                ", senderToken='" + senderToken + '\'' +
+                ", messageKind='" + messageKind + '\'' +
+                ", contactName='" + contactName + '\'' +
+                ", contactPhone='" + contactPhone + '\'' +
+                ", recipients=" + recipients +
+                ", recipientNames=" + recipientNames +
+                ", groupName='" + groupName + '\'' +
+                '}';
     }
 }

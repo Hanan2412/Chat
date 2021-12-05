@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -56,6 +58,8 @@
         <activity android:name=".PreferenceActivity"
           />
         <activity android:name=".CurrentUserProfileActivity"/>
+        <activity android:name=".NewGroupChat"/>
+        <activity android:name=".NewChat"/>
         <activity android:name=".ProfileActivity2"/>
         <activity android:name=".ConversationActivity"
             android:launchMode="standard"
@@ -63,7 +67,26 @@
             >
 
         </activity>
-        <activity android:name=".ProfileActivity"/>
+
+        <activity
+            android:name="com.dropbox.core.android.AuthActivity"
+            android:configChanges="orientation|keyboard"
+            android:launchMode="singleTask"
+            >
+            <intent-filter>
+
+                <!-- Change this to be db- followed by your app key -->
+                <data android:scheme="db-lc09zc1m7qr0ubu" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+
+
         <activity android:name="Try.TryMessageActivity"/>
         <receiver android:name="BroadcastReceivers.ReplyMessageBroadcast"/>
         <receiver android:name="BroadcastReceivers.AlarmReceiverBroadcast"/>

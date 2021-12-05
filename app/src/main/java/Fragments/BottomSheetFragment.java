@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.example.woofmeow.R;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import Consts.ButtonType;
 
 @SuppressWarnings("Convert2Lambda")
@@ -49,7 +51,49 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_layout, container, false);
-        TextView attachFile = view.findViewById(R.id.attachFile);
+        FloatingActionButton locationFab = view.findViewById(R.id.locationFab);
+        FloatingActionButton cameraFab = view.findViewById(R.id.cameraFab);
+        FloatingActionButton galleryFab = view.findViewById(R.id.galleryFab);
+        FloatingActionButton delayFab = view.findViewById(R.id.delayFab);
+        FloatingActionButton contactFab = view.findViewById(R.id.contactFab);
+        FloatingActionButton joke = view.findViewById(R.id.chuckBtn);
+        locationFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.location);
+            }
+        });
+        cameraFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.camera);
+            }
+        });
+        galleryFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.gallery);
+            }
+        });
+        delayFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.delay);
+            }
+        });
+        contactFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.contact);
+            }
+        });
+        joke.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.joke);
+            }
+        });
+        /*TextView attachFile = view.findViewById(R.id.attachFile);
         TextView attachLocation = view.findViewById(R.id.attachLocation);
         TextView attachCameraPhoto = view.findViewById(R.id.attachCamera);
         TextView attachGalleryPhoto = view.findViewById(R.id.attachGallery);
@@ -105,7 +149,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
             public void onClick(View v) {
                 callback.onBottomSheetClick(ButtonType.document);
             }
-        });
+        });*/
         return view;
     }
 

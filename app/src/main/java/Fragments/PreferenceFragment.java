@@ -49,7 +49,7 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 DBActive dbActive = DBActive.getInstance(requireContext());
-                dbActive.ResetDB();
+                dbActive.resetDB();
                 Toast.makeText(requireContext(), "Database reset has been done", Toast.LENGTH_SHORT).show();
                 return true;
             }

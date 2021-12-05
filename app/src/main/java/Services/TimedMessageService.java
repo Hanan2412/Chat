@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.woofmeow.ConversationActivity;
 
@@ -53,14 +52,13 @@ public class TimedMessageService extends Service{
                 long x = Long.parseLong(message.getMessageID());
                 BigInteger bigInteger = BigInteger.valueOf(x);
                 notificationID = bigInteger.intValue();
-                String token = intent.getStringExtra("token");
+                String[] token = intent.getStringArrayExtra("token");
                 String time = intent.getStringExtra("time");
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTimeInMillis(Long.parseLong(time));
-                Log.d("Time",calendar.getTime().toString());
                 Intent conversationIntent = new Intent(this, ConversationActivity.class);
                 conversationIntent.putExtra("conversationID", message.getConversationID());
-                conversationIntent.putExtra("recipient", message.getRecipient());
+                conversationIntent.putExtra("recipient", message.getGroupName());
                 conversationIntent.putExtra("recipientToken", token);
                 PendingIntent alarmPendingIntent = PendingIntent.getActivity(this, 120, conversationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ChannelID);
@@ -73,7 +71,7 @@ public class TimedMessageService extends Service{
                         .build();
                 builder.setSmallIcon(android.R.drawable.star_on)
                         .setContentTitle("waiting to send message")
-                        .setContentText("message: " + message.getMessage() + "will be sent to: " + message.getRecipientName())
+                        .setContentText("message: " + message.getMessage() + "will be sent to: " + message.getGroupName())
                         .setSubText("message will be sent at: " + calendar.getTime().toString())
                         .setContentIntent(alarmPendingIntent).addAction(action);
                 if (manager != null) {
@@ -84,7 +82,7 @@ public class TimedMessageService extends Service{
                                 MessageSender sender = MessageSender.getInstance();
                                 sender.SendMessage(message, token);
                                 DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
-                                dbActive.SaveMessage(message);
+                                dbActive.saveMessage(message);
                                 Log.d(FOREGROUND_SERVICE, "stopped foreground service - onAlarm");
                             }
                             else

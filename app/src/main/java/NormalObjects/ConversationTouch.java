@@ -59,11 +59,13 @@ public class ConversationTouch extends ItemTouchHelper.SimpleCallback {
                 c.drawRect((float) itemView.getRight() + dX, (float) itemView.getTop(),
                         (float) itemView.getRight(), (float) itemView.getBottom(), paint);
                 paint.setColor(Color.BLUE);
-                action =  !adapter2.getConversation(viewHolder.getAdapterPosition()).isBlocked();
-                if(action)
-                     c.drawText("Delete",(float) (itemView.getRight() - itemView.getRight()/6),(float) (itemView.getBottom()-(h/2)+18),paint);
-                else
-                    c.drawText(recyclerView.getContext().getResources().getString(R.string.unblock),(float) (itemView.getRight() - itemView.getRight()/6),(float) (itemView.getBottom()-(h/2)+18),paint);
+                if(adapter2.getConversation(viewHolder.getAdapterPosition())!=null) {
+                    action = !adapter2.getConversation(viewHolder.getAdapterPosition()).isBlocked();
+                    if (action)
+                        c.drawText("Delete", (float) (itemView.getRight() - itemView.getRight() / 6), (float) (itemView.getBottom() - (h / 2) + 18), paint);
+                    else
+                        c.drawText(recyclerView.getContext().getResources().getString(R.string.unblock), (float) (itemView.getRight() - itemView.getRight() / 6), (float) (itemView.getBottom() - (h / 2) + 18), paint);
+                }
             }
         }
         super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);

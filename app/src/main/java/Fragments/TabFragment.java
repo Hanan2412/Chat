@@ -224,15 +224,8 @@ public class TabFragment extends Fragment implements MainGUI {
 
                     @Override
                     public void onClicked(Conversation conversation) {
-                        User recipient = dbActive.LoadUserFromDataBase(conversation.getRecipient());
                         Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
-                        startConversationIntent.putExtra("conversation",conversation);
                         startConversationIntent.putExtra("conversationID", conversation.getConversationID());
-                        startConversationIntent.putExtra("recipient", conversation.getRecipient());
-                        startConversationIntent.putExtra("recipientPhone", conversation.getRecipientPhoneNumber());
-                        startConversationIntent.putExtra("recipientImagePath", conversation.getRecipientImagePath());
-                        startConversationIntent.putExtra("recipientToken",recipient.getToken());
-                        startConversationIntent.putExtra("recipientUser",recipient);
                         SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
                         String title = sharedPreferences.getString("title", "noTitle");
                         String link = sharedPreferences.getString("link", "noLink");
@@ -274,11 +267,9 @@ public class TabFragment extends Fragment implements MainGUI {
 
                 break;
             }
-            case groups:
+            case somethingElse:
                 view = inflater.inflate(R.layout.coming_soon_layout, container, false);
-                break;
         }
-
         return view;
     }
 
@@ -440,19 +431,22 @@ public class TabFragment extends Fragment implements MainGUI {
         });*/
     }
 
+
+
+
     //called only if user doesn't exists - the first lunch of the app
     private void InsertUser(User user) {
-        dbActive.CheckIfUserExist(user);
+        dbActive.checkIfUserExist(user);
     }
 
     //on each login, the user table is updated with the current login user
     private void UpdateUser(User user) {
-        dbActive.UpdateUser(user);
+        dbActive.updateUser(user);
     }
 
     //if the user exists in the database - load it, if not - download it from firebase database
     private void LoadCurrentUserFromDataBase() {
-        user = dbActive.LoadUserFromDataBase(currentUser);
+        user = dbActive.loadUserFromDataBase(currentUser);
         if(user!=null)
             callback.onLoadUserFromMemory(user);
         else
@@ -474,14 +468,14 @@ public class TabFragment extends Fragment implements MainGUI {
 
 
     private void InsertConversationToDataBase(Conversation conversation) {
-        dbActive.InsertConversationToDataBase(conversation);
+        dbActive.insertConversationToDataBase(conversation);
         conversationsAdapter2.addConversation(conversation);
         conversations.add(conversation);
     }
 
     private void UpdateConversationsInDataBase(Conversation conversation, boolean image) {
 
-        dbActive.UpdateConversation(conversation);
+        dbActive.updateConversation(conversation);
         if (!image)
             conversationsAdapter2.updateConversation(conversation);
 
@@ -490,7 +484,7 @@ public class TabFragment extends Fragment implements MainGUI {
 
     //idType - true for conversationID, false for messageID
     private boolean CheckIfExist(String ID, boolean idType) {
-       return dbActive.CheckIfExist(ID,idType);
+       return dbActive.checkIfExist(ID,idType);
     }
 
 
@@ -714,13 +708,13 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
     private void BlockUser(String uid, String conversationID) {
-        boolean blocked =  dbActive.BlockUser(uid);
+        boolean blocked =  dbActive.blockUser(uid);
         conversationsAdapter2.BlockConversation(blocked,conversationID);
     }
 
     private void DeleteConversation(String conversationID) {
         conversationsAdapter2.DeleteConversation(conversationID);
-        dbActive.DeleteConversation(conversationID);
+        dbActive.deleteConversation(conversationID);
     }
 
     public void RequestStatus()

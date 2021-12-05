@@ -24,4 +24,8 @@
     <string name="back">חזור</string>
     <string name="userStatus">מצב</string>
     <string name="action_btn">כפתור פעולה</string>
+    <string name="contact">שתף איש קשר</string>
+    <string name="camera">פתח מצלמה</string>
+    <string name="gallery">גלרייה</string>
+    <string name="delay">הודעה מושעת</string>
 </resources>

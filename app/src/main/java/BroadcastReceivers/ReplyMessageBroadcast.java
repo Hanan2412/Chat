@@ -66,7 +66,8 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
         message.setSenderName(myName);
         message.setMessage(replyText);
         message.setMessageType(MessageType.textMessage.ordinal());
-        message.setRecipient(recipient);
+        //message.setRecipient(recipient);
+        message.setGroupName(recipient);
         message.setConversationID(conversationID);
         message.setMessageID(time);
         message.setMessageTime(Current_time);

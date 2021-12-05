@@ -110,7 +110,7 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
     private void saveUser(User user)
     {
         DBActive dbActive = DBActive.getInstance(this);
-        dbActive.InsertUser(user);
+        dbActive.insertUser(user);
         SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("UID",user.getUserUID());

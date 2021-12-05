@@ -16,6 +16,8 @@ public final class DataBaseContract {
         public static final String LAST_MESSAGE_ID = "messageID";
         public static final String RECIPIENT = "recipient";
         public static final String RECIPIENT_NAME = "recipientName";
+        public static final String GROUP_NAME = "groupName";//group name replaces recipient name .
+        // if its an individual talk I.E only with one recipient then group name should be recipient name
         public static final String IMAGE_PATH = "imagePath";
         public static final String USER_UID = "UID";
         public static final String CONVERSATION_INDEX = "index";
@@ -63,8 +65,8 @@ public final class DataBaseContract {
         public static final String BLOCKED = "block";
     }
 
-    public static class  BlockedUsers implements BaseColumns{
-        public static final String BLOCKED_USERS_TABLE = "blocked_users";
-        public static final String USER_UID = "UID";
+    public static class Group implements BaseColumns
+    {
+        public static final String GroupTable = "group_table";
     }
 }

@@ -23,7 +23,12 @@
                     android:id="@+id/settings"
                     android:icon="@drawable/ic_baseline_settings_24"
                     />
+                <item android:title="Backup"
+                    android:id="@+id/backUp"
+                    android:icon="@drawable/ic_baseline_backup_24"
+                    />
             </group>
         </menu>
     </item>
+
 </menu>

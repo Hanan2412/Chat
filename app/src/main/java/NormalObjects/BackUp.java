@@ -23,14 +23,4 @@ public class BackUp {
         }
         return authWeb;
     }
-
-    public static Retrofit getApi()
-    {
-        if (api == null)
-        {
-            Gson gson = new GsonBuilder().registerTypeAdapter(JSON_TYPE,new DropBoxJson()).create();
-            api = new Retrofit.Builder().baseUrl("https://api.dropboxapi.com/").addConverterFactory(GsonConverterFactory.create(gson)).build();
-        }
-        return api;
-    }
 }

@@ -13,5 +13,6 @@ public enum ButtonType {
     pause,
     recording,
     contact,
-    document
+    document,
+    joke
 }
