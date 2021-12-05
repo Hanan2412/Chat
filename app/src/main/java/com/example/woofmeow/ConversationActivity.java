@@ -602,10 +602,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         onVideoAction();
                         break;
                     }
-                    case joke: {
-                        onJoke();
-                        break;
-                    }
                     default:
                         Log.e(ERROR_CASE, "action button error: " + new Throwable().getStackTrace()[0].getLineNumber());
                 }

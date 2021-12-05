@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,6 +22,8 @@ import java.util.ArrayList;
 
 import Adapters.UsersAdapter;
 import Controller.CController;
+import Fragments.GeneralFragment;
+import Fragments.SingleFieldFragment;
 import NormalObjects.User;
 
 
@@ -78,11 +82,29 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
                 else if (group.size() == 1)
                     startSingleConversation(group.get(0));
                 else {
-                    Intent startConversation = new Intent(NewGroupChat.this, ConversationActivity.class);
-                    startConversation.putExtra("group", group);
-                    startConversation.putExtra("conversationID", createGroupConversationID());
-                    startActivity(startConversation);
-                    finish();
+                    SingleFieldFragment fragment = new SingleFieldFragment();
+                    fragment.setListener(new SingleFieldFragment.onName() {
+                        @Override
+                        public void onGroupName(String name) {
+                            Intent startConversation = new Intent(NewGroupChat.this, ConversationActivity.class);
+                            startConversation.putExtra("group", group);
+                            startConversation.putExtra("groupName",name);
+                            startConversation.putExtra("conversationID", createGroupConversationID());
+                            FragmentManager fragmentManager = getSupportFragmentManager();
+                            FragmentTransaction transaction = fragmentManager.beginTransaction();
+                            transaction.remove(fragment).commit();
+                            startActivity(startConversation);
+                            finish();
+                        }
+                    });
+
+                    FragmentManager fragmentManager = getSupportFragmentManager();
+                    FragmentTransaction transaction = fragmentManager.beginTransaction();
+                    transaction.add(R.id.mainLayout, fragment, "groupName");
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+
+
                 }
             }
         });
