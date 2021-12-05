@@ -602,6 +602,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         onVideoAction();
                         break;
                     }
+                    case joke: {
+                        onJoke();
+                        break;
+                    }
                     default:
                         Log.e(ERROR_CASE, "action button error: " + new Throwable().getStackTrace()[0].getLineNumber());
                 }
@@ -669,6 +673,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         init(conversationID);
     }
 
+    @SuppressWarnings("unchecked")
     private void loadConversationRecipients()
     {
         //the following if statements are for a new conversation
