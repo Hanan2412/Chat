@@ -89,54 +89,48 @@
 
         </androidx.viewpager.widget.ViewPager>
 
-        <RelativeLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/smsConversation"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:gravity="end">
+            android:layout_marginEnd="30dp"
+            android:layout_marginBottom="150dp"
+            android:layout_gravity="end|bottom"
+            android:backgroundTint="#fff"
+            android:contentDescription="chat conversation"
+            android:elevation="8dp"
+            android:src="@drawable/ic_baseline_sms_24"
+            android:visibility="gone"
+            app:fabSize="mini"
+            app:rippleColor="@color/lightestBlue" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/smsConversation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                android:backgroundTint="#fff"
-                android:contentDescription="chat conversation"
-                app:fabSize="mini"
-                android:layout_marginStart="6dp"
-                app:rippleColor="@color/lightestBlue"
-                android:elevation="8dp"
-                android:src="@drawable/ic_baseline_sms_24"
-                android:visibility="gone"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/chatConversation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="30dp"
+            android:layout_marginBottom="90dp"
+            android:backgroundTint="#fff"
+            android:contentDescription="chat conversation"
+            android:elevation="8dp"
+            android:src="@drawable/ic_baseline_chat_bubble_outline_24"
+            android:visibility="gone"
+            app:fabSize="mini"
+            app:rippleColor="@color/lightestBlue" />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/chatConversation"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                android:backgroundTint="#fff"
-                android:contentDescription="chat conversation"
-                android:elevation="8dp"
-                app:fabSize="mini"
-                app:rippleColor="@color/lightestBlue"
-                android:visibility="gone"
-                android:src="@drawable/ic_baseline_chat_bubble_outline_24"
-                android:layout_marginStart="6dp"
-                android:layout_below="@id/smsConversation"/>
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/floatingActionButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:backgroundTint="#FFF"
-                android:contentDescription="new conversation button"
-                android:elevation="8dp"
-                android:layout_below="@id/chatConversation"
-                android:src="@drawable/ic_baseline_message_24" />
-        </RelativeLayout>
-
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/floatingActionButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/chatConversation"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
+            android:backgroundTint="#FFF"
+            android:contentDescription="new conversation button"
+            android:elevation="8dp"
+            android:src="@drawable/ic_baseline_message_24" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
