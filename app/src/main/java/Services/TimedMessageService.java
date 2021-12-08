@@ -80,7 +80,7 @@ public class TimedMessageService extends Service{
                         public void onAlarm() {
                             if(token!=null) {
                                 MessageSender sender = MessageSender.getInstance();
-                                sender.SendMessage(message, token);
+                                sender.sendMessage(message, token);
                                 DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
                                 dbActive.saveMessage(message);
                                 Log.d(FOREGROUND_SERVICE, "stopped foreground service - onAlarm");

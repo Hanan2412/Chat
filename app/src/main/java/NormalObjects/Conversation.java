@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+
+import Consts.ConversationType;
 //Chat2 Object - a more up to date object to save a conversation at
 
 public class Conversation implements Serializable {
@@ -29,6 +31,7 @@ public class Conversation implements Serializable {
     private List<String>tokens;
     private String lastMessageRecipient;
     private String groupName;
+    private ConversationType conversationType = ConversationType.single;
 
     public Conversation(String conversationID)
     {
@@ -36,6 +39,14 @@ public class Conversation implements Serializable {
         messages = new ArrayList<>();
         tokens = new ArrayList<>();
         recipients = new ArrayList<>();
+    }
+
+    public ConversationType getConversationType() {
+        return conversationType;
+    }
+
+    public void setConversationType(ConversationType conversationType) {
+        this.conversationType = conversationType;
     }
 
     public String getGroupName() {

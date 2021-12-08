@@ -76,6 +76,6 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
         if (!token.equals("no token"))
             message.setSenderToken(token);
         MessageSender messageSender = MessageSender.getInstance();
-        messageSender.SendMessage(message,recipientsTokens);
+        messageSender.sendMessage(message,recipientsTokens);
     }
 }

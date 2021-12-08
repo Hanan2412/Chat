@@ -29,6 +29,7 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Conversations.USER_UID + " TEXT," +
                     DataBaseContract.User.TOKEN + " TEXT," +
                     DataBaseContract.Conversations.GROUP_NAME + " TEXT," +
+                    DataBaseContract.Conversations.CONVERSATION_TYPE + " TEXT," +
                     DataBaseContract.Conversations.CONVERSATION_INDEX + "TEXT)";
 
     private static final String SQL_DELETE_CONVERSATIONS_TABLE = "DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE;

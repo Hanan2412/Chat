@@ -66,6 +66,7 @@ import java.util.Set;
 import javax.net.ssl.HttpsURLConnection;
 
 import BroadcastReceivers.ReplyMessageBroadcast;
+import Consts.ConversationType;
 import Consts.MessageAction;
 import Consts.MessageType;
 import Controller.CController;
@@ -664,14 +665,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
         MessageSender sender = MessageSender.getInstance();
         //String token = getRecipientToken(message.getSender());
-        sender.SendMessage(message, message.getSenderToken());
+        sender.sendMessage(message, message.getSenderToken());
         dbActive.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
     }
 
     private void markAsSeen(Message message) {
         message.setMessageStatus(MESSAGE_SEEN);
         MessageSender sender = MessageSender.getInstance();
-        sender.SendMessage(message, message.getSenderToken());
+        sender.sendMessage(message, message.getSenderToken());
         dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_SEEN);
     }
 
@@ -681,7 +682,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         message.setMessageKind("statusResponse");
         message.setMessageStatus(status);
         MessageSender sender = MessageSender.getInstance();
-        sender.SendMessage(message, token);
+        sender.sendMessage(message, token);
     }
 
     private void SaveToDataBase(Message message) {
@@ -741,7 +742,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void CreateNewConversation(Message message) {
-        dbActive.createNewConversation(message);
+        if (message.getRecipients().size()==1)
+            dbActive.createNewConversation(message, ConversationType.single);
+        else
+            dbActive.createNewConversation(message,ConversationType.group);
         SaveToDataBase(message);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference reference = database.getReference("users/" + message.getSender());

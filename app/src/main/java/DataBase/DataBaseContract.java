@@ -21,6 +21,7 @@ public final class DataBaseContract {
         public static final String IMAGE_PATH = "imagePath";
         public static final String USER_UID = "UID";
         public static final String CONVERSATION_INDEX = "index";
+        public static final String CONVERSATION_TYPE = "type";
     }
 
     public static class Messages implements BaseColumns{

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import Consts.ConversationType;
 import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.Message;
@@ -43,13 +44,61 @@ public class DBActive {
         dbHelper = new DataBase(context);
         db = dbHelper.getWritableDatabase();
         //resetDB();
-       // dbHelper.onCreate(db);
         printTablesColumns(DataBaseContract.Messages.MESSAGES_TABLE);
         printTablesColumns(DataBaseContract.Conversations.CONVERSATIONS_TABLE);
         printTablesColumns(DataBaseContract.User.USER_TABLE);
     }
 
+    //the following can also be done with a simple join query but the following is consistent with the rest of the code and sql injection safe
+    public String findConversationByUserPhone(String phoneNumber)
+    {
+        String conversationID = null;
+        if (db!=null)
+        {
+            String[] projections = {
+                    DataBaseContract.User.USER_UID
+            };
+            String selection = DataBaseContract.User.USER_PHONE_NUMBER + " LIKE ?";
+            String[] selectionArgs = {phoneNumber};
+            Cursor cursor = db.query(DataBaseContract.User.USER_TABLE,projections,selection,selectionArgs,null,null,null);
+            cursor.moveToNext();
+            if (cursor.getCount() != 0) {
+                String userID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID));
+                if (userID != null)//should never pass on this if. userID must never be null
+                {
+                    projections[0] = DataBaseContract.Conversations.CONVERSATION_ID;
+                    selection = DataBaseContract.User.USER_UID + " LIKE ?";
+                    selectionArgs[0] = userID;
+                    cursor = db.query(DataBaseContract.Group.GroupTable, projections, selection, selectionArgs, null, null, null);
+                    cursor.moveToNext();
+                    conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
+                }
+            }
+            cursor.close();
+        }
+        return conversationID;
+    }
+    //for debug only
+    private void printTable(String tableName)
+    {
+        if (db!=null)
+        {
+
+            Cursor cursor = db.query(tableName,null,null,null,null,null,null);
+            String[]cNames = cursor.getColumnNames();
+            while (cursor.moveToNext())
+            {
+                for (String cName : cNames) {
+                    String s = cursor.getString(cursor.getColumnIndexOrThrow(cName));
+                    print(s);
+                }
+            }
+            cursor.close();
+        }
+    }
+
     public List<User> loadUsers(String conversationID) {
+        //printTable(DataBaseContract.Group.GroupTable);
         Log.i("loading users", "loading users for group");
         List<User> recipients = new ArrayList<>();
         if (isConversationExists(conversationID)) {
@@ -67,9 +116,7 @@ public class DBActive {
                         recipients.add(loadUserFromDataBase(userID));
                     }
                 }
-                else {
-                    recipients.add(loadUserFromDataBase("pfghXKWGCja8i8YPQz71DuXxyTI2"));
-                }
+
                 cursor.close();
             }
         }
@@ -96,7 +143,8 @@ public class DBActive {
                     DataBaseContract.Conversations.IMAGE_PATH,
                     DataBaseContract.User.TOKEN,
                     DataBaseContract.Conversations.BLOCKED,
-                    DataBaseContract.Conversations.GROUP_NAME
+                    DataBaseContract.Conversations.GROUP_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_TYPE
             };
             String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
             String orderBy = DataBaseContract.Conversations.LAST_MESSAGE_TIME + " DESC";
@@ -116,6 +164,7 @@ public class DBActive {
                     String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
                     String blocked = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.BLOCKED));
                     String groupName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
+                    String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
                     Conversation conversation = new Conversation(conversationIDs);
                     conversation.setLastMessageTimeFormatted(lastMessageTime);
                     conversation.setGroupName(groupName);
@@ -126,6 +175,13 @@ public class DBActive {
                     conversation.setRecipientImagePath(imagePath);
                     conversation.setSenderName(recipientName);
                     conversation.setRecipientName(recipientName);
+                    if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
+                        conversation.setConversationType(ConversationType.single);
+                    else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
+                        conversation.setConversationType(ConversationType.group);
+                    else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
+                        conversation.setConversationType(ConversationType.sms);
+
                     if (muted != null)
                         conversation.setMuted(muted.equals("muted"));
                     else
@@ -161,7 +217,8 @@ public class DBActive {
                     DataBaseContract.Conversations.RECIPIENT_NAME,
                     DataBaseContract.Conversations.IMAGE_PATH,
                     DataBaseContract.User.TOKEN,
-                    DataBaseContract.Conversations.GROUP_NAME
+                    DataBaseContract.Conversations.GROUP_NAME,
+                    DataBaseContract.Conversations.CONVERSATION_TYPE
             };
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
@@ -178,6 +235,7 @@ public class DBActive {
                 String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
                 String recipientToken = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.TOKEN));
                 String group = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
+                String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
                 conversation = new Conversation(conversationIDs);
                 conversation.setLastMessageTimeFormatted(lastMessageTime);
                 conversation.setLastMessage(lastMessage);
@@ -190,6 +248,12 @@ public class DBActive {
                 conversation.setMuted(muted.equals("1"));
                 conversation.setRecipientToken(recipientToken);
                 conversation.setGroupName(group);
+                if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
+                    conversation.setConversationType(ConversationType.single);
+                else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
+                    conversation.setConversationType(ConversationType.group);
+                else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
+                    conversation.setConversationType(ConversationType.sms);
             }
             cursor.close();
 
@@ -197,7 +261,7 @@ public class DBActive {
         return conversation;
     }
 
-    public void insertConversationToDataBase(Conversation conversation) {
+    public synchronized void insertConversationToDataBase(Conversation conversation) {
         String conversationID = conversation.getConversationID();
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.Conversations.CONVERSATION_ID, conversationID);
@@ -211,13 +275,14 @@ public class DBActive {
         values.put(DataBaseContract.Conversations.RECIPIENT_NAME, conversation.getSenderName());
         values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
         values.put(DataBaseContract.Conversations.GROUP_NAME,conversation.getGroupName());
+        values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversation.getConversationType().name());
         long newRowId = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
         if (newRowId == -1)
             Log.e(DataBaseError, "error inserting data to database");
 
     }
 
-    public void updateConversation(Conversation conversation) {
+    public synchronized void updateConversation(Conversation conversation) {
 
         ContentValues values = new ContentValues();
         values.put(DataBaseContract.Conversations.CONVERSATION_ID, conversation.getConversationID());
@@ -239,7 +304,7 @@ public class DBActive {
 
     }
 
-    public void updateConversationLastMessage(String conversationID, String message) {
+    public synchronized void updateConversationLastMessage(String conversationID, String message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message);
@@ -251,7 +316,7 @@ public class DBActive {
         }
     }
 
-    public void updateConversation(Message message) {
+    public synchronized void updateConversation(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
@@ -269,8 +334,7 @@ public class DBActive {
         }
     }
 
-
-    public boolean isConversationExists(String conversationID) {
+    public synchronized boolean isConversationExists(String conversationID) {
         if (db != null) {
             String[] projections = {
                     DataBaseContract.Conversations.CONVERSATION_ID
@@ -299,7 +363,7 @@ public class DBActive {
     }
 
 
-    public User loadUserFromDataBase(String userUID) {
+    public synchronized User loadUserFromDataBase(String userUID) {
         if (userUID == null)
             Log.e("DBActive", "user UID is null");
         else {
@@ -356,7 +420,7 @@ public class DBActive {
         return null;
     }
 
-    public void updateMessageStatus(String id, String status) {
+    public synchronized void updateMessageStatus(String id, String status) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.STATUS, status);
@@ -368,10 +432,12 @@ public class DBActive {
         }
     }
 
-    public void updateMessage(String messageID, String content, String time) {
+    public synchronized void updateMessage(String messageID, String content, String time) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.CONTENT, content);
+            if (time!=null)
+                values.put(DataBaseContract.Messages.TIME_DELIVERED,time);
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
             String[] selectionArgs = {messageID};
             long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
@@ -380,7 +446,7 @@ public class DBActive {
         }
     }
 
-    public void updateMessage(@NonNull Message message) {
+    public synchronized void updateMessage(@NonNull Message message) {
 
         if (db != null) {
             ContentValues values = new ContentValues();
@@ -399,7 +465,7 @@ public class DBActive {
         }
     }
 
-    public void deleteMessage(@NonNull String messageID) {
+    public synchronized void deleteMessage(@NonNull String messageID) {
 
         if (db != null) {
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
@@ -410,13 +476,16 @@ public class DBActive {
         }
     }
 
-    public void deleteConversation(String conversationID) {
+    public synchronized void deleteConversation(String conversationID) {
         if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " = ?";
             String[] selectionArgs = {conversationID};
             int rowSum = db.delete(DataBaseContract.Conversations.CONVERSATIONS_TABLE, selection, selectionArgs);
-            if (rowSum != 1)
-                Log.e(DataBaseError, "deleting conversation failed, more than 1 conversations were deleted or none were");
+            if (rowSum == 0)
+                Log.e(DataBaseError, "deleting conversation failed");
+            rowSum = db.delete(DataBaseContract.Group.GroupTable,selection,selectionArgs);
+            if (rowSum == 0)
+                Log.e(DataBaseError, "deleting conversation failed");
         }
     }
 
@@ -428,15 +497,13 @@ public class DBActive {
        String[] columnNames = cursor.getColumnNames();
        for (String columnName : columnNames)
        {
-           if (columnName.equals(DataBaseContract.Conversations.GROUP_NAME))
-               System.out.print("aaaaaaa");
            print(columnName + " ");
        }
        println("");
        cursor.close();
     }
 
-    public void saveMessage(Message message) {
+    public synchronized void saveMessage(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
@@ -464,6 +531,50 @@ public class DBActive {
         }
     }
 
+    public synchronized void createNewConversation(Message message, ConversationType conversationType)
+    {
+        if (db != null) {
+            ContentValues values = new ContentValues();
+            values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
+            values.put(DataBaseContract.Conversations.USER_UID, currentUserUID);
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
+            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
+            values.put(DataBaseContract.Conversations.MUTED, false);
+            values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversationType.ordinal());
+            values.put(DataBaseContract.Conversations.BLOCKED,"false");
+            values.put(DataBaseContract.Conversations.MUTED,"false");
+            long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
+            if (newConversationID == -1)
+                Log.e(DataBaseError, "inserted more than 1 row");
+            printConversationTable();
+            createNewGroup(message.getConversationID(),message.getRecipients());
+        }
+    }
+
+    public synchronized ConversationType loadConversationType(String conversationID)
+    {
+        ConversationType type = null;
+        if (db!=null)
+        {
+            String[] projections = {
+                    DataBaseContract.Conversations.CONVERSATION_TYPE
+            };
+            String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
+            String[] selectionArgs = {conversationID};
+            Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, null);
+            while (cursor.moveToNext())
+            {
+                String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
+                type = ConversationType.values()[Integer.parseInt(conversationType)];
+            }
+            cursor.close();
+        }
+        return type;
+    }
+    @Deprecated
     public void createNewConversation(Message message) {
         if (db != null) {
             ContentValues values = new ContentValues();
@@ -483,7 +594,7 @@ public class DBActive {
         }
     }
 
-    private void createNewGroup(String conversationID,List<String>recipients)
+    private synchronized void createNewGroup(String conversationID,List<String>recipients)
     {
         ContentValues groupValues = new ContentValues();
         for (int i = 0;i< recipients.size();i++)//its a hashMap
@@ -527,12 +638,12 @@ public class DBActive {
         cursor.close();
     }
 
-    public String loadConversationName(String conversationID)
+    public synchronized String loadConversationName(String conversationID)
     {
         String[]projections = {
           DataBaseContract.Conversations.GROUP_NAME
         };
-        String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";;
+        String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
         String[] selectionArgs = {conversationID};
         Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE,projections,selection,selectionArgs,null,null,null);
         cursor.moveToNext();
@@ -638,7 +749,7 @@ public class DBActive {
     }
 
     //called only if user doesn't exists - the first lunch of the app
-    public void insertUser(User user) {
+    public synchronized void insertUser(User user) {
         if (user.getUserUID().equals(currentUserUID))
             this.user = user;
         ContentValues values = createUserValues(user);
@@ -649,7 +760,7 @@ public class DBActive {
     }
 
     //on each login, the user table is updated with the current login user
-    public void updateUser(User user) {
+    public synchronized void updateUser(User user) {
         ContentValues values = createUserValues(user);
         String where = DataBaseContract.User.USER_UID + " LIKE ?";
         String[] whereArgs = {user.getUserUID()};
@@ -673,7 +784,7 @@ public class DBActive {
         return values;
     }
 
-    public void checkIfUserExist(User user) {
+    public synchronized void checkIfUserExist(User user) {
         if (db != null) {
             String[] projections = {
                     DataBaseContract.User._ID,
@@ -697,10 +808,10 @@ public class DBActive {
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
         //dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
-
+        dbHelper.onCreate(db);
     }
 
-    public boolean checkIfExist(String ID, boolean idType) {
+    public synchronized boolean checkIfExist(String ID, boolean idType) {
         if (ID != null) {
             if (db != null) {
                 String[] projections = {
@@ -733,7 +844,7 @@ public class DBActive {
     }
 
 
-    public void updateMessageMetaData(String messageID, String messageStatus, String readAt) {
+    public synchronized void updateMessageMetaData(String messageID, String messageStatus, String readAt) {
 
         if (db != null) {
             ContentValues contentValues = new ContentValues();
@@ -747,7 +858,7 @@ public class DBActive {
         }
     }
 
-    public boolean checkIfExistsInDataBase(Message message) {
+    public synchronized boolean checkIfExistsInDataBase(Message message) {
         if (db != null) {
             String[] projections = {
                     BaseColumns._ID,
@@ -775,7 +886,7 @@ public class DBActive {
         return false;
     }
 
-    public boolean blockConversation(String conversationID)
+    public synchronized boolean blockConversation(String conversationID)
     {
         if(db!=null)
         {
@@ -797,7 +908,7 @@ public class DBActive {
         return false;
     }
 
-    public boolean isConversationBlocked(String conversationID)
+    public synchronized boolean isConversationBlocked(String conversationID)
     {
         String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
         String[] selectionArgs = {conversationID};
@@ -812,7 +923,7 @@ public class DBActive {
     }
 
 
-    public boolean blockUser(String userUID) {
+    public synchronized boolean blockUser(String userUID) {
         if (db != null) {
             String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {userUID};
@@ -832,7 +943,7 @@ public class DBActive {
         return false;
     }
 
-    public boolean isBlocked(String userUID) {
+    public synchronized boolean isBlocked(String userUID) {
         if (db != null) {
             String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {userUID};
@@ -857,7 +968,7 @@ public class DBActive {
         return false;
     }
 
-    public boolean MuteUser(String conversationID) {
+    public synchronized boolean MuteUser(String conversationID) {
         if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
@@ -877,7 +988,7 @@ public class DBActive {
         return false;
     }
 
-    public boolean isMuted(String conversationID) {
+    public synchronized boolean isMuted(String conversationID) {
         if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};

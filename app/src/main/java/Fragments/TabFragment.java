@@ -727,7 +727,7 @@ public class TabFragment extends Fragment implements MainGUI {
             message.setMessageKind("requestStatus");
            // message.setMessageType(MessageType.requestStatus.ordinal());
             MessageSender sender = MessageSender.getInstance();
-            sender.SendMessage(message,token);
+            sender.sendMessage(message,token);
         }
     }
 }
