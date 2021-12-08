@@ -508,6 +508,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                                 list.add(builder.toString());
                                 builder.delete(0, builder.length());
                             }
+                            if(k == q2.length()-1)
+                                list.add(builder.toString());
                         }
                     }
                 }
@@ -742,9 +744,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void CreateNewConversation(Message message) {
-        if (message.getRecipients().size()==1)
+        if (message.getConversationID().startsWith("C"))
             dbActive.createNewConversation(message, ConversationType.single);
-        else
+        else if (message.getConversationID().startsWith("G"))
             dbActive.createNewConversation(message,ConversationType.group);
         SaveToDataBase(message);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
