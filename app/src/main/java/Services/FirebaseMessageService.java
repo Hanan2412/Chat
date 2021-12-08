@@ -234,13 +234,13 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         dbActive = DBActive.getInstance(this);
     }
 
-    private Bitmap LoadSenderImageForNotification(String sender) {
+    private Bitmap LoadSenderImageForNotification(String conversationID,String sender) {
         SharedPreferences savedImagesPreferences = this.getSharedPreferences("SavedImages", Context.MODE_PRIVATE);
         if (savedImagesPreferences.getBoolean(sender, false)) {
             try {
                 ContextWrapper contextWrapper = new ContextWrapper(this.getApplicationContext());
                 File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                File imageFile = new File(directory, sender + "_Image");
+                File imageFile = new File(directory, conversationID + "_Image");
                 return BitmapFactory.decodeStream(new FileInputStream(imageFile));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -260,7 +260,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                                 if (!directory.mkdir()) {
                                     Log.e("error", "couldn't create a directory in conversationAdapter2");
                                 }
-                            File Path = new File(directory, sender + "_Image");
+                            File Path = new File(directory, conversationID + "_Image");
                             try {
                                 FileOutputStream fileOutputStream = new FileOutputStream(Path);
                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
@@ -367,7 +367,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         CreateNotificationChannel();
         if (messageType == MessageType.gpsMessage.ordinal())
             messageText = locationAddress;
-        Bitmap bitmap = LoadSenderImageForNotification(senderUID);
+        Bitmap bitmap = LoadSenderImageForNotification(conversationID,senderUID);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelID)
                 .setSmallIcon(R.drawable.ic_baseline_chat_black)
@@ -668,6 +668,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         MessageSender sender = MessageSender.getInstance();
         //String token = getRecipientToken(message.getSender());
         sender.sendMessage(message, message.getSenderToken());
+        String token = message.getSenderToken();
+        Log.e("Senders Token",token);
         dbActive.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
     }
 

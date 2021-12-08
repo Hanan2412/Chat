@@ -321,19 +321,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             listenToSMSStatus();
             sendActionBtn.setVisibility(View.GONE);
         }
-
-/*
-        //someone sent me a message and i clicked on a notification
-        if (getIntent().getBooleanExtra("tapMessageNotification", false)) {
-            recipientUID = getIntent().getStringExtra("senderUID");
-
-        } else {
-            //i clicked on a conversation in the conversations tab
-            recipientUID = getIntent().getStringExtra("recipient");
-        }
-*/
-
-
         Toolbar toolbar = findViewById(R.id.toolbar1);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -1289,13 +1276,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (smsConversation)
             prepareMessageToSend(MessageType.sms.ordinal());
         else if (imageView.getVisibility() == View.VISIBLE) {
-            //sendMessage(MessageType.photoMessage.ordinal(), recipientUID);
             prepareMessageToSend(MessageType.photoMessage.ordinal());
-            //PrepareMessageToSend(MessageType.photoMessage.ordinal(), recipientUID);
         } else if (imageView.getVisibility() == View.GONE) {
             prepareMessageToSend(MessageType.textMessage.ordinal());
-            //PrepareMessageToSend(MessageType.textMessage.ordinal(), recipientUID);
-            //sendMessage(MessageType.textMessage.ordinal(), recipientUID);
         }
         linkedMessagePreview.setVisibility(View.GONE);
         link = null;
@@ -1577,50 +1560,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         String path = fileManager.saveImage(bitmap, this);
         message.setImagePath(path);
         return path;
-        /*String path = null;
-        String fileName = "image_" + System.currentTimeMillis() + ".jpg";
-        OutputStream out = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContentResolver resolver = ConversationActivity.this.getApplicationContext().getContentResolver();
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
-            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
-            Uri imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            try {
-                if (imageUri != null) {
-                    out = resolver.openOutputStream(imageUri);
-                    path = imageUri.getPath();
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-        } else {
-            File imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-            File imageFile = new File(imageDirectory, fileName);
-            try {
-                out = new FileOutputStream(imageFile);
-                message.setImagePath(imageFile.getAbsolutePath());
-                UpdateDataBase(message);
-                path = imageFile.getAbsolutePath();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-        if (out != null) {
-            if (bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out))
-                Log.i("good", "Bitmap successfully written");
-            else
-                Log.e(ERROR_WRITE, "Bitmap save have failed");
-            try {
-                out.flush();
-                out.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return path;*/
     }
 
     @Override
@@ -2570,6 +2509,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void loadCurrentUserFromDataBase() {
         user = dbActive.loadUserFromDataBase(currentUser);
+        Log.e("Token", "ConversationActivity current user token: " + user.getToken());
     }
 
     private void CreateMessage(String content, int messageType, String[] recipientsNames, String... recipients) {
@@ -2972,6 +2912,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     String token = (String) snapshot.getValue();
                     if (token != null) {
+                        Log.e("newToken: ",token);
                         User recipient = getRecipientByID(uid);
                         if (recipient != null) {
                             if (!token.equals(recipient.getToken())) {
@@ -3065,6 +3006,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     //either one or all, gets all the recipients in the current conversation
     private void loadGroupConversation(String conversationID) {
         recipients = dbActive.loadUsers(conversationID);
+        Log.e("recipient token: ",recipients.get(0).getToken());
         groupName = dbActive.loadConversationName(conversationID);
         conversationType = dbActive.loadConversationType(conversationID);
         if (conversationType == ConversationType.sms)

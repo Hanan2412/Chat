@@ -536,7 +536,6 @@ public class DBActive {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
-            values.put(DataBaseContract.Conversations.USER_UID, currentUserUID);
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
@@ -550,7 +549,24 @@ public class DBActive {
             if (newConversationID == -1)
                 Log.e(DataBaseError, "inserted more than 1 row");
             printConversationTable();
-            createNewGroup(message.getConversationID(),message.getRecipients());
+            if (!message.getRecipients().contains(currentUserUID))
+            {
+                createNewGroup(message.getConversationID(),message.getRecipients());
+            }
+            else
+            {
+                List<String> recipients = message.getRecipients();
+                for (String s : recipients)
+                {
+                    if (s.equals(currentUserUID))
+                    {
+                        recipients.remove(s);
+                        break;
+                    }
+                }
+                recipients.add(message.getSender());
+                createNewGroup(message.getConversationID(),recipients);
+            }
         }
     }
 
@@ -579,7 +595,6 @@ public class DBActive {
         if (db != null) {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
-            values.put(DataBaseContract.Conversations.USER_UID, currentUserUID);
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
@@ -590,7 +605,24 @@ public class DBActive {
             if (newConversationID == -1)
                 Log.e(DataBaseError, "inserted more than 1 row");
             printConversationTable();
-            createNewGroup(message.getConversationID(),message.getRecipients());
+            if (!message.getRecipients().contains(currentUserUID))
+            {
+                createNewGroup(message.getConversationID(),message.getRecipients());
+            }
+            else
+            {
+                List<String> recipients = message.getRecipients();
+                for (String s : recipients)
+                {
+                    if (s.equals(currentUserUID))
+                    {
+                        recipients.remove(s);
+                        break;
+                    }
+                }
+                recipients.add(message.getSender());
+                createNewGroup(message.getConversationID(),recipients);
+            }
         }
     }
 

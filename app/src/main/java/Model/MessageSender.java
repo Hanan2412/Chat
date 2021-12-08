@@ -43,7 +43,7 @@ public class MessageSender {
     {
         for (String token : recipientsTokens) {
             if(token!=null)
-                Log.d("sending to token",token);
+                Log.d("messageSender, sending to token: ",token);
             else
                 Log.e("null","message sender - token is null");
             ObjectToSend toSend = new ObjectToSend(message, token);//for debug/testing reasons, change to token for regular operations
