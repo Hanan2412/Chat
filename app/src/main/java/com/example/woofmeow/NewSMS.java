@@ -88,7 +88,10 @@ public class NewSMS extends AppCompatActivity {
                 builder.append(fullName[i]);
             user.setLastName(builder.toString());
         }
-        else user.setName(null);
+        else {
+            user.setName(phoneNumber);
+            user.setLastName("");
+        }
         user.setPhoneNumber(phoneNumber);
         user.setUserUID(UUID.randomUUID().toString());
         intent.putExtra("smsUser", user);
