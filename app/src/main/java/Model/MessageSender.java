@@ -1,8 +1,15 @@
 package Model;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.telephony.SmsManager;
 import android.util.Log;
 import androidx.annotation.NonNull;
 
+import BroadcastReceivers.SMSBroadcastSent;
 import NormalObjects.Message;
 import NormalObjects.ObjectToSend;
 import Retrofit.RetrofitApi;
@@ -32,7 +39,7 @@ public class MessageSender {
         api = RetrofitClient.getRetrofitClient("https://fcm.googleapis.com/").create(RetrofitApi.class);
     }
 
-    public void SendMessage(Message message,String... recipientsTokens)
+    public void sendMessage(Message message, String... recipientsTokens)
     {
         for (String token : recipientsTokens) {
             if(token!=null)
@@ -63,7 +70,22 @@ public class MessageSender {
         }
     }
 
-
+    //sends sms message
+    public void sendMessage(Message message, String phoneNumber, Context context)
+    {
+        String scAddress = null;
+        Intent intent = new Intent(context, SMSBroadcastSent.class);
+        intent.putExtra("messageID",message.getMessageID());
+        intent.putExtra("sending", "yes");
+        PendingIntent sent = PendingIntent.getBroadcast(context, 182, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent deliveredIntent = new Intent(context,SMSBroadcastSent.class);
+        deliveredIntent.putExtra("delivered","yes");
+        deliveredIntent.putExtra("messageID",message.getMessageID());
+        PendingIntent delivered = PendingIntent.getBroadcast(context, 183, deliveredIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_UPDATE_CURRENT);
+        //pendingIntent is to see if the sms message was sent and/or delivered
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(phoneNumber, scAddress, message.getMessage(), sent, delivered);
+    }
 
 
 }

@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.woofmeow.R;
 
+@SuppressWarnings("Convert2Lambda")
 public class SingleFieldFragment extends Fragment {
 
     public interface onName{

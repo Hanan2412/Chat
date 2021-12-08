@@ -14,7 +14,10 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -59,7 +62,7 @@
           />
         <activity android:name=".CurrentUserProfileActivity"/>
         <activity android:name=".NewGroupChat"/>
-        <activity android:name=".NewChat"/>
+        <activity android:name=".NewSMS"/>
         <activity android:name=".ProfileActivity2"/>
         <activity android:name=".ConversationActivity"
             android:launchMode="standard"
@@ -90,7 +93,15 @@
         <activity android:name="Try.TryMessageActivity"/>
         <receiver android:name="BroadcastReceivers.ReplyMessageBroadcast"/>
         <receiver android:name="BroadcastReceivers.AlarmReceiverBroadcast"/>
-
+        <receiver android:name="BroadcastReceivers.SMSBroadcastSent"/>
+        <receiver android:name="BroadcastReceivers.SMSBroadcast"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="9999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
         <service
             android:name="Services.FirebaseMessageService"
             android:exported="false"

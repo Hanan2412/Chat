@@ -14,11 +14,15 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
 
+import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -53,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import Consts.MessageType;
 import Consts.Tabs;
 import Fragments.NewChatFragment2;
 import Fragments.TabFragment;
@@ -85,7 +90,10 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
-
+    private boolean isRotate = false;
+    private FloatingActionButton smsBtn;
+    private FloatingActionButton chatBtn;
+    private final int READ_SMS = 1;
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             if (!uid.equals("ERROR: NO UID"))
                 currentUser = uid;
         }
+
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -134,26 +143,51 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 return false;
             }
         });
-        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+        smsBtn = findViewById(R.id.smsConversation);
+        chatBtn = findViewById(R.id.chatConversation);
+        chatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Tabs tab = Tabs.values()[pagePosition];
+               Tabs tab = Tabs.values()[pagePosition];
                 switch (tab) {
-
                     case chat:
-                        Intent singleChat = new Intent(MainActivity.this, NewGroupChat.class);
-                        startActivity(singleChat);
-
+                        Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
+                        rotateAndShowOut();
+                        startActivity(chat);
                         break;
                     case somethingElse: {
-
-                        Intent intent = new Intent(MainActivity.this, NewGroupChat.class);
-                        startActivity(intent);
+                        //probably calls
                         break;
                     }
                     default:
                 }
-
+            }
+        });
+        smsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //opens sms conversation
+                if(askPermission(MessageType.sms)) {
+                    Intent sms = new Intent(MainActivity.this, NewSMS.class);
+                    rotateAndShowOut();
+                    startActivity(sms);
+                }
+            }
+        });
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isRotate = rotateFab(floatingActionButton,!isRotate);
+                if (isRotate)
+                {
+                    showIn(smsBtn);
+                    showIn(chatBtn);
+                }
+                else
+                {
+                    showOut(smsBtn);
+                    showOut(chatBtn);
+                }
             }
         });
         pagerAdapter = new PagerAdapter(getSupportFragmentManager(), BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
@@ -219,7 +253,57 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         //DropBox();
     }
 
+    private void rotateAndShowOut()
+    {
+        rotateFab(floatingActionButton,!isRotate);
+        showOut(smsBtn);
+        showOut(chatBtn);
+    }
 
+    private boolean rotateFab(FloatingActionButton btn,boolean rotate)
+    {
+        btn.animate().setDuration(200).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+            }
+        }).rotation(rotate ? 180f:0f);
+        return rotate;
+    }
+
+    private void showIn(FloatingActionButton btn)
+    {
+        btn.setVisibility(View.VISIBLE);
+        btn.setAlpha(0f);
+        btn.setTranslationY(btn.getHeight());
+        btn.animate().setDuration(200).translationY(0).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+            }
+        }).alpha(1f).start();
+    }
+
+    private void showOut(FloatingActionButton btn)
+    {
+        btn.setVisibility(View.VISIBLE);
+        btn.setAlpha(1f);
+        btn.setTranslationY(0);
+        btn.animate().setDuration(200).translationY(btn.getHeight()).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                btn.setVisibility(View.GONE);
+                super.onAnimationEnd(animation);
+            }
+        }).alpha(0f).start();
+    }
+
+    private void initAnimation(View view)
+    {
+        view.setVisibility(View.GONE);
+        view.setTranslationY(view.getHeight());
+        view.setAlpha(0f);
+    }
     private void ShareTextMessage(String text) {
 
         String[] textSplit = text.split("\n");
@@ -557,7 +641,16 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
+        if (requestCode == READ_SMS && resultCode == RESULT_OK)
+        {
+            Intent sms = new Intent(MainActivity.this, NewSMS.class);
+            rotateAndShowOut();
+            startActivity(sms);
+        }
+        else if (requestCode == READ_SMS && resultCode == RESULT_CANCELED)
+        {
+            Toast.makeText(this, "can't start sms conversation without read sms permission", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void ConnectedToInternet() {
@@ -593,5 +686,24 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         if (connectivityManager != null)
             connectivityManager.registerNetworkCallback(request, network2);
 
+    }
+
+
+    private boolean askPermission(MessageType messageType)
+    {
+        switch (messageType)
+        {
+            case sms:
+                int hasPermission = this.checkSelfPermission(Manifest.permission.RECEIVE_SMS);
+                if (hasPermission!= PackageManager.PERMISSION_GRANTED)
+                {
+                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},READ_SMS);
+                    return false;
+                }
+                else return true;
+            default:
+                Log.e("ERROR","ask permission error in main activity");
+        }
+        return false;
     }
 }

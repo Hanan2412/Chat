@@ -93,6 +93,8 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import BroadcastReceivers.SMSBroadcastSent;
+import Consts.ConversationType;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
 
@@ -197,7 +199,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private final int SEND_CONTACT = 9;
     private final int DOCUMENT_REQUEST = 11;
     private User user;
-    private List<User>recipients;
+    private List<User> recipients;
     private ImageButton sendActionBtn;
 
     private final String PICKER_FRAGMENT_TAG = "Picker_fragment";
@@ -220,7 +222,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private CController controller;
     private String recipientPhoneNumber;
-
+    private boolean smsConversation = false;
     //button state is the button "type" as is how it functions
     private int buttonState = 1;
     private final int RECORD_VOICE = 1;
@@ -282,15 +284,17 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private BroadcastReceiver MessageReceiver;
     private BroadcastReceiver recipientStatus;
     private BroadcastReceiver imageMessage;
+    private ConversationType conversationType;
 
     private String groupName;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         darkMode = preferences.getBoolean("darkView", false);
-        if(darkMode)
+        if (darkMode)
             setContentView(R.layout.conversation_layout2_dark);
         else
             setContentView(R.layout.converastion_layout2);
@@ -298,20 +302,26 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         dataBaseSetUp();
         loadCurrentUserFromDataBase();
         loadConversationRecipients();
-
-        if (recipients != null) {//updates tokens for all recipients
-            for(int i = 0;i<recipients.size();i++)
-            {
-                if (recipients.get(i)!=null)//here because of debugging and testing - on production version the if shouldn't exist since null user should be impossible
-                    getRecipientToken(recipients.get(i).getUserUID());
-                else
-                {
-                    recipients.remove(null);
-                    Log.e(NULL_ERROR,"user is null");
-                    i--;
+        sendActionBtn = findViewById(R.id.ActionBtn);
+        if (!smsConversation) {
+            if (recipients != null) {//updates tokens for all recipients
+                for (int i = 0; i < recipients.size(); i++) {
+                    if (recipients.get(i) != null)//here because of debugging and testing - on production version the if shouldn't exist since null user should be impossible
+                        getRecipientToken(recipients.get(i).getUserUID());
+                    else {
+                        recipients.remove(null);
+                        Log.e(NULL_ERROR, "user is null");
+                        i--;
+                    }
                 }
             }
+            MessageStatusBroadcast();
+        }else
+        {
+            listenToSMSStatus();
+            sendActionBtn.setVisibility(View.GONE);
         }
+
 /*
         //someone sent me a message and i clicked on a notification
         if (getIntent().getBooleanExtra("tapMessageNotification", false)) {
@@ -323,12 +333,18 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
 */
 
-        MessageStatusBroadcast();
+
         Toolbar toolbar = findViewById(R.id.toolbar1);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null)
             actionBar.setDisplayShowTitleEnabled(false);
+
+        if (smsConversation)
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark,getTheme()));
+        else if (recipients.size() > 1)
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple,getTheme()));
+
         relativeLayout = findViewById(R.id.root_container);
         searchLayout = findViewById(R.id.searchLayout);
         searchText = findViewById(R.id.searchText);
@@ -372,13 +388,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         textSwitcherStatus = findViewById(R.id.toolbarStatusTextSwitch);
         textSwitcherTyping = findViewById(R.id.typingIndicator);
         setUpSwitchers();
-        controller = CController.getController();
-        controller.setConversationGUI(this);
-        if (user == null) {
-            controller.onDownloadUser(this, currentUser);
-            Log.i(USER_SERVICE, "downloading user");
+        if (!smsConversation) {
+            controller = CController.getController();
+            controller.setConversationGUI(this);
+            if (user == null) {
+                controller.onDownloadUser(this, currentUser);
+                Log.i(USER_SERVICE, "downloading user");
+            }
         }
-
         voiceLayout = findViewById(R.id.voiceLayout);
         quoteText = findViewById(R.id.quoteText);
 
@@ -409,10 +426,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         chatAdapter.setListener(this);
 
         //sendMessageButton = findViewById(R.id.sendMessageBtn);
-        sendActionBtn = findViewById(R.id.ActionBtn);
+
         recyclerView = findViewById(R.id.recycle_view);
         messageSent = findViewById(R.id.MessageToSend);
         //removes the set location button if started typing a message
+        TextView smsCharCount = findViewById(R.id.smsCharCount);
         messageSent.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -427,10 +445,22 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         typing = true;
                     }
                 }
+                if (smsConversation && count >= 140)
+                {
+                    smsCharCount.setVisibility(View.VISIBLE);
+                    int msgAmount = count %160;
+                    String charCount = "(" + msgAmount + ") " +  count + "";
+                    smsCharCount.setText(charCount);
+                }
             }
 
             @Override
             public void afterTextChanged(Editable s) {
+                if (smsConversation)
+                {
+                    if(s.toString().equals("") || s.toString().length() < 140)
+                        smsCharCount.setVisibility(View.GONE);
+                }
                 if (chatAdapter.getItemCount() > 0)//prevents updating and creating new incomplete conversation object in server before first message sent
                     if (s.toString().equals("")) {
                         InteractionMessage(conversationID, null, NOT_TYPING);
@@ -440,8 +470,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 if (s.toString().equals("")) {
                     if (buttonState != RECORD_VOICE)
                         SetCorrectColor(ButtonType.microphone);
-                    sendActionBtn.setVisibility(View.VISIBLE);
-                    buttonState = RECORD_VOICE;
+                    if (!smsConversation) {
+                        sendActionBtn.setVisibility(View.VISIBLE);
+                        buttonState = RECORD_VOICE;
+                    }else buttonState = SEND_MESSAGE;
                 } else {
                     if (buttonState != SEND_MESSAGE)
                         SetCorrectColor(ButtonType.sendMessage);
@@ -622,7 +654,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
         });
 
-        loadGroupImage();
+        loadConversationImage();
         /*talkingToImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -639,6 +671,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             @Override
             public void onClick(View v) {
                 goingBack = true;
+                if (!smsConversation)
                 controller.setConversationGUI(null);
                 Intent intent = new Intent(ConversationActivity.this, MainActivity.class);
                 startActivity(intent);
@@ -671,50 +704,92 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
         registerForContextMenu(recyclerView);
         init(conversationID);
+
+        if (smsConversation) {
+            buttonState = SEND_MESSAGE;
+
+        }
+    }
+
+    private void sendSMS(Message message) {
+        if (askPermission(MessageType.sms))
+            smsSendMessage(message);
+    }
+
+    private void smsSendMessage(Message message) {
+        Log.d("smsMessageID",message.getMessageID());
+        MessageSender sender = MessageSender.getInstance();
+        sender.sendMessage(message,recipientPhoneNumber,this);
+    }
+
+    private void listenToSMSStatus()
+    {
+        BroadcastReceiver smsReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String messageID = intent.getStringExtra("messageID");
+                String status = intent.getStringExtra("status");
+                chatAdapter.UpdateMessageStatus(messageID,status,System.currentTimeMillis()+"");
+                if (status!=null && status.equals(MESSAGE_DELIVERED))
+                    markAsRead(messageID);
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(smsReceiver,new IntentFilter(SMSBroadcastSent.SENT_SMS_STATUS));
     }
 
     @SuppressWarnings("unchecked")
-    private void loadConversationRecipients()
-    {
+    private void loadConversationRecipients() {
         //the following if statements are for a new conversation
-        if(getIntent().hasExtra("recipientUser"))
-        {
+        if (getIntent().hasExtra("recipientUser")) {
             //new single conversation
             User user = (User) getIntent().getSerializableExtra("recipientUser");
-            if(user!=null) {
+            if (user != null) {
                 recipients = new ArrayList<>();
                 recipients.add(user);
                 groupName = user.getName();
-            }
-            else
+                conversationType = ConversationType.single;
+            } else
                 throw new NullPointerException("user is null when creating new conversation");
-        }
-        else if (getIntent().hasExtra("group"))
-        {
+        } else if (getIntent().hasExtra("group")) {
             //new group conversation
             recipients = (List<User>) getIntent().getSerializableExtra("group");
             groupName = getIntent().getStringExtra("groupName");
-        }
-        else
-        {
+            conversationType = ConversationType.group;
+        } else if (getIntent().hasExtra("phoneNumber")) {
+            //new sms conversation
+            recipientPhoneNumber = (String) getIntent().getStringExtra("phoneNumber");
+            User user = (User) getIntent().getSerializableExtra("smsUser");
+            recipients = new ArrayList<>();
+            recipients.add(user);
+            smsConversation = true;
+            conversationType = ConversationType.sms;
+            if (user!=null)
+            {
+                if (user.getName() == null)
+                    groupName = recipientPhoneNumber;
+                else
+                    groupName = user.getName();
+            }
+            else
+                groupName = recipientPhoneNumber;
+        } else {
             //existing conversation
             loadGroupConversation(conversationID);
         }
     }
 
     //sets up all the different switches in the activity: sendBtn,typing,userStatus,recipientName
-    private void setUpSwitchers()
-    {
+    private void setUpSwitchers() {
         Animation in = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left);
         Animation out = AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right);
-        setUpSendMessageBtn(in,out);
-        setUpTalkingTo(in,out);
-        setUpTypingStatus(in,out);
-        setUpUserStatus(in,out);
+        setUpSendMessageBtn(in, out);
+        setUpTalkingTo(in, out);
+        setUpTypingStatus(in, out);
+        setUpUserStatus(in, out);
     }
+
     @SuppressLint("ClickableViewAccessibility")
-    private void setUpSendMessageBtn(Animation in,Animation out)
-    {
+    private void setUpSendMessageBtn(Animation in, Animation out) {
         imageSwitcher.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -771,8 +846,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         imageSwitcher.setOutAnimation(out);
     }
 
-    private void setUpTalkingTo(Animation in,Animation out)
-    {
+    private void setUpTalkingTo(Animation in, Animation out) {
         textSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
             @Override
             public View makeView() {
@@ -784,15 +858,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
         });
         //talkingTo = new String[]{recipient.getLastName(), recipient.getName(), recipient.getName() + " " + recipient.getLastName()};
-        talkingTo = new String[2*recipients.size()];
+        talkingTo = new String[2 * recipients.size()];
         int j = 0;
-        for (int i = 0;i<talkingTo.length;i = i+2)
-        {
+        for (int i = 0; i < talkingTo.length; i = i + 2) {
             talkingTo[i] = recipients.get(j).getName();
-            talkingTo[i+1] = recipients.get(j).getLastName();
+            talkingTo[i + 1] = recipients.get(j).getLastName();
             j++;
         }
-        if(!recipients.isEmpty())
+        if (!recipients.isEmpty())
             textSwitcher.setCurrentText(recipients.get(0).getName() + " " + recipients.get(0).getLastName());
         textSwitcher.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -808,8 +881,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         textSwitcher.setOutAnimation(out);
     }
 
-    private void setUpTypingStatus(Animation in,Animation out)
-    {
+    private void setUpTypingStatus(Animation in, Animation out) {
         textSwitcherTyping.setFactory(new ViewSwitcher.ViewFactory() {
             @Override
             public View makeView() {
@@ -824,8 +896,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         textSwitcherTyping.setOutAnimation(out);
     }
 
-    private void setUpUserStatus(Animation in,Animation out)
-    {
+    private void setUpUserStatus(Animation in, Animation out) {
         textSwitcherStatus.setFactory(new ViewSwitcher.ViewFactory() {
             @Override
             public View makeView() {
@@ -898,28 +969,28 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
 
-    private void loadGroupImage() {
+    private void loadConversationImage() {
         FileManager fileManager = FileManager.getInstance();
-        Bitmap bitmap = fileManager.getSavedImage(this, groupName + "_Image");
+        Bitmap bitmap = fileManager.getSavedImage(this, conversationID + "_Image");
         if (bitmap == null) {
-                Picasso.get().load(recipients.get(0).getPictureLink()).into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        talkingToImage.setImageBitmap(bitmap);
-                        fileManager.SaveUserImage(bitmap, groupName, ConversationActivity.this);
-                        Log.d("Picasso", "user image downloaded");
-                    }
+            Picasso.get().load(recipients.get(0).getPictureLink()).into(new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    talkingToImage.setImageBitmap(bitmap);
+                    fileManager.SaveUserImage(bitmap, conversationID, ConversationActivity.this);
+                    Log.d("Picasso", "user image downloaded");
+                }
 
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        Log.e("failed loading bitmap", "failed loading bitmap from picasso");
-                    }
+                @Override
+                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                    Log.e("failed loading bitmap", "failed loading bitmap from picasso");
+                }
 
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
 
-                    }
-                });
+                }
+            });
         } else talkingToImage.setImageBitmap(bitmap);
     }
 
@@ -935,7 +1006,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 //sends the location
-                if (AskPermission(MessageType.gpsMessage))
+                if (askPermission(MessageType.gpsMessage))
                     findLocation();
             }
         }).setMessage("Are you sure you want to send your current location");
@@ -943,7 +1014,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void onCameraAction() {
-        if (AskPermission(MessageType.photoMessage))
+        if (askPermission(MessageType.photoMessage))
             requestCamera();
     }
 
@@ -979,7 +1050,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void onVideoAction() {
-        if (AskPermission(MessageType.photoMessage))
+        if (askPermission(MessageType.photoMessage))
             RecordVideo();
     }
 
@@ -990,7 +1061,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             public void onResponse(@NonNull Call<Joke> call, @NonNull Response<Joke> response) {
                 if (response.code() == 200) {
                     Joke joke = response.body();
-                    if(joke !=null) {
+                    if (joke != null) {
                         messagePreview(joke.getValue(), "Random chuck norris joke", joke.getIcon_url());
                     }
                 } else
@@ -1069,93 +1140,100 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void SetCorrectColor(ButtonType type) {
-        switch (type) {
-            case location: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);
-                break;
+        if (smsConversation) {
+            buttonState = SEND_MESSAGE;
+            if (!darkMode)
+                imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
+            else
+                imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
+        } else
+            switch (type) {
+                case location: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.location_white);
+                    break;
+                }
+                case attachFile: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_24);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_white);
+                    break;
+                }
+                case camera: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_24);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
+                    break;
+                }
+                case gallery: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_photo_24);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
+                    break;
+                }
+                case delay: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_black);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_white);
+                    break;
+                }
+                case video: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_black);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_white);
+                    break;
+                }
+                case sendMessage: {
+                    if (!darkMode)
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
+                    else
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
+                    break;
+                }
+                case microphone: {
+                    if (!darkMode)
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
+                    else
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
+                    break;
+                }
+                case recording: {
+                    if (!darkMode)
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_black);
+                    else
+                        imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_white);
+                    break;
+                }
+                case play: {
+                    if (!darkMode)
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
+                    else
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
+                    break;
+                }
+                case pause: {
+                    if (!darkMode)
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
+                    else
+                        playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
+                    break;
+                }
+                default: {
+                    if (!darkMode)
+                        sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
+                    else
+                        sendActionBtn.setImageResource(R.drawable.location_white);
+                    Log.i(ERROR_CASE, "default color");
+                    break;
+                }
             }
-            case attachFile: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_attach_file_white);
-                break;
-            }
-            case camera: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
-                break;
-            }
-            case gallery: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_photo_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_camera_alt_white);
-                break;
-            }
-            case delay: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_black);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_access_time_white);
-                break;
-            }
-            case video: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_black);
-                else
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_videocam_white);
-                break;
-            }
-            case sendMessage: {
-                if (!darkMode)
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
-                else
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_send_white);
-                break;
-            }
-            case microphone: {
-                if (!darkMode)
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_black);
-                else
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_mic_white);
-                break;
-            }
-            case recording: {
-                if (!darkMode)
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_black);
-                else
-                    imageSwitcher.setImageResource(R.drawable.ic_baseline_settings_voice_white);
-                break;
-            }
-            case play: {
-                if (!darkMode)
-                    playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
-                else
-                    playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
-                break;
-            }
-            case pause: {
-                if (!darkMode)
-                    playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
-                else
-                    playAudioRecordingBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
-                break;
-            }
-            default: {
-                if (!darkMode)
-                    sendActionBtn.setImageResource(R.drawable.ic_baseline_location_on_24);
-                else
-                    sendActionBtn.setImageResource(R.drawable.location_white);
-                Log.i(ERROR_CASE, "default color");
-                break;
-            }
-        }
     }
 
     private void RecordingSoundStart() {
@@ -1182,8 +1260,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
     }
 
-    private void playNewMessageSound()
-    {
+    private void playNewMessageSound() {
         MediaPlayer startNewMessageSound = MediaPlayer.create(getApplicationContext(), R.raw.new_message_arrived);
         startNewMessageSound.start();
         startNewMessageSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -1209,7 +1286,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void PrepareSendMessage() {
 
-        if (imageView.getVisibility() == View.VISIBLE) {
+        if (smsConversation)
+            prepareMessageToSend(MessageType.sms.ordinal());
+        else if (imageView.getVisibility() == View.VISIBLE) {
             //sendMessage(MessageType.photoMessage.ordinal(), recipientUID);
             prepareMessageToSend(MessageType.photoMessage.ordinal());
             //PrepareMessageToSend(MessageType.photoMessage.ordinal(), recipientUID);
@@ -1234,6 +1313,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         buttonState = RECORD_VOICE;
         startRecording = true;
         stopPlaying();
+        if (smsConversation)
+            sendActionBtn.setVisibility(View.GONE);
     }
 
     private void ShowVoiceControl() {
@@ -1249,7 +1330,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private void LongPressToRecordVoice() {
         fileName = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath();
         fileName += "/audioRecordingTest.3gp";
-        if (AskPermission(MessageType.VoiceMessage)) {
+        if (askPermission(MessageType.VoiceMessage)) {
             RecordOrNot();
         }
     }
@@ -1336,8 +1417,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void stopPlaying() {
-        if (player != null)
-        {
+        if (player != null) {
             player.reset();
             player.release();
         }
@@ -1641,7 +1721,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("disableNotifications").putExtra("ConversationID", conversationID));
 
-        controller.setConversationGUI(this);
+        if (!smsConversation)
+            controller.setConversationGUI(this);
         // controller.onUpdateData("users/" + currentUser + "/status", MainActivity.ONLINE_S);
         goingBack = false;
     }
@@ -1660,21 +1741,27 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         editor1.remove("title");
         editor1.remove("link");
         editor1.apply();
-        controller.setConversationGUI(null);
+        if (!smsConversation)
+            controller.setConversationGUI(null);
         StatusOffline(true);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        controller.onRemoveChildEvent();
+        if (!smsConversation)
+        {
+            controller.onRemoveChildEvent();
+            controller.removeInterface(1);
+            controller.setConversationGUI(null);
+            tokenReference.removeEventListener(tokenListener);
+        }
         // Server.removeMessagesChildEvent();
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         SharedPreferences.Editor editor = conversationPreferences.edit();
         editor.putString("liveConversation", "noConversation");
         editor.apply();
-        controller.removeInterface(1);
-        controller.setConversationGUI(null);
+
         if (player != null) {
             try {
                 player.release();
@@ -1684,7 +1771,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 e.printStackTrace();
             }
         }
-        tokenReference.removeEventListener(tokenListener);
+
         LocalBroadcastManager.getInstance(this).unregisterReceiver(MessageReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiveNewMessages);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(recipientStatus);
@@ -1692,7 +1779,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         StatusOffline(false);
     }
 
-    private boolean AskPermission(MessageType messageType) {
+    private boolean askPermission(MessageType messageType) {
         switch (messageType) {
             case gpsMessage: {
                 int hasLocationPermission = ConversationActivity.this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -1719,6 +1806,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 int hasRecordingPermission = ConversationActivity.this.checkSelfPermission(Manifest.permission.RECORD_AUDIO);
                 if (hasRecordingPermission != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO_PERMISSION);
+                    return false;
+                } else return true;
+            }
+            case sms: {
+                int hasSmsPermission = ConversationActivity.this.checkSelfPermission(Manifest.permission.SEND_SMS);
+                if (hasSmsPermission != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.SEND_SMS}, 999);
                     return false;
                 } else return true;
             }
@@ -1760,6 +1854,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     else
                         Toast.makeText(this, "permission required to record audi", Toast.LENGTH_SHORT).show();
                     break;
+                case 999:
+                    if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                        Toast.makeText(this, "Great! permission granted, press send to send a sms message", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(this, "can't send sms without permission", Toast.LENGTH_SHORT).show();
+                    break;
             }
         }
     }
@@ -1796,16 +1896,15 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     }
 
-    private void prepareMessageToSend(int messageType)
-    {
+    private void prepareMessageToSend(int messageType) {
         String[] recipientsNames = new String[recipients.size()];
         String[] recipientsID = new String[recipients.size()];
-        for (int i = 0;i<recipientsNames.length;i++)
-        {
+        for (int i = 0; i < recipientsNames.length; i++) {
             recipientsNames[i] = recipients.get(i).getName();
-            recipientsID[i] = recipients.get(i).getUserUID();
+            if (!smsConversation)
+                recipientsID[i] = recipients.get(i).getUserUID();
         }
-        CreateMessage(messageToSend,messageType,recipientsNames,recipientsID);
+        CreateMessage(messageToSend, messageType, recipientsNames, recipientsID);
         resetToText();
     }
 
@@ -1870,8 +1969,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        controller.onRemoveChildEvent();
-        controller.setConversationGUI(null);
+        if (!smsConversation) {
+            controller.onRemoveChildEvent();
+            controller.setConversationGUI(null);
+        }
         goingBack = true;
     }
 
@@ -2057,7 +2158,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         contactName = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                         contact = true;
                         prepareMessageToSend(MessageType.contact.ordinal());
-                       // PrepareMessageToSend(MessageType.contact.ordinal(), recipientUID);
+                        // PrepareMessageToSend(MessageType.contact.ordinal(), recipientUID);
                         cursor.close();
                     }
                 }
@@ -2088,7 +2189,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void requestCamera() {
-        if (AskPermission(MessageType.photoMessage))
+        if (askPermission(MessageType.photoMessage))
             takePicture();
     }
 
@@ -2154,7 +2255,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             //opening dialer to call the recipient number if exists
             if (recipientPhoneNumber != null)
                 if (directCall)
-                    CallPhone(AskPermission(MessageType.callPhone));
+                    CallPhone(askPermission(MessageType.callPhone));
                 else
                     CallPhone(false);
         } else if (item.getItemId() == R.id.addAsContact) {
@@ -2219,8 +2320,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     startActivity(calendarIntent);*/
         } else if (item.getItemId() == R.id.block) {
             //blocks current recipient from sending messages to current user
-            Toast.makeText(ConversationActivity.this,"block needs reWrite",Toast.LENGTH_SHORT).show();
-            dbActive.blockConversation(conversationID);
+            if(dbActive.blockConversation(conversationID))
+                Toast.makeText(ConversationActivity.this,"conversation was blocked!",Toast.LENGTH_SHORT).show();
+            else
+                Toast.makeText(ConversationActivity.this,"conversation was un-blocked!",Toast.LENGTH_SHORT).show();
 
         } else if (item.getItemId() == R.id.share) {
             if (selectedMessage != null) {
@@ -2300,7 +2403,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             if (permissionGranted)
                 callRecipientIntent = new Intent(Intent.ACTION_CALL);
             else
-                AskPermission(MessageType.callPhone);
+                askPermission(MessageType.callPhone);
         } else {
             callRecipientIntent = new Intent(Intent.ACTION_DIAL);
         }
@@ -2480,7 +2583,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         message.setConversationID(conversationID);
         for (User recipientUser : this.recipients)
             message.addRecipient(recipientUser.getUserUID());
-        for(String name : recipientsNames)
+        for (String name : recipientsNames)
             message.addRecipientName(name);
         message.setGroupName(groupName);
         message.setSenderName(user.getName());
@@ -2492,7 +2595,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             @Override
             public void onPathReady(String path) {
                 message.setFilePath(path);
-                SendMessage(message);
+                sendMessage(message);
             }
 
             @Override
@@ -2560,8 +2663,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 server3.uploadFile(videoUri.toString());
                 break;
         }
-        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status)
-            SendMessage(message);
+        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms)
+            sendMessage(message);
     }
 
     /**
@@ -2570,44 +2673,41 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
      * @param message - the message to send
      */
 
-    private void SendMessage(@NonNull Message message) {
-        if(recipients.size()>0)
-        {
-            String token = getMyToken();
-            message.setSenderToken(token);
-            MessageSender messageSender = MessageSender.getInstance();
-            String[] recipientsTokens = new String[recipients.size()];
-            for(int i=0;i<recipientsTokens.length;i++)
-            {
-                recipientsTokens[i] = recipients.get(i).getToken();
-            }
-            Log.d("the amount of all the recipients tokens ",recipientsTokens.length + "");
-            saveMessage(message);
-            if(isNetworkAvailable())
-            {
-                message.setMessageStatus(MESSAGE_SENT);
-                messageSender.SendMessage(message, recipientsTokens);
-                UpdateMessage(message);
-                dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_SENT);
-            }
-            else
-            {
-                if (!message.getMessageStatus().equals(MESSAGE_WAITING)) {//no need to constantly update the same data - saves on processing time
-                    message.setMessageStatus(MESSAGE_WAITING);
-                    dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_WAITING);
+    private void sendMessage(@NonNull Message message) {
+        if (recipients.size() > 0) {
+            if (message.getMessageType() == MessageType.sms.ordinal()) {
+                sendSMS(message);
+                saveMessage(message);
+                showMessageOnScreen(message, message.getMessageAction());
+            } else {
+                String token = getMyToken();
+                message.setSenderToken(token);
+                MessageSender messageSender = MessageSender.getInstance();
+                String[] recipientsTokens = new String[recipients.size()];
+                for (int i = 0; i < recipientsTokens.length; i++) {
+                    recipientsTokens[i] = recipients.get(i).getToken();
                 }
-                Toast.makeText(ConversationActivity.this, "message will be sent during the next session with a valid connection", Toast.LENGTH_LONG).show();
+                Log.d("the amount of all the recipients tokens ", recipientsTokens.length + "");
+                saveMessage(message);
+                if (isNetworkAvailable()) {
+                    message.setMessageStatus(MESSAGE_SENT);
+                    messageSender.sendMessage(message, recipientsTokens);
+                    UpdateMessage(message);
+                    dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_SENT);
+                } else {
+                    if (!message.getMessageStatus().equals(MESSAGE_WAITING)) {//no need to constantly update the same data - saves on processing time
+                        message.setMessageStatus(MESSAGE_WAITING);
+                        dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_WAITING);
+                    }
+                    Toast.makeText(ConversationActivity.this, "message will be sent during the next session with a valid connection", Toast.LENGTH_LONG).show();
+                }
+                if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
+                    if (!chatAdapter.isMessageExists(message.getMessageID()))
+                        showMessageOnScreen(message, message.getMessageAction());
+                } else
+                    showMessageOnScreen(message, message.getMessageAction());
             }
-            if (message.getMessageStatus().equals(MESSAGE_WAITING))
-            {
-                if (!chatAdapter.isMessageExists(message.getMessageID()))
-                    ShowMessageOnScreen(message, message.getMessageAction());
-            }
-            else
-                ShowMessageOnScreen(message, message.getMessageAction());
-        }
-        else
-        {
+        } else {
             Log.e(NULL_ERROR, "recipients tokens empty or null");
             Toast.makeText(ConversationActivity.this, "error - can't send message, try again later", Toast.LENGTH_SHORT).show();
         }
@@ -2627,7 +2727,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     String readAt = intent.getStringExtra("readAt");
                     String messageStatus = intent.getStringExtra("messageStatus");
                     chatAdapter.UpdateMessageStatus(messageID, messageStatus, readAt);
-                    MarkAsRead(messageID);
+                    markAsRead(messageID);
                 } else if (intent.hasExtra("typing")) {
                     boolean typing = intent.getBooleanExtra("typing", false);
                     if (typing)
@@ -2657,30 +2757,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     playNewMessageSound();
                     Message message = (Message) intent.getSerializableExtra("message");
                     if (message != null && message.getMessageAction() != null) {
-                       /* if(message.getMessageType() == MessageType.meetUp.ordinal())
-                        {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity.this);
-                            builder.setTitle("MeetUp").setMessage(message.getSenderName() + " wants to schedule a meet up at " + message.getMessage())
-                                    .setPositiveButton("confirm", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-
-                                        }
-                                    }).setNegativeButton("decline", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                }
-                            });
-                            builder.create().show();
-                        }*/
-                        ShowMessageOnScreen(message, message.getMessageAction());
+                        showMessageOnScreen(message, message.getMessageAction());
                     }
                 } else if (intent.hasExtra("delete")) {
                     Log.d("delete message conversation activity", "got del ");
                     Message message = (Message) intent.getSerializableExtra("message");
                     if (message != null && message.getMessageAction() != null) {
-                        ShowMessageOnScreen(message, message.getMessageAction());
+                        showMessageOnScreen(message, message.getMessageAction());
 
                     }
                 }
@@ -2703,39 +2786,40 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private void LoadMessage(@NonNull final String id, @NonNull final String selection, MessageAction messageAction) {
         List<Message> messages = dbActive.loadMessages(id, selection);
         for (Message message : messages) {
-            if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
-                message.setMessageStatus(MESSAGE_SEEN);
-                MessageSender sender = MessageSender.getInstance();
-                if(!recipients.isEmpty())
-                {
-                    for(int i = 0;i<recipients.size();i++)
-                        if (recipients.get(i).getToken()!=null)
-                            sender.SendMessage(message,recipients.get(i).getToken());
-                        else
-                            Log.e(NULL_ERROR, "load messages - recipient token is null. recipient id: " + recipients.get(i).getUserUID());
+            if (!smsConversation) {
+                if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
+                    message.setMessageStatus(MESSAGE_SEEN);
+                    MessageSender sender = MessageSender.getInstance();
+                    if (!recipients.isEmpty()) {
+                        for (int i = 0; i < recipients.size(); i++)
+                            if (recipients.get(i).getToken() != null)
+                                sender.sendMessage(message, recipients.get(i).getToken());
+                            else
+                                Log.e(NULL_ERROR, "load messages - recipient token is null. recipient id: " + recipients.get(i).getUserUID());
+                    }
+                    markAsRead(message.getMessageID());
                 }
-                MarkAsRead(message.getMessageID());
             }
             if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
-                SendMessage(message);
+                sendMessage(message);
             } else
-                ShowMessageOnScreen(message, messageAction);//else statement because this function is being called also in sendMessage function
+                showMessageOnScreen(message, messageAction);//else statement because this function is being called also in sendMessage function
         }
     }
 
-    private void MarkAsRead(String messageID) {
+    private void markAsRead(String messageID) {
         dbActive.updateMessageStatus(messageID, MESSAGE_SEEN);
     }
 
 
-    private void ShowMessageOnScreen(Message message, MessageAction action) {
+
+    private void showMessageOnScreen(Message message, MessageAction action) {
         switch (action) {
             case new_message:
                 int amount = chatAdapter.getItemCount();
                 if (amount == 0) {//sending the first message in a conversation
                     CreateNewConversation(message);
-                    for(User user :recipients)
-                    {
+                    for (User user : recipients) {
                         getRecipientToken(user.getUserUID());
                         dbActive.insertUser(user);
                     }
@@ -2757,12 +2841,13 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
                 break;
         }
-        if (!message.getSender().equals(currentUser) && !message.getMessageStatus().equals(MESSAGE_SEEN))
+        if (!smsConversation && !message.getSender().equals(currentUser) && !message.getMessageStatus().equals(MESSAGE_SEEN))
             InteractionMessage(message.getConversationID(), message.getMessageID(), READ_TIME);
     }
 
     private void CreateNewConversation(Message message) {
-        dbActive.createNewConversation(message);
+        dbActive.createNewConversation(message, conversationType);
+        //dbActive.createNewConversation(message);
     }
 
     private void UpdateConversation(Message message) {
@@ -2775,6 +2860,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         dbActive.saveMessage(message);
 
     }
+
     private void UpdateMessage(@NonNull Message message) {
         dbActive.updateMessage(message);
     }
@@ -2790,80 +2876,79 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void InteractionMessage(String conversationID, String messageID, int type) {
-        Message message = new Message();
-        message.setConversationID(conversationID);
-        message.setSenderToken(getMyToken());
-        switch (type) {
-            case TYPING: {
-                message.setMessageKind("typing");
-                break;
+        if (!smsConversation) {
+            Message message = new Message();
+            message.setConversationID(conversationID);
+            message.setSenderToken(getMyToken());
+            switch (type) {
+                case TYPING: {
+                    message.setMessageKind("typing");
+                    break;
+                }
+                case NOT_TYPING: {
+                    message.setMessageKind("not typing");
+                    break;
+                }
+                case RECORDING: {
+                    message.setMessageKind("recording");
+                    break;
+                }
+                case NOT_RECORDING: {
+                    message.setMessageKind("not recording");
+                    break;
+                }
+                case READ_TIME: {
+                    message.setReadAt(System.currentTimeMillis());
+                    message.setMessageID(messageID);
+                    message.setMessageKind("read_time");
+                    message.setMessageStatus(MESSAGE_SEEN);
+                    break;
+                }
+                case DELETE: {
+                    message.setMessageKind("delete");
+                    message.setMessageID(messageID);
+                    break;
+                }
+                case EDIT: {
+                    message = editMessage;
+                    message.setMessageID(messageID);
+                    message.setMessage(messageToSend);
+                    message.setEditTime(System.currentTimeMillis() + "");
+                    message.setMessageAction(MessageAction.edit_message);
+                    message.setMessageKind("edit");
+                    chatAdapter.UpdateMessageEdit(messageID, messageToSend, message.getMessageTime());
+                    dbActive.updateConversationLastMessage(conversationID, messageToSend);
+                    break;
+                }
+                case STATUS: {
+                    message.setMessageKind("status");
+                    break;
+                }
+                default:
+                    Log.e(ERROR_CASE, "interaction message error");
             }
-            case NOT_TYPING: {
-                message.setMessageKind("not typing");
-                break;
-            }
-            case RECORDING: {
-                message.setMessageKind("recording");
-                break;
-            }
-            case NOT_RECORDING: {
-                message.setMessageKind("not recording");
-                break;
-            }
-            case READ_TIME: {
-                message.setReadAt(System.currentTimeMillis());
-                message.setMessageID(messageID);
-                message.setMessageKind("read_time");
-                message.setMessageStatus(MESSAGE_SEEN);
-                break;
-            }
-            case DELETE: {
-                message.setMessageKind("delete");
-                message.setMessageID(messageID);
-                break;
-            }
-            case EDIT: {
-                message = editMessage;
-                message.setMessageID(messageID);
-                message.setMessage(messageToSend);
-                message.setEditTime(System.currentTimeMillis() + "");
-                message.setMessageAction(MessageAction.edit_message);
-                message.setMessageKind("edit");
-                chatAdapter.UpdateMessageEdit(messageID, messageToSend, message.getMessageTime());
-                dbActive.updateConversationLastMessage(conversationID, messageToSend);
-                break;
-            }
-            case STATUS: {
-                message.setMessageKind("status");
-                break;
-            }
-            default:
-                Log.e(ERROR_CASE, "interaction message error");
+            MessageSender sender = MessageSender.getInstance();
+            sender.sendMessage(message, getRecipientsTokens());
         }
-        MessageSender sender = MessageSender.getInstance();
-        sender.SendMessage(message, getRecipientsTokens());
     }
 
-    private String[] getRecipientsNames()
-    {
+    private String[] getRecipientsNames() {
         String[] recipientsNames = new String[recipients.size()];
-        for(int i = 0;i<recipientsNames.length;i++)
+        for (int i = 0; i < recipientsNames.length; i++)
             recipientsNames[i] = recipients.get(i).getName();
         return recipientsNames;
     }
 
-    private String[] getRecipientsIDs()
-    {
+    private String[] getRecipientsIDs() {
         String[] recipientsIDs = new String[recipients.size()];
-        for(int i = 0;i<recipientsIDs.length;i++)
+        for (int i = 0; i < recipientsIDs.length; i++)
             recipientsIDs[i] = recipients.get(i).getUserUID();
         return recipientsIDs;
     }
 
-    private String[] getRecipientsTokens()
-    {
+    private String[] getRecipientsTokens() {
         String[] recipientsTokens = new String[recipients.size()];
-        for(int i = 0;i<recipientsTokens.length;i++)
+        for (int i = 0; i < recipientsTokens.length; i++)
             recipientsTokens[i] = recipients.get(i).getToken();
         return recipientsTokens;
     }
@@ -2888,8 +2973,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     String token = (String) snapshot.getValue();
                     if (token != null) {
                         User recipient = getRecipientByID(uid);
-                        if (recipient!=null)
-                        {
+                        if (recipient != null) {
                             if (!token.equals(recipient.getToken())) {
                                 dbActive.updateUserToken(uid, token);
                                 recipient.setToken(token);
@@ -2908,9 +2992,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             Log.e(NULL_ERROR, "recipientUID is null");
     }
 
-    private User getRecipientByID(String uid)
-    {
-        for(User user : recipients)
+    private User getRecipientByID(String uid) {
+        for (User user : recipients)
             if (user.getUserUID().equals(uid))
                 return user;
         return null;
@@ -2942,7 +3025,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         else
             message.setMessageStatus(MainActivity.OFFLINE_S);
         MessageSender sender = MessageSender.getInstance();
-        sender.SendMessage(message, getRecipientsTokens());
+        sender.sendMessage(message, getRecipientsTokens());
     }
 
     private void getRecipientStatus() {
@@ -2980,9 +3063,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     //either one or all, gets all the recipients in the current conversation
-    private void loadGroupConversation(String conversationID)
-    {
+    private void loadGroupConversation(String conversationID) {
         recipients = dbActive.loadUsers(conversationID);
         groupName = dbActive.loadConversationName(conversationID);
+        conversationType = dbActive.loadConversationType(conversationID);
+        if (conversationType == ConversationType.sms)
+        {
+            smsConversation = true;
+            recipientPhoneNumber = recipients.get(0).getPhoneNumber();
+        }
     }
 }
