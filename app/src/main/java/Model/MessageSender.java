@@ -46,7 +46,7 @@ public class MessageSender {
                 Log.d("sending to token",token);
             else
                 Log.e("null","message sender - token is null");
-            ObjectToSend toSend = new ObjectToSend(message, message.getSenderToken());//for debug/testing reasons, change to token for regular operations
+            ObjectToSend toSend = new ObjectToSend(message, token);//for debug/testing reasons, change to token for regular operations
             api.sendMessage(toSend).enqueue(new Callback<TryMyResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<TryMyResponse> call, @NonNull Response<TryMyResponse> response) {
