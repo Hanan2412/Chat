@@ -638,16 +638,19 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }
     }
 
+
+
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == READ_SMS && resultCode == RESULT_OK)
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_GRANTED)
         {
             Intent sms = new Intent(MainActivity.this, NewSMS.class);
             rotateAndShowOut();
             startActivity(sms);
         }
-        else if (requestCode == READ_SMS && resultCode == RESULT_CANCELED)
+        else if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_DENIED)
         {
             Toast.makeText(this, "can't start sms conversation without read sms permission", Toast.LENGTH_SHORT).show();
         }
