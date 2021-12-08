@@ -23,9 +23,9 @@
         android:layout_gravity="center_vertical"
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
-        android:background="@drawable/ic_launcher_background"
+        android:background="@android:color/holo_blue_light"
         android:scaleType="fitXY"
-        android:src="@drawable/ic_launcher_foreground"
+        android:src="@drawable/ic_baseline_account_circle_black"
         app:shapeAppearanceOverlay="@style/circleImageView" />
 
 
