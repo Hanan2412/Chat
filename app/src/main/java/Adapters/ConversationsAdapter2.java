@@ -199,7 +199,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
             holder.conversationStatus.setVisibility(View.GONE);
-        Bitmap bitmap = fileManager.getSavedImage(holder.itemView.getContext().getApplicationContext(), conversation.getConversationID() + "_Image");
+        Bitmap bitmap = null;
+        if (conversation.getConversationType() != ConversationType.sms)
+             bitmap = fileManager.getSavedImage(holder.itemView.getContext().getApplicationContext(), conversation.getConversationID() + "_Image");
         if (bitmap!=null)
         {
             holder.profileImage.setImageBitmap(bitmap);
@@ -208,40 +210,42 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         }
         else
         {
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/pictureLink");
-            reference.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String pictureLink = snapshot.getValue(String.class);
-                    Picasso.get().load(pictureLink).into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            String path = fileManager.SaveUserImage(bitmap,conversation.getConversationID(),holder.itemView.getContext().getApplicationContext());
-                            conversations.get(position).setRecipientImagePath(path);
-                            callback.onImageDownloaded(conversations.get(position),true);
-                        }
+            if(conversation.getConversationType() != ConversationType.sms) {
+                DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/pictureLink");
+                reference.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        String pictureLink = snapshot.getValue(String.class);
+                        Picasso.get().load(pictureLink).into(new Target() {
+                            @Override
+                            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                String path = fileManager.SaveUserImage(bitmap, conversation.getConversationID(), holder.itemView.getContext().getApplicationContext());
+                                conversations.get(position).setRecipientImagePath(path);
+                                callback.onImageDownloaded(conversations.get(position), true);
+                            }
 
-                        @Override
-                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                            Log.e("Error","couldn't load image");
-                        }
+                            @Override
+                            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                                Log.e("Error", "couldn't load image");
+                            }
 
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+                            @Override
+                            public void onPrepareLoad(Drawable placeHolderDrawable) {
 
-                        }
-                    });
-                    Picasso.get().load(pictureLink).into(holder.profileImage);
-                    reference.removeEventListener(this);
+                            }
+                        });
+                        Picasso.get().load(pictureLink).into(holder.profileImage);
+                        reference.removeEventListener(this);
 
 
-                }
+                    }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    error.toException().printStackTrace();
-                }
-            });
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        error.toException().printStackTrace();
+                    }
+                });
+            }
         }
         DatabaseReference statusReference = FirebaseDatabase.getInstance().getReference("users/" + conversation.getRecipient() + "/status");
         statusReference.addValueEventListener(new ValueEventListener() {
