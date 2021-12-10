@@ -446,25 +446,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
     private void LoadCurrentUserPicture() {
-        Picasso.get().load(user.getPictureLink()).into(new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                FileManager fileManager = FileManager.getInstance();
-                fileManager.SaveUserImage(bitmap, currentUser, MainActivity.this);
-                profileImage.setImageBitmap(bitmap);//loads user image to drawer header
-                shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
-            }
+        FileManager fileManager = FileManager.getInstance();
+        Bitmap profileBitmap = fileManager.readImage(this,FileManager.user_profile_images,currentUser);
+        profileImage.setImageBitmap(profileBitmap);
+        shapeableImageView.setImageBitmap(profileBitmap);
+        if (profileBitmap == null)
+            Log.e("ProfileBitmap", "profile bitmap is null");
 
-            @Override
-            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity");
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-            }
-        });
     }
 
     @Override
@@ -477,7 +465,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         FileManager fileManager = FileManager.getInstance();
-                        fileManager.SaveUserImage(bitmap, currentUser, MainActivity.this);
+                        fileManager.saveProfileImage(bitmap,currentUser,MainActivity.this,false);
                         profileImage.setImageBitmap(bitmap);//loads user image to drawer header
                         shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
                     }
@@ -494,8 +482,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 });
                 currentStatus = user.getStatus();
                 onUserUpdate = true;
-                UpdateMuted(user.getMutedConversations());
-                UpdateBlocked(user.getBlockedUsers());
                 invalidateOptionsMenu();
             }
 
@@ -503,12 +489,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
     private void LoadCurrentUserImage() {
-        FileManager fileManager = FileManager.getInstance();
-        Bitmap bitmap = fileManager.getSavedImage(this, currentUser + "_Image");
-        if (bitmap != null) {
-            profileImage.setImageBitmap(bitmap);
-            shapeableImageView.setImageBitmap(bitmap);
-        }
+        LoadCurrentUserPicture();
     }
 
     @Override
@@ -543,24 +524,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             }
 
         }
-    }
-
-    private void UpdateBlocked(ArrayList<String> blocked) {
-        SharedPreferences sharedPreferences = getSharedPreferences("blocked", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.clear().apply();
-        for (String block : blocked)
-            editor.putString(block, block);
-        editor.apply();
-    }
-
-    private void UpdateMuted(ArrayList<String> muted) {
-        SharedPreferences sharedPreferences = getSharedPreferences("muted", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.clear().apply();
-        for (String mute : muted)
-            editor.putString(mute, mute);
-        editor.apply();
     }
 
     @Override
