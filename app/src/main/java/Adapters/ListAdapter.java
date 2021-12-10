@@ -37,7 +37,9 @@ public class ListAdapter extends BaseAdapter {
     public int getCount() {
         if (users!=null)
             return users.size();
-        else return conversations.size();
+        else if (conversations!=null)
+            return conversations.size();
+        else return 0;
     }
 
     @Override

@@ -24,7 +24,7 @@
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_recent_actors_24.xml" value="0.21979166666666666" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_send_24.xml" value="0.23125" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_sms_24.xml" value="0.3592592592592593" />
-        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/activity_main.xml" value="0.25" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/backdrop_layout.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/bottom_sheet_layout.xml" value="0.5" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/camera.xml" value="0.36666666666666664" />
@@ -34,17 +34,23 @@
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_group_cell.xml" value="0.225" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_layout.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_layout2.xml" value="0.25" />
-        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_single_cell.xml" value="0.225" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_single_cell.xml" value="0.1" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversations_sms_cell.xml" value="0.2" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/conversatuin_layout2_dark.xml" value="0.22" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/converstion_layout2_dark.xml" value="0.22" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/current_user_profile_layout.xml" value="0.16944444444444445" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/drawer_header.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/general_fragment_layout.xml" value="0.182370820668693" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/group_activity.xml" value="0.25" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/group_profile_cell.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/incoming_message.xml" value="0.17831813576494426" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/list_adapter_view.xml" value="0.23233695652173914" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/list_cell.xml" value="0.21422101449275363" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/new_chat.xml" value="0.22" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/new_chat2.xml" value="0.25" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/new_sms_conversation.xml" value="0.25" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/outgoing_message.xml" value="0.22" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/profile_activity2.xml" value="0.25" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/sign.xml" value="0.15081521739130435" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/single_field.xml" value="0.375" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/start_group.xml" value="0.22" />

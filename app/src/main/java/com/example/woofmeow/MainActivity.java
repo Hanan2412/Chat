@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             @Override
             public void onClick(View v) {
                 Intent profileIntent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
-                profileIntent.putExtra("currentUser", user);
+                profileIntent.putExtra("user", user);
                 startActivity(profileIntent);
                 //startActivity(new Intent(MainActivity.this, CurrentUserProfileActivity.class).putExtra("currentUser",user));
             }
