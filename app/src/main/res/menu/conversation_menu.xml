@@ -33,14 +33,6 @@
         android:visible="true"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/sms"
-        android:enabled="true"
-        android:icon="@drawable/ic_baseline_message_24"
-        android:title="Send sms"
-        android:visible="true"
-        app:showAsAction="never"
-        />
     <item android:id="@+id/searchMessage"
         android:title="Search"
         android:icon="@drawable/ic_baseline_search_black"
