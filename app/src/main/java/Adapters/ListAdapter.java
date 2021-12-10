@@ -1,46 +1,50 @@
 package Adapters;
 
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.res.ResourcesCompat;
+
 import com.example.woofmeow.R;
-import com.squareup.picasso.Picasso;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.List;
 
+import NormalObjects.Conversation;
+import NormalObjects.FileManager;
 import NormalObjects.User;
 
 public class ListAdapter extends BaseAdapter {
 
     private ArrayList<User>users;
-
-    public void setUsers(ArrayList<User>users){this.users = users;}
-    public void addUser(User user){
-        if (users == null)
-            users = new ArrayList<>();
-        users.add(user);
-       // notifyDataSetChanged();
+    private List<Conversation> conversations;
+    public void setConversations(List<Conversation>conversations){
+        this.conversations = conversations;
+        notifyDataSetChanged();
     }
+    public void setUsers(ArrayList<User>users){
+        this.users = users;
+    notifyDataSetChanged();
+    }
+
     @Override
     public int getCount() {
-        return users.size();
+        if (users!=null)
+            return users.size();
+        else return conversations.size();
     }
 
     @Override
     public Object getItem(int position) {
-        return users.get(position);
+        if (users!=null)
+            return users.get(position);
+        else return conversations.get(position);
     }
 
     @Override
@@ -53,39 +57,43 @@ public class ListAdapter extends BaseAdapter {
         LayoutInflater layoutInflater = (LayoutInflater)parent.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         if (layoutInflater!=null) {
             convertView = layoutInflater.inflate(R.layout.list_adapter_view, parent, false);
-            TextView name = convertView.findViewById(R.id.userName);
-            TextView lastName = convertView.findViewById(R.id.userLastName);
+            LinearLayout root = convertView.findViewById(R.id.rootLayout);
+            TextView name = convertView.findViewById(R.id.name);
+            TextView lastName = convertView.findViewById(R.id.lastName);
             ImageView profileImage = convertView.findViewById(R.id.profileImage);
-            User user = users.get(position);
-            name.setText(user.getName());
-            lastName.setText(user.getLastName());
-            Bitmap userImage = LoadUserImageBitmap(position,parent);
-            if (userImage == null)
-                Picasso.get().load(user.getPictureLink()).into(profileImage);
+            FileManager fm = FileManager.getInstance();
+            if (conversations!=null)
+            {
+                Conversation conversation = conversations.get(position);
+                switch (conversation.getConversationType())
+                {
+                    case single:
+                        root.setBackground(ResourcesCompat.getDrawable(parent.getResources(),R.drawable.conversation_cell_not_selected,parent.getContext().getTheme()));
+                        break;
+                    case group:
+                        root.setBackground(ResourcesCompat.getDrawable(parent.getResources(),R.drawable.conversation_group_cell_not_selected,parent.getContext().getTheme()));
+                        break;
+                    case sms:
+                        root.setBackground(ResourcesCompat.getDrawable(parent.getResources(),R.drawable.conversation_sms_cell_not_selected,parent.getContext().getTheme()));
+                        break;
+                }
+                name.setText(conversation.getGroupName());
+                Bitmap bitmap = fm.readImage(parent.getContext(), FileManager.conversationProfileImage,conversation.getConversationID());
+                if (bitmap!=null)
+                    profileImage.setImageBitmap(bitmap);
+                lastName.setText(conversation.getLastMessage());
+            }
             else
-                profileImage.setImageBitmap(userImage);
-        }
-        return convertView;
-    }
-
-    private Bitmap LoadUserImageBitmap(int position,ViewGroup parent)
-    {
-        SharedPreferences savedImagesPreferences = parent.getContext().getSharedPreferences("SavedImages",Context.MODE_PRIVATE);
-        User user = users.get(position);
-        String sender = user.getUserUID();
-        if (savedImagesPreferences.getBoolean(sender,false))
-        {
-            try {
-                ContextWrapper contextWrapper = new ContextWrapper(parent.getContext().getApplicationContext());
-                File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                File imageFile = new File(directory,sender + "_Image");
-                return BitmapFactory.decodeStream(new FileInputStream(imageFile));
-
-                //holder.profileImage.setImageBitmap(imageBitmap);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+            {
+                User user = users.get(position);
+                String fullName = user.getName() + " " + user.getLastName();
+                name.setText(fullName);
+                Bitmap bitmap = fm.readImage(parent.getContext(),FileManager.user_profile_images,user.getUserUID());
+                if (bitmap!=null)
+                    profileImage.setImageBitmap(bitmap);
+                lastName.setVisibility(View.GONE);
             }
         }
-        return null;
+        return convertView;
     }
 }
