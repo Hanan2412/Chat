@@ -457,21 +457,13 @@ public class TabFragment extends Fragment implements MainGUI {
     @Override
     public void onReceiveUser(User user) {
         if (user.getUserUID().equals(currentUser)) {//us - the user login
-           // CheckIfUserExist(user);
             InsertUser(user);
-            //dbActive.CheckIfUserExist(user);
             this.user = user;
             //sends the data to mainActivity
             callback.onUserUpdate(user);
         }
     }
 
-
-    private void InsertConversationToDataBase(Conversation conversation) {
-        dbActive.insertConversationToDataBase(conversation);
-        conversationsAdapter2.addConversation(conversation);
-        conversations.add(conversation);
-    }
 
     private void UpdateConversationsInDataBase(Conversation conversation, boolean image) {
 
@@ -481,13 +473,6 @@ public class TabFragment extends Fragment implements MainGUI {
 
     }
 
-
-    //idType - true for conversationID, false for messageID
-    private boolean CheckIfExist(String ID, boolean idType) {
-       return dbActive.checkIfExist(ID,idType);
-    }
-
-
     @Deprecated
     @Override
     public void onReceiveConversations(ArrayList<Conversation> conversations) {
@@ -495,28 +480,19 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
     //this method is only called on lunch or when a new conversation begins
+    @Deprecated
     @Override
     public void onReceiveConversation(Conversation conversation) {
-        //checks if conversation already exists
-        if (!CheckIfExist(conversation.getConversationID(), true)) {
-            //if conversation doesn't exists - meaning its a new conversation
-            InsertConversationToDataBase(conversation);
-        } else {
-            //meaning conversationExists already - so we only need to update the database
-            UpdateConversationsInDataBase(conversation, false);
-        }
     }
 
     @Deprecated
     @Override
     public void onChangedConversation(Conversation conversation) {
-        UpdateConversationsInDataBase(conversation, false);
     }
 
     @Deprecated
     @Override
     public void onRemoveConversation(Conversation conversation) {
-        conversationsAdapter2.deleteConversation(conversation);
     }
 
     @Override
@@ -524,18 +500,10 @@ public class TabFragment extends Fragment implements MainGUI {
         callback.onUserQuery(user);
     }
 
+    @Deprecated
     @Override
     public void onVersionChange(float newVersionNumber) {
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("App", MODE_PRIVATE);
-        float currentVersionNumber = sharedPreferences.getFloat("Version", -1);
-        if (currentVersionNumber != newVersionNumber) {
-            Snackbar.make(requireContext(), view, "A newer version is available", Snackbar.LENGTH_SHORT).setAction("Update", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    //opens play store with the app link
-                }
-            }).show();
-        }
+
     }
 
 
@@ -691,7 +659,7 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
     private void MuteConversation(String conversationID) {
-        boolean mute = dbActive.MuteUser(conversationID);
+        boolean mute = dbActive.muteConversation(conversationID);
         String dialog;
         if(mute)
             dialog = "Conversation was Muted";

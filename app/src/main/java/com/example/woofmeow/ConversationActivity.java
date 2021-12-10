@@ -642,17 +642,28 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
 
         loadConversationImage();
-        /*talkingToImage.setOnClickListener(new View.OnClickListener() {
+        talkingToImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent openRecipientIntent = new Intent(ConversationActivity.this, ProfileActivity2.class);
-                openRecipientIntent.putExtra("recipient", recipient);
-                openRecipientIntent.putExtra("currentUser", user);
-                openRecipientIntent.putExtra("recipientImagePath", recipientImagePath);
-                openRecipientIntent.putExtra("conversationID", conversationID);
-                startActivity(openRecipientIntent);
+                if (chatAdapter.getItemCount() == 0)
+                    Toast.makeText(ConversationActivity.this,"send or receive a message to open conversation profile",Toast.LENGTH_SHORT).show();
+                else {
+                    if (recipients.size() > 1) {
+                        Intent openGroupIntent = new Intent(ConversationActivity.this, GroupActivity.class);
+                        openGroupIntent.putExtra("conversationID", conversationID);
+                        startActivity(openGroupIntent);//opens group profile
+                    } else if (recipients.size() == 1) {
+
+                        Intent openRecipientIntent = new Intent(ConversationActivity.this, ProfileActivity2.class);
+                        openRecipientIntent.putExtra("user", recipients.get(0));//opens single user profile activity
+                        openRecipientIntent.putExtra("conversationID", conversationID);
+                        startActivity(openRecipientIntent);
+
+                    }
+                }
+
             }
-        });*/
+        });
         ImageButton backButton = findViewById(R.id.goBack);
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -958,13 +969,20 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void loadConversationImage() {
         FileManager fileManager = FileManager.getInstance();
-        Bitmap bitmap = fileManager.getSavedImage(this, conversationID + "_Image");
+        Bitmap bitmap;
+        if (recipients.size()>1)
+            bitmap = fileManager.readImage(this,FileManager.conversationProfileImage,conversationID);
+        else
+            bitmap = fileManager.readImage(this,FileManager.user_profile_images,recipients.get(0).getUserUID());
         if (bitmap == null) {
             Picasso.get().load(recipients.get(0).getPictureLink()).into(new Target() {
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                     talkingToImage.setImageBitmap(bitmap);
-                    fileManager.SaveUserImage(bitmap, conversationID, ConversationActivity.this);
+                    if (recipients.size()>1)
+                        fileManager.saveProfileImage(bitmap,conversationID,ConversationActivity.this,true);
+                    else
+                        fileManager.saveProfileImage(bitmap,recipients.get(0).getUserUID(),ConversationActivity.this,false);
                     Log.d("Picasso", "user image downloaded");
                 }
 

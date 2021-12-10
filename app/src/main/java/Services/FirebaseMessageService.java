@@ -72,6 +72,7 @@ import Consts.MessageType;
 import Controller.CController;
 
 import Model.MessageSender;
+import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.Message;
 import NormalObjects.User;
@@ -234,18 +235,73 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         dbActive = DBActive.getInstance(this);
     }
 
-    private Bitmap LoadSenderImageForNotification(String conversationID,String sender) {
+
+    private void downloadConversationImage(String conversationID)
+    {
+        List<Conversation> conversationList = dbActive.getConversations();
+        for (Conversation conversation : conversationList)
+        {
+            if (conversation.getConversationID().equals(conversationID))
+            {
+                if (conversation.getRecipientImagePath() == null)
+                {
+                    //starts download of group image
+                    DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversationID + "/pictureLink");
+                    reference.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            String pictureLink = snapshot.getValue(String.class);
+                            Picasso.get().load(pictureLink).into(new Target() {
+                                @Override
+                                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                    saveImage(bitmap,conversationID,true);
+                                }
+
+                                @Override
+                                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+                                    e.printStackTrace();
+                                }
+
+                                @Override
+                                public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                                }
+                            });
+                            reference.removeEventListener(this);
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+                }
+
+            }
+        }
+    }
+
+    //saves the downloaded image in a directory determined by the boolean value
+    private void saveImage(Bitmap bitmap,String id, boolean identifier)
+    {
+       FileManager fm = FileManager.getInstance();
+       fm.saveProfileImage(bitmap,id,this,identifier);
+    }
+
+    private Bitmap loadSenderImageForNotification(String sender) {
         SharedPreferences savedImagesPreferences = this.getSharedPreferences("SavedImages", Context.MODE_PRIVATE);
-        if (savedImagesPreferences.getBoolean(sender, false)) {
-            try {
+        if (savedImagesPreferences.getBoolean(sender, false)) {//if image is already downloaded,use it
+            FileManager fm = FileManager.getInstance();
+            return fm.readImage(this,FileManager.user_profile_images,sender);
+           /* try {
                 ContextWrapper contextWrapper = new ContextWrapper(this.getApplicationContext());
                 File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                File imageFile = new File(directory, conversationID + "_Image");
+                File imageFile = new File(directory, sender + "_Image");
                 return BitmapFactory.decodeStream(new FileInputStream(imageFile));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
-            }
-        } else {
+            }*/
+        } else {//if the image isn't downloaded , download it
             DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + sender + "/pictureLink");
             reference.addValueEventListener(new ValueEventListener() {
                 @Override
@@ -254,24 +310,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     Picasso.get().load(pictureLink).into(new Target() {
                         @Override
                         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            ContextWrapper contextWrapper = new ContextWrapper(FirebaseMessageService.this.getApplicationContext());
-                            File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                            if (!directory.exists())
-                                if (!directory.mkdir()) {
-                                    Log.e("error", "couldn't create a directory in conversationAdapter2");
-                                }
-                            File Path = new File(directory, conversationID + "_Image");
-                            try {
-                                FileOutputStream fileOutputStream = new FileOutputStream(Path);
-                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                                fileOutputStream.close();
-                                SharedPreferences.Editor editor = savedImagesPreferences.edit();
-                                editor.putBoolean(sender, true);
-                                editor.apply();
+                            saveImage(bitmap,sender,false);
+                            SharedPreferences.Editor editor = savedImagesPreferences.edit();
+                            editor.putBoolean(sender, true);
+                            editor.apply();
 
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
                         }
 
                         @Override
@@ -367,7 +410,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         CreateNotificationChannel();
         if (messageType == MessageType.gpsMessage.ordinal())
             messageText = locationAddress;
-        Bitmap bitmap = LoadSenderImageForNotification(conversationID,senderUID);
+        Bitmap bitmap = loadSenderImageForNotification(senderUID);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelID)
                 .setSmallIcon(R.drawable.ic_baseline_chat_black)
@@ -515,6 +558,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 }
                 String content = remoteMessage.getData().get("message");
                 String senderUID = remoteMessage.getData().get("sender");
+                if (list.size() == 1)
+                    loadSenderImageForNotification(senderUID);
+                else
+                    downloadConversationImage(conversationID);
                 String senderName = remoteMessage.getData().get("senderName");
                 String sendingTime = remoteMessage.getData().get("sendingTime");
                 String quote = remoteMessage.getData().get("quoteMessage");

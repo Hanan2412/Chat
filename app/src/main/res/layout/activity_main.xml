@@ -37,10 +37,10 @@
                         android:id="@+id/toolbarProfileImage"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@drawable/ic_launcher_background"
+                        android:background="@android:color/holo_blue_light"
                         android:clickable="true"
                         android:contentDescription="profile image"
-                        android:src="@drawable/ic_launcher_foreground"
+                        android:src="@drawable/ic_baseline_account_circle_black"
                         app:shapeAppearanceOverlay="@style/circleImageView" />
                     <!--
                                         <ImageView
