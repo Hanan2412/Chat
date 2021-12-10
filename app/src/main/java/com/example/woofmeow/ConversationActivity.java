@@ -1479,12 +1479,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             messageLongPress = false;
             invalidateOptionsMenu();
             Drawable drawable;
-            if (selectedMessage.getSender().equals(currentUser)) {
+            if (message.getSender().equals(currentUser)) {
                 drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.outgoing_message_look, getTheme());
             } else {
                 drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.incoming_message_look, getTheme());
             }
-            selectedMessageView.setBackground(drawable);
+            view.setBackground(drawable);
 
         } else if (message.getQuoteMessage() != null) {
             //this is a quoted message
@@ -2307,12 +2307,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             if (selectedMessage != null) {
                 BackdropFragment backdropFragment = BackdropFragment.newInstance();
                 Bundle backDropBundle = new Bundle();
-                backDropBundle.putString("senderName", selectedMessage.getSenderName());
-                backDropBundle.putString("timeSent", selectedMessage.getMessageTime());
-                backDropBundle.putString("message", selectedMessage.getMessage());
-                backDropBundle.putInt("messageType", selectedMessage.getMessageType());
-                backDropBundle.putBoolean("messageSeen", selectedMessage.isHasBeenRead());
-                backDropBundle.putString("conversationID", selectedMessage.getConversationID());
+                final String conversationType = "conversationType";
+                backDropBundle.putSerializable("message",selectedMessage);
+                if (smsConversation)
+                    backDropBundle.putInt(conversationType,ConversationType.sms.ordinal());
+                else if (recipients.size() == 1)
+                    backDropBundle.putInt(conversationType,ConversationType.single.ordinal());
+                else if (recipients.size() > 1)
+                    backDropBundle.putInt(conversationType,ConversationType.group.ordinal());
                 backdropFragment.setArguments(backDropBundle);
                 backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
                 selectedMessage = null;
