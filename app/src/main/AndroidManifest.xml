@@ -57,6 +57,7 @@
 
 
         </activity>
+        <activity android:name=".GroupActivity"/>
         <activity android:name=".UserCreationActivity"/>
         <activity android:name=".PreferenceActivity"
           />

@@ -535,6 +535,8 @@ public class DBActive {
     {
         if (db != null) {
             ContentValues values = new ContentValues();
+            if (message.getRecipients().size() == 1)
+                values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipients().get(0));
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
@@ -1000,7 +1002,51 @@ public class DBActive {
         return false;
     }
 
-    public synchronized boolean MuteUser(String conversationID) {
+    //mutes/un mutes users in db
+    public synchronized boolean muteUser(String userID)
+    {
+        boolean muted = false;
+        if (db!=null)
+        {
+            String selection = DataBaseContract.User.USER_TABLE + " LIKE ?";
+            String[] selectionArgs = {userID};
+            ContentValues values = new ContentValues();
+            if (isUserMuted(userID))
+            {
+                values.put(DataBaseContract.User.USER_TABLE,"");
+            }
+            else
+            {
+                values.put(DataBaseContract.User.USER_TABLE,"muted");
+                muted = true;
+            }
+            db.update(DataBaseContract.User.USER_TABLE,values,selection,selectionArgs);
+        }
+        return muted;
+    }
+
+    //reads if the user is muted
+    public synchronized boolean isUserMuted(String userID)
+    {
+        String muted = "";
+        if (db!=null)
+        {
+            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
+            String[] selectionArgs = {userID};
+            String[] projections = {
+                    DataBaseContract.Conversations.MUTED
+            };
+            Cursor cursor = db.query(DataBaseContract.User.USER_TABLE,projections,selection,selectionArgs,null,null,null);
+            if (cursor.getCount() > 1)
+                Log.e(DataBaseError, "isUserMuted: got more than 1 answer for mute query" );
+            cursor.moveToNext();
+            muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
+            cursor.close();
+        }
+        return muted.equals("muted");
+    }
+
+    public synchronized boolean muteConversation(String conversationID) {
         if (db != null) {
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {conversationID};
@@ -1043,4 +1089,41 @@ public class DBActive {
         return false;
     }
 
+    public List<Conversation> getAllMutedOrBlockedConversation(String selection,String[] selectionArgs)
+    {
+        List<Conversation>conversations = new ArrayList<>();
+        if (db!=null)
+        {
+            String[] projection = {
+                    DataBaseContract.Conversations.CONVERSATION_ID,
+                    DataBaseContract.Conversations.CONVERSATION_TYPE,
+                    DataBaseContract.Conversations.LAST_MESSAGE,
+                    DataBaseContract.Conversations.RECIPIENT,
+                    DataBaseContract.Conversations.GROUP_NAME,
+                    DataBaseContract.Conversations.RECIPIENT_NAME
+            };
+            //String selection = DataBaseContract.Conversations.MUTED + " LIKE ?";
+            //String[] selectionArgs = {"muted"};
+            Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE,projection,selection,selectionArgs,null,null,null);
+            while (cursor.moveToNext())
+            {
+                Conversation conversation = new Conversation(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID)));
+                conversation.setMuted(true);
+                conversation.setLastMessage(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE)));
+                conversation.setRecipient(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT)));
+                conversation.setRecipientName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME)));
+                conversation.setGroupName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME)));
+                String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
+                if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
+                    conversation.setConversationType(ConversationType.single);
+                else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
+                    conversation.setConversationType(ConversationType.group);
+                else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
+                    conversation.setConversationType(ConversationType.sms);
+                conversations.add(conversation);
+            }
+            cursor.close();
+        }
+        return conversations;
+    }
 }
