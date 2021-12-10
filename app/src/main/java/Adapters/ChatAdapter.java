@@ -172,8 +172,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, @SuppressLint("RecyclerView") int position) {
         final Message message = messages.get(position);
-       /* if (!message.getMessageStatus().equals(ConversationActivity.MESSAGE_SEEN))
-            callback.onUpdateMessageStatus(message);*/
         holder.message.setText(message.getMessage());
             if (message.isStar()) {
                 holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
