@@ -20,10 +20,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import DataBase.DBActive;
+import Services.FirebaseMessageService;
+
 public class FileManager {
 
     private final String fileError = "Error while creating file";
-
+    public static final String conversationProfileImage = "conversation_profile_image";
+    public static final String user_profile_images = "user_images";
     private static FileManager fileManager;
 
     private FileManager(){}
@@ -34,6 +38,45 @@ public class FileManager {
         return fileManager;
     }
 
+    //saves the profile image of the user or the conversation to local storage
+    public void saveProfileImage(Bitmap bitmap, String id, Context context, boolean identifier)
+    {
+        ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
+        File directory;
+        if (!identifier)
+            directory = contextWrapper.getDir(user_profile_images, Context.MODE_PRIVATE);
+        else
+            directory = contextWrapper.getDir(conversationProfileImage,Context.MODE_PRIVATE);
+        if (!directory.exists())
+            if (!directory.mkdir()) {
+                Log.e("error", "couldn't create a directory in fm");
+            }
+        File path = new File(directory, id + "_Image");
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(path);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.d("FileManager", "saveProfileImage - image was saved");
+
+    }
+
+    public Bitmap readImage(Context context,String dirName,String childPath)
+    {
+        try {
+            ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
+            File directory = contextWrapper.getDir(dirName, Context.MODE_PRIVATE);
+            File imageFile = new File(directory, childPath + "_Image");
+            return BitmapFactory.decodeStream(new FileInputStream(imageFile));
+        }catch (FileNotFoundException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Deprecated
     public String SaveUserImage(Bitmap bitmap,String userUID,Context context)
     {
         ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
@@ -101,6 +144,7 @@ public class FileManager {
         return path;
     }
 
+    @Deprecated
     public Bitmap getSavedImage(Context context,String childPath)
     {
         try {
@@ -115,6 +159,7 @@ public class FileManager {
         return null;
     }
 
+    @Deprecated
     public String getSavedImagePath(Context context,String childPath)
     {
         ContextWrapper contextWrapper = new ContextWrapper(context);
