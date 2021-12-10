@@ -51,7 +51,6 @@ import java.util.concurrent.Future;
 import javax.net.ssl.HttpsURLConnection;
 import Consts.MessageType;
 import Consts.Messaging;
-import NormalObjects.FileManager;
 import NormalObjects.Message;
 
 
@@ -271,17 +270,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 @Override
                 public void run() {
                     super.run();
-
                     try {
                         if (holder.linkMessage != null) {
-
+                            String imageLink = "",description = "",title = "";
                             Document doc = Jsoup.connect(message.getMessage()).userAgent("Mozilla").get();
-                            String title = doc.title();
+                            title = doc.title();
                             // Elements meta = doc.select("meta[property=og:url]");
                             Elements webImage = doc.select("meta[property=og:image]");
-                            String imageLink = webImage.attr("content");
+                            imageLink = webImage.attr("content");
                             Elements webDescription = doc.select("meta[property=og:description]");
-                            String description = webDescription.attr("content");
+                            description = webDescription.attr("content");
                             URL url = new URL(imageLink);
                             HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
                             httpsURLConnection.connect();
@@ -290,14 +288,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                                 InputStream inputStream = httpsURLConnection.getInputStream();
                                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                                 Handler handler = new Handler(Looper.getMainLooper());
+                                String finalDescription = description;
+                                String finalTitle = title;
                                 handler.post(new Runnable() {
                                     @Override
                                     public void run() {
                                         holder.linkMessage.setVisibility(View.VISIBLE);
                                         holder.linkImage.setImageBitmap(bitmap);
                                         holder.linkImage.setScaleType(ImageView.ScaleType.FIT_XY);
-                                        holder.linkContent.setText(description);
-                                        holder.linkTitle.setText(title);
+                                        holder.linkContent.setText(finalDescription);
+                                        holder.linkTitle.setText(finalTitle);
                                         holder.linkMessage.setOnClickListener(new View.OnClickListener() {
                                             @Override
                                             public void onClick(View v) {
@@ -307,16 +307,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                                         holder.message.setVisibility(View.GONE);
                                     }
                                 });
-
                                 inputStream.close();
                                 httpsURLConnection.disconnect();
                             }
                             httpsURLConnection.disconnect();
-
                         }
-
-
                     } catch (IOException | IllegalArgumentException e) {
+                        e.printStackTrace();
                         System.out.println("error in getting link image");
                     }
                 }

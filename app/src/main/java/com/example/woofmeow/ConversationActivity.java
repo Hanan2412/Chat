@@ -755,7 +755,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             conversationType = ConversationType.group;
         } else if (getIntent().hasExtra("phoneNumber")) {
             //new sms conversation
-            recipientPhoneNumber = (String) getIntent().getStringExtra("phoneNumber");
+            recipientPhoneNumber =  getIntent().getStringExtra("phoneNumber");
             User user = (User) getIntent().getSerializableExtra("smsUser");
             recipients = new ArrayList<>();
             recipients.add(user);
@@ -910,20 +910,28 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void parseHtml(String link) {//parsing html for message preview from shared link
-        try {
-            Document doc = Jsoup.connect(link).userAgent("Mozilla").get();
-            String title = doc.title();
-            Elements webImage = doc.select("meta[property=og:image]");
-            String imageLink = webImage.attr("content");
-            Elements webDescription = doc.select("meta[property=og:description]");
-            String description = webDescription.attr("content");
-            messagePreview(description, title, imageLink);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Thread htmlParser = new Thread(){
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    Document doc = Jsoup.connect(link).userAgent("Mozilla").get();
+                    String title = doc.title();
+                    Elements webImage = doc.select("meta[property=og:image]");
+                    String imageLink = webImage.attr("content");
+                    Elements webDescription = doc.select("meta[property=og:description]");
+                    String description = webDescription.attr("content");
+                    messagePreview(description, title, imageLink,link);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        htmlParser.setName("html parser");
+        htmlParser.start();
     }
 
-    private void messagePreview(String description, String title, String imageLink) {
+    private void messagePreview(String description, String title, String imageLink,String originalLink) {
         Thread linkPreviewThread = new Thread() { //downloading preview image using httpsUrlConnection to demonstrate capabilities, would be done with picasso otherwise
             @Override
             public void run() {
@@ -945,7 +953,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                                 linkedImage.setImageBitmap(bitmap);
                                 linkContent.setText(description);
                                 linkTitle.setText(title);
+                                linkedMessagePreview.setVisibility(View.GONE);
                                 buttonState = SEND_MESSAGE;
+                                messageSent.setText(description);
                                 imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
                             }
                         });
@@ -1067,7 +1077,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 if (response.code() == 200) {
                     Joke joke = response.body();
                     if (joke != null) {
-                        messagePreview(joke.getValue(), "Random chuck norris joke", joke.getIcon_url());
+                        messagePreview(joke.getValue(), "Random chuck norris joke", joke.getIcon_url(),joke.getUrl());
                     }
                 } else
                     Log.e("joke response code and message", response.code() + " " + response.message());
