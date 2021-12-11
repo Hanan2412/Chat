@@ -248,8 +248,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private ShapeableImageView talkingToImage;
     private boolean messageLongPress = false;
     private Message selectedMessage;
-    private View selectedMessageView;
-    private boolean goingBack = false;
     private String quotedMessageID;
 
     private final String FIREBASE_ERROR = "firebase_Error";
@@ -265,7 +263,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private final int REQUEST_VIDEO_CAPTURE = 8;
     private Uri videoUri;
     private final String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
-    private RelativeLayout relativeLayout;
     private BroadcastReceiver receiveNewMessages;
     private final int TYPING = 0;
     private final int NOT_TYPING = 2;
@@ -331,8 +328,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark,getTheme()));
         else if (recipients.size() > 1)
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple,getTheme()));
-
-        relativeLayout = findViewById(R.id.root_container);
         searchLayout = findViewById(R.id.searchLayout);
         searchText = findViewById(R.id.searchText);
         Button searchBtn = findViewById(R.id.searchBtn);
@@ -668,7 +663,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                goingBack = true;
                 if (!smsConversation)
                 controller.setConversationGUI(null);
                 Intent intent = new Intent(ConversationActivity.this, MainActivity.class);
@@ -953,9 +947,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                                 linkedImage.setImageBitmap(bitmap);
                                 linkContent.setText(description);
                                 linkTitle.setText(title);
-                                linkedMessagePreview.setVisibility(View.GONE);
                                 buttonState = SEND_MESSAGE;
-                                messageSent.setText(description);
+                                messageSent.setText(originalLink);
                                 imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
                             }
                         });
@@ -1077,7 +1070,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 if (response.code() == 200) {
                     Joke joke = response.body();
                     if (joke != null) {
-                        messagePreview(joke.getValue(), "Random chuck norris joke", joke.getIcon_url(),joke.getUrl());
+                        messageSent.setText(joke.getValue());
+                        //messagePreview(joke.getValue(), "Random chuck norris joke", joke.getIcon_url(),joke.getUrl());
                     }
                 } else
                     Log.e("joke response code and message", response.code() + " " + response.message());
@@ -1539,7 +1533,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         messageLongPress = !messageLongPress;
         invalidateOptionsMenu();
         selectedMessage = message;
-        selectedMessageView = view;
         MarkMessage(view, false);
 
     }
@@ -1691,7 +1684,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         if (!smsConversation)
             controller.setConversationGUI(this);
         // controller.onUpdateData("users/" + currentUser + "/status", MainActivity.ONLINE_S);
-        goingBack = false;
     }
 
 
@@ -1940,7 +1932,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             controller.onRemoveChildEvent();
             controller.setConversationGUI(null);
         }
-        goingBack = true;
     }
 
 
