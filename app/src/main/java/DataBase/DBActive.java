@@ -1008,7 +1008,7 @@ public class DBActive {
         boolean muted = false;
         if (db!=null)
         {
-            String selection = DataBaseContract.User.USER_TABLE + " LIKE ?";
+            String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {userID};
             ContentValues values = new ContentValues();
             if (isUserMuted(userID))
@@ -1043,6 +1043,8 @@ public class DBActive {
             muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.MUTED));
             cursor.close();
         }
+        if (muted == null)
+            return false;
         return muted.equals("muted");
     }
 

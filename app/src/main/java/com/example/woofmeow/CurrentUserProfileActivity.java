@@ -162,6 +162,7 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             dits.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    String showText,actionText;
                     if (muteBtn.getPressCycle() != -1)
                     {
                         if (adapter.getItem(0) instanceof Conversation)
@@ -169,42 +170,44 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                             Conversation conversation = (Conversation) adapter.getItem(position);
                             boolean muted = db.muteConversation(conversation.getConversationID());
                             if (muted)
-                                Snackbar.make(linearLayout,"Conversation was muted",Snackbar.LENGTH_SHORT)
-                                        .setAction("un mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.muteConversation(conversation.getConversationID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Conversation was muted";
+                                actionText = "un mute";
+                            }
                             else
-                                Snackbar.make(linearLayout,"Conversation was un muted",Snackbar.LENGTH_SHORT)
-                                        .setAction("mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.muteConversation(conversation.getConversationID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Conversation was un muted";
+                                actionText = "mute";
+                            }
+                            Snackbar.make(linearLayout,showText,Snackbar.LENGTH_SHORT)
+                                    .setAction(actionText, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            db.muteConversation(conversation.getConversationID());
+                                        }
+                                    }).show();
                         }
                         else
                         {
                             User recipient = (User) adapter.getItem(position);
                             boolean muted = db.muteUser(recipient.getUserUID());
                             if (muted)
-                                Snackbar.make(linearLayout,"Recipient was muted",Snackbar.LENGTH_SHORT)
-                                        .setAction("un mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.muteConversation(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Recipient was muted";
+                                actionText = "un mute";
+                            }
                             else
-                                Snackbar.make(linearLayout,"Recipient was un muted",Snackbar.LENGTH_SHORT)
-                                        .setAction("mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.muteConversation(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Recipient was un muted";
+                                actionText = "mute";
+                            }
+                            Snackbar.make(linearLayout,showText,Snackbar.LENGTH_SHORT)
+                                    .setAction(actionText, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            db.muteConversation(recipient.getUserUID());
+                                        }
+                                    }).show();
                         }
                     }
                     else if (blockBtn.getPressCycle() != -1)
@@ -214,42 +217,45 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                             User recipient = (User) adapter.getItem(position);
                             boolean blocked = db.blockUser(recipient.getUserUID());
                             if (blocked)
-                                Snackbar.make(linearLayout,"Conversation was blocked",Snackbar.LENGTH_SHORT)
-                                        .setAction("un mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.blockUser(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Conversation was blocked";
+                                actionText = "un blocked";
+                            }
                             else
-                                Snackbar.make(linearLayout,"Conversation was un blocked",Snackbar.LENGTH_SHORT)
-                                        .setAction("mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.blockUser(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Conversation was un blocked";
+                                actionText = "blocked";
+                            }
+                            Snackbar.make(linearLayout,showText,Snackbar.LENGTH_SHORT)
+                                    .setAction(actionText, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            db.blockUser(recipient.getUserUID());
+                                        }
+                                    }).show();
+
                         }
                         else
                         {
                             User recipient = (User) adapter.getItem(position);
                             boolean blocked = db.blockUser(recipient.getUserUID());
                             if (blocked)
-                                Snackbar.make(linearLayout,"Recipient was blocked",Snackbar.LENGTH_SHORT)
-                                        .setAction("un mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.blockUser(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Recipient was blocked";
+                                actionText = "un blocked";
+                            }
                             else
-                                Snackbar.make(linearLayout,"Recipient was un blocked",Snackbar.LENGTH_SHORT)
-                                        .setAction("mute", new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                db.blockUser(recipient.getUserUID());
-                                            }
-                                        }).show();
+                            {
+                                showText = "Recipient was un blocked";
+                                actionText = "blocked";
+                            }
+                            Snackbar.make(linearLayout,showText,Snackbar.LENGTH_SHORT)
+                                    .setAction(actionText, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            db.blockUser(recipient.getUserUID());
+                                        }
+                                    }).show();
                         }
                     }
                 }

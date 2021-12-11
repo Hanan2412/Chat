@@ -49,7 +49,7 @@
             android:layout_gravity="center"
             android:gravity="center">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/profileImage"
                 style="@style/circleImageView"
                 android:layout_width="150dp"
