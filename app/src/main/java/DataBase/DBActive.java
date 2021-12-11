@@ -1013,11 +1013,11 @@ public class DBActive {
             ContentValues values = new ContentValues();
             if (isUserMuted(userID))
             {
-                values.put(DataBaseContract.User.USER_TABLE,"");
+                values.put(DataBaseContract.User.MUTED,"");
             }
             else
             {
-                values.put(DataBaseContract.User.USER_TABLE,"muted");
+                values.put(DataBaseContract.User.MUTED,"muted");
                 muted = true;
             }
             db.update(DataBaseContract.User.USER_TABLE,values,selection,selectionArgs);
@@ -1034,13 +1034,13 @@ public class DBActive {
             String selection = DataBaseContract.User.USER_UID + " LIKE ?";
             String[] selectionArgs = {userID};
             String[] projections = {
-                    DataBaseContract.Conversations.MUTED
+                    DataBaseContract.User.MUTED
             };
             Cursor cursor = db.query(DataBaseContract.User.USER_TABLE,projections,selection,selectionArgs,null,null,null);
             if (cursor.getCount() > 1)
                 Log.e(DataBaseError, "isUserMuted: got more than 1 answer for mute query" );
             cursor.moveToNext();
-            muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
+            muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.MUTED));
             cursor.close();
         }
         return muted.equals("muted");
@@ -1089,6 +1089,8 @@ public class DBActive {
         return false;
     }
 
+
+
     public List<Conversation> getAllMutedOrBlockedConversation(String selection,String[] selectionArgs)
     {
         List<Conversation>conversations = new ArrayList<>();
@@ -1108,7 +1110,6 @@ public class DBActive {
             while (cursor.moveToNext())
             {
                 Conversation conversation = new Conversation(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID)));
-                conversation.setMuted(true);
                 conversation.setLastMessage(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE)));
                 conversation.setRecipient(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT)));
                 conversation.setRecipientName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME)));
@@ -1125,5 +1126,30 @@ public class DBActive {
             cursor.close();
         }
         return conversations;
+    }
+
+
+    public List<User> getAllMutedOrBlockedUsers(String selection,String[] selectionArgs)
+    {
+        List<User>users = new ArrayList<>();
+        if (db!=null)
+        {
+            String[] projections = {
+                    DataBaseContract.User.USER_UID,
+                    DataBaseContract.User.USER_NAME,
+                    DataBaseContract.User.USER_LAST_NAME
+            };
+            Cursor cursor = db.query(DataBaseContract.User.USER_TABLE,projections,selection,selectionArgs,null,null,null);
+            while (cursor.moveToNext())
+            {
+                User user = new User();
+                user.setUserUID(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_UID)));
+                user.setName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_NAME)));
+                user.setLastName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.User.USER_LAST_NAME)));
+                users.add(user);
+            }
+            cursor.close();
+        }
+        return users;
     }
 }

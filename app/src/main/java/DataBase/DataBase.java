@@ -75,6 +75,7 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.User.USER_PHONE_NUMBER + " TEXT," +
                     DataBaseContract.User.USER_LAST_STATUS + " TEXT," +
                     DataBaseContract.User.BLOCKED + " TEXT," +
+                    DataBaseContract.User.MUTED + " TEXT," +
                     DataBaseContract.User.TOKEN + " TEXT)";
 
 

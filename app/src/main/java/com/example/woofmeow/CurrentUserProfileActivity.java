@@ -6,9 +6,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +21,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -25,13 +31,13 @@ import java.util.List;
 
 import Adapters.ListAdapter;
 import DataBase.DBActive;
+import NormalObjects.ImageButtonPlus;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.User;
 
 @SuppressWarnings("Convert2Lambda")
 public class CurrentUserProfileActivity extends AppCompatActivity {
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,30 +50,72 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             dits.setAdapter(adapter);
             DBActive db = DBActive.getInstance(this);
             ImageView profilePic = findViewById(R.id.profileImage);
+            LinearLayout linearLayout = findViewById(R.id.rootLayout);
+            TextView title = findViewById(R.id.title);
+            title.setText("");
+            ImageButton goBack = findViewById(R.id.goBack);
+            goBack.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    finish();
+                }
+            });
             FileManager fm = FileManager.getInstance();
             Bitmap bitmap = fm.readImage(this, FileManager.user_profile_images, user.getUserUID());
             if (bitmap!=null)
                 profilePic.setImageBitmap(bitmap);
             else
                 Log.e("Bitmap", "currentUser profile bitmap is null");
-            ImageButton muteBtn = findViewById(R.id.mute);
+            ImageButtonPlus muteBtn =  findViewById(R.id.mute);
+            ImageButtonPlus blockBtn = findViewById(R.id.block);
+            muteBtn.setResetOnValue(2);
             muteBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     //shows all muted users and conversations
+                    blockBtn.setPressCycle(-1);
                     String[] selectionArgs = {"muted"};
-                    List<Conversation>mutedConversations = db.getAllMutedOrBlockedConversation("muted LIKE ?",selectionArgs);
-                    adapter.setConversations(mutedConversations);
+                    if (muteBtn.getPressCycle() == 1)
+                    {
+                        title.setText("Muted Conversations");
+                        List<Conversation>mutedConversations = db.getAllMutedOrBlockedConversation("muted LIKE ?",selectionArgs);
+                        adapter.setConversations(mutedConversations);
+                    }
+                    else if (muteBtn.getPressCycle() == 2)
+                    {
+                        title.setText("Muted Users");
+                        List<User>mutedUsers = db.getAllMutedOrBlockedUsers("muted LIKE ?",selectionArgs);
+                        adapter.setUsers(mutedUsers);
+                    }
+                    else
+                    {
+                        title.setText("");
+                    }
                 }
             });
-            ImageButton blockBtn = findViewById(R.id.block);
+            blockBtn.setResetOnValue(2);
             blockBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     //shows all blocked users and conversations
+                    muteBtn.setPressCycle(-1);
                     String[] selectionArgs = {"blocked"};
-                    List<Conversation>blocked = db.getAllMutedOrBlockedConversation("blocked LIKE ?",selectionArgs);
-                    adapter.setConversations(blocked);
+                    if (blockBtn.getPressCycle() == 1)
+                    {
+                        title.setText("Blocked conversations");
+                        List<Conversation>blocked = db.getAllMutedOrBlockedConversation("blocked LIKE ?",selectionArgs);
+                        adapter.setConversations(blocked);
+                    }
+                    else if (blockBtn.getPressCycle() == 2)
+                    {
+                        title.setText("Blocked users");
+                        List<User>mutedUsers = db.getAllMutedOrBlockedUsers("blocked LIKE ?",selectionArgs);
+                        adapter.setUsers(mutedUsers);
+                    }
+                    else
+                    {
+                        title.setText("");
+                    }
                 }
             });
             ImageButton stats = findViewById(R.id.stats);
@@ -75,6 +123,7 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     //shows the stats of this account
+                    Toast.makeText(CurrentUserProfileActivity.this, "Im not implemented yet...", Toast.LENGTH_SHORT).show();
                 }
             });
             stats.setVisibility(View.VISIBLE);
@@ -110,6 +159,101 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                 }
             });
             deleteBtn.setVisibility(View.VISIBLE);
+            dits.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    if (muteBtn.getPressCycle() != -1)
+                    {
+                        if (adapter.getItem(0) instanceof Conversation)
+                        {
+                            Conversation conversation = (Conversation) adapter.getItem(position);
+                            boolean muted = db.muteConversation(conversation.getConversationID());
+                            if (muted)
+                                Snackbar.make(linearLayout,"Conversation was muted",Snackbar.LENGTH_SHORT)
+                                        .setAction("un mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.muteConversation(conversation.getConversationID());
+                                            }
+                                        }).show();
+                            else
+                                Snackbar.make(linearLayout,"Conversation was un muted",Snackbar.LENGTH_SHORT)
+                                        .setAction("mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.muteConversation(conversation.getConversationID());
+                                            }
+                                        }).show();
+                        }
+                        else
+                        {
+                            User recipient = (User) adapter.getItem(position);
+                            boolean muted = db.muteUser(recipient.getUserUID());
+                            if (muted)
+                                Snackbar.make(linearLayout,"Recipient was muted",Snackbar.LENGTH_SHORT)
+                                        .setAction("un mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.muteConversation(recipient.getUserUID());
+                                            }
+                                        }).show();
+                            else
+                                Snackbar.make(linearLayout,"Recipient was un muted",Snackbar.LENGTH_SHORT)
+                                        .setAction("mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.muteConversation(recipient.getUserUID());
+                                            }
+                                        }).show();
+                        }
+                    }
+                    else if (blockBtn.getPressCycle() != -1)
+                    {
+                        if (adapter.getItem(0) instanceof User)
+                        {
+                            User recipient = (User) adapter.getItem(position);
+                            boolean blocked = db.blockUser(recipient.getUserUID());
+                            if (blocked)
+                                Snackbar.make(linearLayout,"Conversation was blocked",Snackbar.LENGTH_SHORT)
+                                        .setAction("un mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.blockUser(recipient.getUserUID());
+                                            }
+                                        }).show();
+                            else
+                                Snackbar.make(linearLayout,"Conversation was un blocked",Snackbar.LENGTH_SHORT)
+                                        .setAction("mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.blockUser(recipient.getUserUID());
+                                            }
+                                        }).show();
+                        }
+                        else
+                        {
+                            User recipient = (User) adapter.getItem(position);
+                            boolean blocked = db.blockUser(recipient.getUserUID());
+                            if (blocked)
+                                Snackbar.make(linearLayout,"Recipient was blocked",Snackbar.LENGTH_SHORT)
+                                        .setAction("un mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.blockUser(recipient.getUserUID());
+                                            }
+                                        }).show();
+                            else
+                                Snackbar.make(linearLayout,"Recipient was un blocked",Snackbar.LENGTH_SHORT)
+                                        .setAction("mute", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                db.blockUser(recipient.getUserUID());
+                                            }
+                                        }).show();
+                        }
+                    }
+                }
+            });
         }
     }
 

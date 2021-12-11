@@ -2,15 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="20dp"
     android:id="@+id/rootLayout">
 
-    <ImageView
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/profileImage"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:background="@android:color/darker_gray"
         android:contentDescription="user image"
+        android:scaleType="fitXY"
+        app:shapeAppearanceOverlay="@style/circleImageView"
         android:src="@drawable/ic_baseline_account_circle_black" />
 
     <TextView

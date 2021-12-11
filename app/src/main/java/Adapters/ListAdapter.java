@@ -13,24 +13,29 @@ import android.widget.TextView;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.example.woofmeow.R;
+import com.google.android.material.imageview.ShapeableImageView;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import Consts.ConversationType;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.User;
 
 public class ListAdapter extends BaseAdapter {
 
-    private ArrayList<User>users;
+    private List<User>users;
     private List<Conversation> conversations;
     public void setConversations(List<Conversation>conversations){
         this.conversations = conversations;
+        users = null;
         notifyDataSetChanged();
     }
-    public void setUsers(ArrayList<User>users){
+    public void setUsers(List<User>users){
         this.users = users;
-    notifyDataSetChanged();
+        conversations = null;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -62,7 +67,7 @@ public class ListAdapter extends BaseAdapter {
             LinearLayout root = convertView.findViewById(R.id.rootLayout);
             TextView name = convertView.findViewById(R.id.name);
             TextView lastName = convertView.findViewById(R.id.lastName);
-            ImageView profileImage = convertView.findViewById(R.id.profileImage);
+            ShapeableImageView profileImage = convertView.findViewById(R.id.profileImage);
             FileManager fm = FileManager.getInstance();
             if (conversations!=null)
             {
@@ -80,7 +85,11 @@ public class ListAdapter extends BaseAdapter {
                         break;
                 }
                 name.setText(conversation.getGroupName());
-                Bitmap bitmap = fm.readImage(parent.getContext(), FileManager.conversationProfileImage,conversation.getConversationID());
+                Bitmap bitmap = null;
+                if (conversation.getConversationType() == ConversationType.single)
+                    bitmap = fm.readImage(parent.getContext(), FileManager.user_profile_images,conversation.getRecipient());
+                else if (conversation.getConversationType() == ConversationType.group)
+                    bitmap = fm.readImage(parent.getContext(), FileManager.conversationProfileImage,conversation.getConversationID());
                 if (bitmap!=null)
                     profileImage.setImageBitmap(bitmap);
                 lastName.setText(conversation.getLastMessage());

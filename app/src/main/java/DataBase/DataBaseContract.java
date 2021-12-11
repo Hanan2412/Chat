@@ -64,6 +64,7 @@ public final class DataBaseContract {
         public static final String USER_LAST_STATUS = "status";
         public static final String TOKEN = "token";
         public static final String BLOCKED = "block";
+        public static final String MUTED = "muted";
     }
 
     public static class Group implements BaseColumns
