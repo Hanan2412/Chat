@@ -236,15 +236,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
 
-    private void downloadConversationImage(String conversationID)
-    {
+    private void downloadConversationImage(String conversationID) {
         List<Conversation> conversationList = dbActive.getConversations();
-        for (Conversation conversation : conversationList)
-        {
-            if (conversation.getConversationID().equals(conversationID))
-            {
-                if (conversation.getRecipientImagePath() == null)
-                {
+        for (Conversation conversation : conversationList) {
+            if (conversation.getConversationID().equals(conversationID)) {
+                if (conversation.getRecipientImagePath() == null) {
                     //starts download of group image
                     DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversationID + "/pictureLink");
                     reference.addValueEventListener(new ValueEventListener() {
@@ -254,7 +250,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                             Picasso.get().load(pictureLink).into(new Target() {
                                 @Override
                                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                                    saveImage(bitmap,conversationID,true);
+                                    saveImage(bitmap, conversationID, true);
                                 }
 
                                 @Override
@@ -282,25 +278,16 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     //saves the downloaded image in a directory determined by the boolean value
-    private void saveImage(Bitmap bitmap,String id, boolean identifier)
-    {
-       FileManager fm = FileManager.getInstance();
-       fm.saveProfileImage(bitmap,id,this,identifier);
+    private void saveImage(Bitmap bitmap, String id, boolean identifier) {
+        FileManager fm = FileManager.getInstance();
+        fm.saveProfileImage(bitmap, id, this, identifier);
     }
 
     private Bitmap loadSenderImageForNotification(String sender) {
         SharedPreferences savedImagesPreferences = this.getSharedPreferences("SavedImages", Context.MODE_PRIVATE);
         if (savedImagesPreferences.getBoolean(sender, false)) {//if image is already downloaded,use it
             FileManager fm = FileManager.getInstance();
-            return fm.readImage(this,FileManager.user_profile_images,sender);
-           /* try {
-                ContextWrapper contextWrapper = new ContextWrapper(this.getApplicationContext());
-                File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-                File imageFile = new File(directory, sender + "_Image");
-                return BitmapFactory.decodeStream(new FileInputStream(imageFile));
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }*/
+            return fm.readImage(this, FileManager.user_profile_images, sender);
         } else {//if the image isn't downloaded , download it
             DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + sender + "/pictureLink");
             reference.addValueEventListener(new ValueEventListener() {
@@ -310,7 +297,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     Picasso.get().load(pictureLink).into(new Target() {
                         @Override
                         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            saveImage(bitmap,sender,false);
+                            saveImage(bitmap, sender, false);
                             SharedPreferences.Editor editor = savedImagesPreferences.edit();
                             editor.putBoolean(sender, true);
                             editor.apply();
@@ -551,7 +538,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                                 list.add(builder.toString());
                                 builder.delete(0, builder.length());
                             }
-                            if(k == q2.length()-1)
+                            if (k == q2.length() - 1)
                                 list.add(builder.toString());
                         }
                     }
@@ -716,7 +703,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         //String token = getRecipientToken(message.getSender());
         sender.sendMessage(message, message.getSenderToken());
         String token = message.getSenderToken();
-        Log.e("Senders Token",token);
+        Log.e("Senders Token", token);
         dbActive.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
     }
 
@@ -751,24 +738,28 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private void SendBroadcast(String conversationID, Message message) {
 
         //if this is the current on going conversation
-        if (isOpenConversation(conversationID)) {
-            if (!isBlocked(message.getSender())) {
-                message.setMessageStatus(MESSAGE_SEEN);
-                SaveToDataBase(message);
-                Intent newMessageIntent = new Intent(conversationID);
-                newMessageIntent.putExtra("message", message);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
-                markAsSeen(message);
+        if (isConversationExists(conversationID)) {
+            if (isOpenConversation(conversationID)) {
+                if (!isConversationBlocked(conversationID))
+                    if (!isBlocked(message.getSender())) {
+                        message.setMessageStatus(MESSAGE_SEEN);
+                        SaveToDataBase(message);
+                        Intent newMessageIntent = new Intent(conversationID);
+                        newMessageIntent.putExtra("message", message);
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
+                        markAsSeen(message);
+                    }
             }
         }//is the conversation exist at all
         else if (isConversationExists(conversationID)) {
             if (isNotificationsAllowed())
                 if (!isConversationBlocked(message.getConversationID()))
                     if (!isMuted(message.getConversationID()))
-                        if (!isBlocked(message.getSender()))
-                            createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
-                                    , message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                                    message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+                        if (!isUserMuted(message.getSender()))//
+                            if (!isBlocked(message.getSender()))
+                                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
+                                        , message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                                        message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
             markAsDelivered(message);
             SaveToDataBase(message);
             Intent updateConversationIntent = new Intent("Update Conversation");
@@ -796,7 +787,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         if (message.getConversationID().startsWith("C"))
             dbActive.createNewConversation(message, ConversationType.single);
         else if (message.getConversationID().startsWith("G"))
-            dbActive.createNewConversation(message,ConversationType.group);
+            dbActive.createNewConversation(message, ConversationType.group);
         SaveToDataBase(message);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference reference = database.getReference("users/" + message.getSender());
@@ -866,6 +857,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         LocalBroadcastManager.getInstance(this).registerReceiver(disableNotificationReceiver, new IntentFilter("disableNotifications"));
     }
 
+
+    private boolean isUserMuted(String userID) {
+        return dbActive.isUserMuted(userID);
+    }
+
     private boolean isMuted(String conversationID) {
         return dbActive.isMuted(conversationID);
     }
@@ -875,8 +871,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         return dbActive.isBlocked(uid);
     }
 
-    private boolean isConversationBlocked(String conversationID)
-    {
+    private boolean isConversationBlocked(String conversationID) {
         return dbActive.isConversationBlocked(conversationID);
     }
 }
