@@ -141,7 +141,9 @@
         android:layout_gravity="start"
         android:background="@drawable/background_gradient"
         app:headerLayout="@layout/drawer_header"
-        app:itemTextColor="@color/colorPrimaryDark"
+        app:itemTextColor="@android:color/white"
+        app:itemIconTint="@android:color/white"
+        android:theme="@style/TextAppearance"
         app:menu="@menu/drawer_menu">
 
     </com.google.android.material.navigation.NavigationView>
