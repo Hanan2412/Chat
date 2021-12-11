@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 }
             }
         }
-        ConnectedToInternet();
+        //ConnectedToInternet();
         //DropBox();
     }
 
@@ -663,7 +663,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 int hasPermission = this.checkSelfPermission(Manifest.permission.RECEIVE_SMS);
                 if (hasPermission!= PackageManager.PERMISSION_GRANTED)
                 {
-                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},READ_SMS);
+                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS,Manifest.permission.SEND_SMS},READ_SMS);
                     return false;
                 }
                 else return true;
