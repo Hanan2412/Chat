@@ -93,18 +93,36 @@
             android:id="@+id/smsConversation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="30dp"
-            android:layout_marginBottom="150dp"
             android:layout_gravity="end|bottom"
+            android:layout_marginEnd="30dp"
+            android:layout_marginBottom="210dp"
             android:backgroundTint="#fff"
             android:contentDescription="chat conversation"
             android:elevation="8dp"
-            app:icon="@drawable/ic_baseline_sms_24"
+            android:text="sms"
             android:textColor="@android:color/holo_orange_dark"
-            app:iconTint="@android:color/holo_orange_dark"
             android:visibility="gone"
             app:fabSize="mini"
-            android:text="sms"
+            app:icon="@drawable/ic_baseline_sms_24"
+            app:iconTint="@android:color/holo_orange_dark"
+            app:rippleColor="@color/lightestBlue" />
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/groupConversation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="30dp"
+            android:layout_marginBottom="150dp"
+            android:backgroundTint="#fff"
+            android:contentDescription="chat conversation"
+            android:elevation="8dp"
+            android:text="group"
+            android:textColor="@android:color/holo_purple"
+            android:visibility="gone"
+            app:fabSize="mini"
+            app:icon="@drawable/ic_baseline_group_24"
+            app:iconTint="@android:color/holo_purple"
             app:rippleColor="@color/lightestBlue" />
 
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -117,12 +135,12 @@
             android:backgroundTint="#fff"
             android:contentDescription="chat conversation"
             android:elevation="8dp"
-            app:icon="@drawable/ic_baseline_chat_bubble_outline_24"
-            app:iconTint="@android:color/holo_blue_light"
+            android:text="chat"
             android:textColor="@android:color/holo_blue_light"
             android:visibility="gone"
             app:fabSize="mini"
-            android:text="chat"
+            app:icon="@drawable/ic_baseline_person_24"
+            app:iconTint="@android:color/holo_blue_light"
             app:rippleColor="@color/lightestBlue" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -131,7 +149,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/chatConversation"
             android:layout_gravity="end|bottom"
-            android:layout_marginEnd="20dp"
+            android:layout_marginEnd="30dp"
             android:layout_marginBottom="20dp"
             android:backgroundTint="#FFF"
             android:contentDescription="new conversation button"
@@ -146,10 +164,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@drawable/background_gradient"
-        app:headerLayout="@layout/drawer_header"
-        app:itemTextColor="@android:color/white"
-        app:itemIconTint="@android:color/white"
         android:theme="@style/TextAppearance"
+        app:headerLayout="@layout/drawer_header"
+        app:itemIconTint="@android:color/white"
+        app:itemTextColor="@android:color/white"
         app:menu="@menu/drawer_menu">
 
     </com.google.android.material.navigation.NavigationView>

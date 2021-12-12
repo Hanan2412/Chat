@@ -2,6 +2,7 @@ package com.example.woofmeow;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -34,7 +35,7 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
     private final CController controller;
     private ArrayList<User>group;
     private String currentUser;
-
+    private final String NEW_GROUP_CHAT = "group chat";
     public NewGroupChat()
     {
         if(FirebaseAuth.getInstance().getCurrentUser()!=null)
@@ -53,11 +54,13 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
         Button talk = findViewById(R.id.talk);
         talk.setVisibility(View.GONE);
         adapter = new UsersAdapter();
+        adapter.setSingle(false);
         group = new ArrayList<>();
         adapter.setListener(new UsersAdapter.startConversation() {
             @Override
             public void onStart(User user) {
-                startSingleConversation(user);
+                Log.e(NEW_GROUP_CHAT,"trying to call single chat in group");
+                //startSingleConversation(user);
             }
 
             @Override
@@ -80,7 +83,8 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
                 if (group.isEmpty())
                     Toast.makeText(NewGroupChat.this, "can't start conversation without any recipients", Toast.LENGTH_SHORT).show();
                 else if (group.size() == 1)
-                    startSingleConversation(group.get(0));
+                    Log.e(NEW_GROUP_CHAT,"trying to start single conversation in group");
+                    //startSingleConversation(group.get(0));
                 else {
                     SingleFieldFragment fragment = new SingleFieldFragment();
                     fragment.setListener(new SingleFieldFragment.onName() {
@@ -143,7 +147,7 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
         controller.removeInterface(6);
     }
 
-    private void startSingleConversation(User user)
+    /*private void startSingleConversation(User user)
     {
         Intent openConversationIntent = new Intent(NewGroupChat.this, ConversationActivity.class);
         openConversationIntent.putExtra("recipientUser",user);
@@ -155,7 +159,7 @@ public class NewGroupChat extends AppCompatActivity implements FoundUsers{
     private String createConversationID()
     {
         return "C_" + System.currentTimeMillis();
-    }
+    }*/
 
     private String createGroupConversationID(){return "G_" + System.currentTimeMillis();}
 

@@ -92,8 +92,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;
-    private ExtendedFloatingActionButton smsBtn;
-    private ExtendedFloatingActionButton chatBtn;
+    private ExtendedFloatingActionButton smsBtn,chatBtn,groupBtn;
     private final int READ_SMS = 1;
     @SuppressWarnings("Convert2Lambda")
     @Override
@@ -146,13 +145,17 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         });
         smsBtn = findViewById(R.id.smsConversation);
         chatBtn = findViewById(R.id.chatConversation);
+        groupBtn = findViewById(R.id.groupConversation);
+        smsBtn.shrink();
+        chatBtn.shrink();
+        groupBtn.shrink();
         chatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                Tabs tab = Tabs.values()[pagePosition];
                 switch (tab) {
                     case chat:
-                        Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
+                        Intent chat = new Intent(MainActivity.this, NewChat.class);
                         rotateAndShowOut();
                         startActivity(chat);
                         break;
@@ -175,6 +178,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 }
             }
         });
+        groupBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
+                rotateAndShowOut();
+                startActivity(chat);
+            }
+        });
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -182,11 +193,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 if (isRotate)
                 {
                     showIn(smsBtn);
+                    showIn(groupBtn);
                     showIn(chatBtn);
                 }
                 else
                 {
                     showOut(smsBtn);
+                    showOut(groupBtn);
                     showOut(chatBtn);
                 }
             }
@@ -258,7 +271,9 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     {
         rotateFab(floatingActionButton,!isRotate);
         showOut(smsBtn);
+        showOut(groupBtn);
         showOut(chatBtn);
+        isRotate = false;
     }
 
     private boolean rotateFab(FloatingActionButton btn,boolean rotate)
@@ -281,22 +296,31 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
+                btn.extend();
             }
         }).alpha(1f).start();
     }
 
     private void showOut(ExtendedFloatingActionButton btn)
     {
-        btn.setVisibility(View.VISIBLE);
-        btn.setAlpha(1f);
-        btn.setTranslationY(0);
-        btn.animate().setDuration(200).translationY(btn.getHeight()).setListener(new AnimatorListenerAdapter() {
+        btn.shrink(new ExtendedFloatingActionButton.OnChangedCallback() {
             @Override
-            public void onAnimationEnd(Animator animation) {
-                btn.setVisibility(View.GONE);
-                super.onAnimationEnd(animation);
+            public void onShrunken(ExtendedFloatingActionButton extendedFab) {
+                super.onShrunken(extendedFab);
+                extendedFab.setVisibility(View.VISIBLE);
+                extendedFab.setAlpha(1f);
+                extendedFab.setTranslationY(0);
+                extendedFab.animate().setDuration(200).translationY(btn.getHeight()).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+
+                        extendedFab.setVisibility(View.GONE);
+                        super.onAnimationEnd(animation);
+                    }
+                }).alpha(0f).start();
             }
-        }).alpha(0f).start();
+        });
+
     }
 
     private void initAnimation(View view)

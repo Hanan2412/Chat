@@ -25,6 +25,16 @@ public class UsersAdapter extends BaseAdapter {
     @SuppressWarnings("FieldMayBeFinal")
     private ArrayList<User>users;
     private List<Integer> selected;
+    private boolean single = true;
+
+    public boolean isSingle() {
+        return single;
+    }
+
+    public void setSingle(boolean single) {
+        this.single = single;
+    }
+
     public UsersAdapter()
     {
         users = new ArrayList<>();
@@ -81,6 +91,10 @@ public class UsersAdapter extends BaseAdapter {
             String name = user.getName() + " " + user.getLastName();
             userName.setText(name);
             Picasso.get().load(user.getPictureLink()).into(imageView);
+            if (!single)
+                singleTalk.setVisibility(View.GONE);
+            else
+                groupTalk.setVisibility(View.GONE);
             singleTalk.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
