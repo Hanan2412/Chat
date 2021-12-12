@@ -61,6 +61,8 @@ public class DataBase extends SQLiteOpenHelper {
                     DataBaseContract.Messages.MESSAGE_READ_TIME + " TEXT," +
                     DataBaseContract.Messages.QUOTE + " TEXT," +
                     DataBaseContract.Messages.QUOTE_ID + " TEXT," +
+                    DataBaseContract.Messages.CONTACT + " TEXT," +
+                    DataBaseContract.Messages.CONTACT_PHONE + " TEXT," +
                     DataBaseContract.Messages.MESSAGE_SENDER_NAME + " TEXT)";
 
 
