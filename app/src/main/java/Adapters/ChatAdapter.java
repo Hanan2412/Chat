@@ -29,6 +29,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
@@ -51,7 +52,9 @@ import java.util.concurrent.Future;
 import javax.net.ssl.HttpsURLConnection;
 import Consts.MessageType;
 import Consts.Messaging;
+import NormalObjects.FileManager;
 import NormalObjects.Message;
+import NormalObjects.Web;
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -181,80 +184,44 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         } else if (message.getMessageType() == MessageType.gpsMessage.ordinal()) {
             holder.previewImage.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.GONE);
-        } else if (message.getMessageType() == MessageType.photoMessage.ordinal()) {
+        }
+        else if(message.getMessageType() == MessageType.contact.ordinal())
+        {
+            holder.linkMessage.setVisibility(View.VISIBLE);
+            holder.linkImage.setImageResource(R.drawable.ic_baseline_contacts_24);
+            holder.linkImage.setBackground(ResourcesCompat.getDrawable(holder.itemView.getContext().getResources(),R.drawable.conversation_cell_not_selected,holder.itemView.getContext().getTheme()));
+            holder.linkContent.setText(message.getContactName());
+            holder.linkTitle.setText(message.getContactPhone());
+            holder.message.setVisibility(View.GONE);
+        }
+        else if (message.getMessageType() == MessageType.photoMessage.ordinal()) {
             holder.previewImage.setVisibility(View.VISIBLE);
             if (message.getImagePath()!=null) {
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                Callable<Bitmap> bitmapCallable = new Callable<Bitmap>() {
+                FileManager fm = FileManager.getInstance();
+                fm.setListener(new FileManager.onLoadingImage() {
                     @Override
-                    public Bitmap call() {
-                        Bitmap bitmap = null;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            ContentResolver resolver = holder.itemView.getContext().getApplicationContext().getContentResolver();
-                            try {
-                                bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(message.getImagePath())));
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                    public void onSuccess(Bitmap bitmap) {//the call is happening from a different thread so handler is a must
+                        new Handler(holder.itemView.getContext().getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                holder.previewImage.setScaleType(ImageView.ScaleType.FIT_XY);
+                                holder.previewImage.setImageBitmap(bitmap);
                             }
-                        } else
-                            bitmap = BitmapFactory.decodeFile(message.getImagePath());
-                        if (bitmap != null) {
-                            float ratio = (float) bitmap.getWidth() / (float) bitmap.getHeight();
-                            int width = 540;
-                            int height;
-                            if (bitmap.getWidth() > bitmap.getHeight())
-                                height = (int) (width / ratio);
-                            else
-                                height = (int) (width * ratio);
-
-                            bitmap = Bitmap.createScaledBitmap(bitmap, width, height, false);
-                        }
-                        return bitmap;
+                        });
                     }
-                };
-                Future<Bitmap> bitmapFuture = executorService.submit(bitmapCallable);
-                Thread doneThread = new Thread(){
+
                     @Override
-                    public void run() {
-                        super.run();
-                        while(!bitmapFuture.isDone())
-                        {
-                            /*
-                            * waiting for the picture to load
-                            * since get method blocks and makes the app freeze until the image is loaded
-                            * noticeable with multiple images
-                            * */
-                        }
-                        try {
-                            Bitmap bitmap = bitmapFuture.get();
-                            new Handler(holder.itemView.getContext().getMainLooper()).post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    holder.previewImage.setImageBitmap(bitmap);
-                                }
-                            });
-                        } catch (ExecutionException | InterruptedException e) {
-                            e.printStackTrace();
-                        } finally {
-                            executorService.shutdown();
-                        }
-
+                    public void onFailed() {
+                        new Handler(holder.itemView.getContext().getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(holder.itemView.getContext(), "Failed loading an image", Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
-                };
-                doneThread.setName("doneThread");
-                doneThread.start();
-                /*try {
-                    Bitmap bitmap = bitmapFuture.get();
-                    holder.previewImage.setImageBitmap(bitmap);
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    executorService.shutdown();
-                }*/
-
-
+                });
+                fm.readImageMessage(message.getImagePath(),holder.itemView.getContext());
             }
-
             holder.playRecordingLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.VoiceMessage.ordinal()) {
 
@@ -266,60 +233,47 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.message.setGravity(Gravity.CENTER);
 
         } else if (message.getMessageType() == MessageType.webMessage.ordinal()) {
-            Thread downloadWeb = new Thread() {
+            holder.linkMessage.setVisibility(View.VISIBLE);
+            Web web = new Web();
+            web.setListener(new Web.onWebDownload() {
                 @Override
-                public void run() {
-                    super.run();
-                    try {
-                        if (holder.linkMessage != null) {
-                            String imageLink = "",description = "",title = "";
-                            Document doc = Jsoup.connect(message.getMessage()).userAgent("Mozilla").get();
-                            title = doc.title();
-                            // Elements meta = doc.select("meta[property=og:url]");
-                            Elements webImage = doc.select("meta[property=og:image]");
-                            imageLink = webImage.attr("content");
-                            Elements webDescription = doc.select("meta[property=og:description]");
-                            description = webDescription.attr("content");
-                            URL url = new URL(imageLink);
-                            HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
-                            httpsURLConnection.connect();
-                            int responseCode = httpsURLConnection.getResponseCode();
-                            if (responseCode == 200) {
-                                InputStream inputStream = httpsURLConnection.getInputStream();
-                                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                                Handler handler = new Handler(Looper.getMainLooper());
-                                String finalDescription = description;
-                                String finalTitle = title;
-                                handler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        holder.linkMessage.setVisibility(View.VISIBLE);
-                                        holder.linkImage.setImageBitmap(bitmap);
-                                        holder.linkImage.setScaleType(ImageView.ScaleType.FIT_XY);
-                                        holder.linkContent.setText(finalDescription);
-                                        holder.linkTitle.setText(finalTitle);
-                                        holder.linkMessage.setOnClickListener(new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                callback.onMessageClick(message, v, message.getMessageType());
-                                            }
-                                        });
-                                        holder.message.setVisibility(View.GONE);
-                                    }
-                                });
-                                inputStream.close();
-                                httpsURLConnection.disconnect();
-                            }
-                            httpsURLConnection.disconnect();
+                public void onMetaDataDownload(String description, String title) {
+                    Handler handler = new Handler(Looper.getMainLooper());
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            holder.linkContent.setText(description);
+                            holder.linkTitle.setText(title);
                         }
-                    } catch (IOException | IllegalArgumentException e) {
-                        e.printStackTrace();
-                        System.out.println("error in getting link image");
-                    }
+                    });
                 }
-            };
-            downloadWeb.setName("linkMessage");
-            downloadWeb.start();
+
+                @Override
+                public void onWebImageSuccess(Bitmap bitmap) {
+                    Handler handler = new Handler(Looper.getMainLooper());
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            holder.linkImage.setImageBitmap(bitmap);
+                            holder.linkImage.setScaleType(ImageView.ScaleType.FIT_XY);
+                            holder.message.setVisibility(View.GONE);
+                        }
+                    });
+
+                }
+
+                @Override
+                public void onFailed() {
+                    new Handler(holder.itemView.getContext().getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(holder.itemView.getContext(), "failed showing message", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+            });
+            web.downloadWebPreview(message.getMessage());
         } else if (message.getMessageType() == MessageType.videoMessage.ordinal()) {
             if (message.getRecordingPath() != null) {
                     Uri videoUri = Uri.parse(message.getRecordingPath());
@@ -538,6 +492,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             quote = itemView.findViewById(R.id.quoteText);
 
             linkMessage = itemView.findViewById(R.id.linkMessage);
+            linkMessage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    callback.onMessageClick(messages.get(getAdapterPosition()),v,getItemViewType());
+                }
+            });
             linkContent = itemView.findViewById(R.id.linkContent);
             linkTitle = itemView.findViewById(R.id.linkTitle);
             linkImage = itemView.findViewById(R.id.linkImage);

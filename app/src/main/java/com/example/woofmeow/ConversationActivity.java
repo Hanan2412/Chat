@@ -95,6 +95,7 @@ import com.squareup.picasso.Target;
 
 import BroadcastReceivers.SMSBroadcastSent;
 import Consts.ConversationType;
+import NormalObjects.Web;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
 
@@ -692,7 +693,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         linkedImage = findViewById(R.id.linkImage);
         if (link != null) {
             messageSent.setText(link);
-            parseHtml(link);
+            messagePreview(link);
+            //parseHtml(link);
         }
         registerForContextMenu(recyclerView);
         init(conversationID);
@@ -903,70 +905,48 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         textSwitcherStatus.setOutAnimation(out);
     }
 
-    private void parseHtml(String link) {//parsing html for message preview from shared link
-        Thread htmlParser = new Thread(){
-            @Override
-            public void run() {
-                super.run();
-                try {
-                    Document doc = Jsoup.connect(link).userAgent("Mozilla").get();
-                    String title = doc.title();
-                    Elements webImage = doc.select("meta[property=og:image]");
-                    String imageLink = webImage.attr("content");
-                    Elements webDescription = doc.select("meta[property=og:description]");
-                    String description = webDescription.attr("content");
-                    messagePreview(description, title, imageLink,link);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        htmlParser.setName("html parser");
-        htmlParser.start();
-    }
+    private void messagePreview(String originalLink) {
 
-    private void messagePreview(String description, String title, String imageLink,String originalLink) {
-        Thread linkPreviewThread = new Thread() { //downloading preview image using httpsUrlConnection to demonstrate capabilities, would be done with picasso otherwise
+        Web web = new Web();
+        web.setListener(new Web.onWebDownload() {
             @Override
-            public void run() {
-                super.run();
-                try {
-                    URL url = new URL(imageLink);
-                    HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
-                    httpsURLConnection.connect();
-                    int responseCode = httpsURLConnection.getResponseCode();
-                    if (responseCode == 200) {
-                        InputStream inputStream = httpsURLConnection.getInputStream();
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        Handler handler = new Handler(Looper.getMainLooper());
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                linkedMessagePreview.setVisibility(View.VISIBLE);
-                                linkedImage.setScaleType(ImageView.ScaleType.FIT_XY);
-                                linkedImage.setImageBitmap(bitmap);
-                                linkContent.setText(description);
-                                linkTitle.setText(title);
-                                buttonState = SEND_MESSAGE;
-                                messageSent.setText(originalLink);
-                                imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
-                            }
-                        });
+            public void onMetaDataDownload(String description, String title) {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        linkedMessagePreview.setVisibility(View.VISIBLE);
+                        linkedImage.setScaleType(ImageView.ScaleType.FIT_XY);
+                        linkContent.setText(description);
+                        linkTitle.setText(title);
 
-                        inputStream.close();
-                        httpsURLConnection.disconnect();
                     }
-                    httpsURLConnection.disconnect();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
+                });
             }
-        };
-        linkPreviewThread.setName("link preview Thread");
-        linkPreviewThread.start();
 
+            @Override
+            public void onWebImageSuccess(Bitmap bitmap) {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        linkedImage.setImageBitmap(bitmap);
+                    }
+                });
+            }
 
+            @Override
+            public void onFailed() {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(ConversationActivity.this, "failed loading link", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+        web.downloadWebPreview(originalLink);
+        buttonState = SEND_MESSAGE;
+        messageSent.setText(originalLink);
+        imageSwitcher.setImageResource(R.drawable.ic_baseline_send_24);
     }
 
 
@@ -1468,7 +1448,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     @Override
     public void onMessageClick(Message message, View view, int viewType) {
-        //highlights the message and changes the toolbar to show options
+        if (message.getMessageType() == MessageType.contact.ordinal())
+        {
+            Intent createNewContact = new Intent(ContactsContract.Intents.Insert.ACTION);
+            createNewContact.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+            createNewContact.putExtra(ContactsContract.Intents.Insert.NAME,message.getContactName());
+            createNewContact.putExtra(ContactsContract.Intents.Insert.PHONE,message.getContactPhone());
+            startActivity(createNewContact);
+        }
         if (messageLongPress) {
             messageLongPress = false;
             invalidateOptionsMenu();
@@ -2115,9 +2102,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         contactNumber = cursor.getString(numberIndex);
                         contactName = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                         contact = true;
+                        cursor.close();
                         prepareMessageToSend(MessageType.contact.ordinal());
                         // PrepareMessageToSend(MessageType.contact.ordinal(), recipientUID);
-                        cursor.close();
                     }
                 }
             }
@@ -2152,7 +2139,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void openGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(Intent.createChooser(intent, "Select Picture to Upload"), GALLERY_REQUEST);
     }
 
@@ -2624,7 +2611,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 server3.uploadFile(videoUri.toString());
                 break;
         }
-        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms)
+        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact)
             sendMessage(message);
     }
 

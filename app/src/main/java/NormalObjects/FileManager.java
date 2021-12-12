@@ -6,11 +6,15 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
+
+import com.example.woofmeow.ConversationActivity;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -19,10 +23,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import DataBase.DBActive;
 import Services.FirebaseMessageService;
 
+@SuppressWarnings("Convert2Lambda")
 public class FileManager {
 
     private final String fileError = "Error while creating file";
@@ -38,6 +48,16 @@ public class FileManager {
         return fileManager;
     }
 
+    public interface onLoadingImage
+    {
+        void onSuccess(Bitmap bitmap);
+        void onFailed();
+    }
+
+    private onLoadingImage listener;
+
+    public void setListener(onLoadingImage listener){this.listener = listener;}
+    public void killListener(){listener = null;}
     //saves the profile image of the user or the conversation to local storage
     public void saveProfileImage(Bitmap bitmap, String id, Context context, boolean identifier)
     {
@@ -61,6 +81,78 @@ public class FileManager {
         }
         Log.d("FileManager", "saveProfileImage - image was saved");
 
+    }
+
+    //reads images that were sent in a message
+    public void readImageMessage(String path,Context context)
+    {
+        if (listener!=null) {
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+            Callable<Bitmap> bitmapCallable = new Callable<Bitmap>() {
+                @Override
+                public Bitmap call() {
+                    Bitmap bitmap = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ContentResolver resolver = context.getApplicationContext().getContentResolver();
+                        try {
+                            bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(path)));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else
+                    {
+                        try {
+                            if (Build.VERSION.SDK_INT > 27) {
+                                ImageDecoder.Source source = ImageDecoder.createSource(context.getContentResolver(), Uri.parse(path));
+                                bitmap = ImageDecoder.decodeBitmap(source);
+                            } else {
+                                bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), Uri.parse(path));
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        //bitmap = BitmapFactory.decodeFile(path);
+                    }
+                    if (bitmap != null) {
+                        float ratio = (float) bitmap.getWidth() / (float) bitmap.getHeight();
+                        int width = 540;
+                        int height;
+                        if (bitmap.getWidth() > bitmap.getHeight())
+                            height = (int) (width / ratio);
+                        else
+                            height = (int) (width * ratio);
+                        bitmap = Bitmap.createScaledBitmap(bitmap, width, height, false);
+                    }
+                    return bitmap;
+                }
+            };
+            Future<Bitmap> bitmapFuture = executorService.submit(bitmapCallable);
+            Thread doneThread = new Thread() {
+                @Override
+                public void run() {
+                    super.run();
+                    while (!bitmapFuture.isDone()) {
+                        /*
+                         * waiting for the picture to load
+                         * since get method blocks and makes the app freeze until the image is loaded
+                         * noticeable with multiple images
+                         * */
+                    }
+                    try {
+                        Bitmap bitmap = bitmapFuture.get();
+                        listener.onSuccess(bitmap);
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                        listener.onFailed();
+                    } finally {
+                        executorService.shutdown();
+                    }
+
+                }
+            };
+            doneThread.setName("readImageMessage");
+            doneThread.start();
+        }else Log.e("FileManager", "listener is null" );
     }
 
     public Bitmap readImage(Context context,String dirName,String childPath)
