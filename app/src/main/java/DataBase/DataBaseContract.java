@@ -50,6 +50,8 @@ public final class DataBaseContract {
         public static final String MESSAGE_READ_TIME = "read_time";
         public static final String QUOTE = "quote";
         public static final String QUOTE_ID = "quote_id";
+        public static final String CONTACT = "contact";
+        public static final String CONTACT_PHONE = "contact_phone";
     }
 
     public static class User implements BaseColumns{

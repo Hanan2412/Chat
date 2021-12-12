@@ -523,6 +523,8 @@ public class DBActive {
             values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH, message.getFilePath());
             values.put(DataBaseContract.Messages.QUOTE, message.getQuoteMessage());
             values.put(DataBaseContract.Messages.QUOTE_ID, message.getQuotedMessageID());
+            values.put(DataBaseContract.Messages.CONTACT,message.getContactPhone());
+            values.put(DataBaseContract.Messages.CONTACT_PHONE,message.getContactPhone());
             if (message.getMessageType() == MessageType.webMessage.ordinal())
                 values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
             long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
@@ -714,7 +716,9 @@ public class DBActive {
                     DataBaseContract.Messages.MESSAGE_IMAGE_PATH,
                     DataBaseContract.Messages.QUOTE_ID,
                     DataBaseContract.Messages.QUOTE,
-                    DataBaseContract.Conversations.GROUP_NAME
+                    DataBaseContract.Conversations.GROUP_NAME,
+                    DataBaseContract.Messages.CONTACT,
+                    DataBaseContract.Messages.CONTACT_PHONE
             };
             String[] selectionArgs = {id};
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, null);
@@ -726,6 +730,8 @@ public class DBActive {
                 String timeDelivered = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_DELIVERED));
                 String timeSent = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.TIME_SENT));
                 String senderName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_SENDER_NAME));
+                String contact = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.CONTACT));
+                String contactPhone = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.CONTACT_PHONE));
                 //String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_RECIPIENT_NAME));
                 String filePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_FILE_PATH));
                 String address = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ADDRESS));
@@ -764,6 +770,8 @@ public class DBActive {
                 message.setMessageType(type);
                 message.setQuoteMessage(quote);
                 message.setQuotedMessageID(quoteID);
+                message.setContactPhone(contactPhone);
+                message.setContactName(contact);
                 messages.add(message);
             }
             cursor.close();
