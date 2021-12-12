@@ -523,7 +523,7 @@ public class DBActive {
             values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH, message.getFilePath());
             values.put(DataBaseContract.Messages.QUOTE, message.getQuoteMessage());
             values.put(DataBaseContract.Messages.QUOTE_ID, message.getQuotedMessageID());
-            values.put(DataBaseContract.Messages.CONTACT,message.getContactPhone());
+            values.put(DataBaseContract.Messages.CONTACT,message.getContactName());
             values.put(DataBaseContract.Messages.CONTACT_PHONE,message.getContactPhone());
             if (message.getMessageType() == MessageType.webMessage.ordinal())
                 values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
