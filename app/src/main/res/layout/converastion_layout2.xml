@@ -73,8 +73,7 @@
                         <TextSwitcher
                             android:id="@+id/toolbarTextSwitch"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                             />
+                            android:layout_height="match_parent" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -121,30 +120,36 @@
             android:hint="@string/search"
             android:inputType="textMultiLine"
             android:visibility="visible"
+            android:layout_marginTop="20dp"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp">
 
             <Button
                 android:id="@+id/searchBtn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/search" />
+                android:text="@string/search"
+                style="?android:attr/buttonBarButtonStyle"
+                />
 
-            <ImageButton
-                android:id="@+id/scrollToNext"
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginStart="20dp"
-                android:background="@drawable/circle"
-                android:contentDescription="@string/scroll"
-                android:src="@drawable/ic_baseline_arrow_forward_24" />
+                android:text="next"
+                app:icon="@drawable/ic_baseline_arrow_forward_24"
+                app:iconTint="@android:color/holo_blue_light"
+                android:textColor="@android:color/holo_blue_light"
+                android:id="@+id/scrollToNext"
+                android:backgroundTint="@android:color/white"
+
+                />
         </LinearLayout>
 
     </LinearLayout>
@@ -306,12 +311,12 @@
                 android:layout_marginEnd="15dp"
                 android:layout_toStartOf="@id/ActionBtn"
                 android:autofillHints=""
+                android:focusable="true"
                 android:gravity="center"
                 android:hint="@string/message_hint"
                 android:inputType="textMultiLine|textNoSuggestions"
                 android:textSize="15sp"
-                android:visibility="visible"
-                android:focusable="true"/>
+                android:visibility="visible" />
 
             <TextView
                 android:id="@+id/recordingTime"
@@ -338,16 +343,15 @@
 
             <TextView
                 android:id="@+id/smsCharCount"
+                style="?android:attr/buttonBarButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                style="?android:attr/buttonBarButtonStyle"
                 android:layout_marginEnd="15dp"
                 android:layout_toStartOf="@+id/sendImageSwitch"
                 android:background="@android:color/transparent"
                 android:contentDescription="sms character count"
-                android:visibility="gone"
                 android:gravity="center"
-                />
+                android:visibility="gone" />
 
             <ImageSwitcher
                 android:id="@+id/sendImageSwitch"
@@ -356,9 +360,8 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_marginTop="4dp"
-                android:foregroundGravity="center"
                 android:contentDescription="@string/action_btn"
-                />
+                android:foregroundGravity="center" />
 
         </RelativeLayout>
     </RelativeLayout>

@@ -16,6 +16,7 @@
             android:id="@+id/searchText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:autofillHints=""
             android:hint="@string/search"
             android:inputType="textMultiLine|textNoSuggestions"
@@ -29,6 +30,7 @@
             android:id="@+id/searchBtn"
             android:text="@string/search"
             android:layout_gravity="center"
+            android:textColor="@color/black"
             style="@style/Widget.AppCompat.Button.Borderless.Colored"
             />
     </LinearLayout>

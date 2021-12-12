@@ -82,6 +82,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -339,7 +340,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 indices = chatAdapter.SearchMessage(searchQuery);
             }
         });
-        ImageButton scrollToNext = findViewById(R.id.scrollToNext);
+        ExtendedFloatingActionButton scrollToNext = findViewById(R.id.scrollToNext);
         scrollToNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

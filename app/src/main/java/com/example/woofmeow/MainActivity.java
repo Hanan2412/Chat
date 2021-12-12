@@ -41,6 +41,7 @@ import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.android.Auth;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.navigation.NavigationView;
@@ -91,8 +92,8 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;
-    private FloatingActionButton smsBtn;
-    private FloatingActionButton chatBtn;
+    private ExtendedFloatingActionButton smsBtn;
+    private ExtendedFloatingActionButton chatBtn;
     private final int READ_SMS = 1;
     @SuppressWarnings("Convert2Lambda")
     @Override
@@ -271,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         return rotate;
     }
 
-    private void showIn(FloatingActionButton btn)
+    private void showIn(ExtendedFloatingActionButton btn)
     {
         btn.setVisibility(View.VISIBLE);
         btn.setAlpha(0f);
@@ -284,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }).alpha(1f).start();
     }
 
-    private void showOut(FloatingActionButton btn)
+    private void showOut(ExtendedFloatingActionButton btn)
     {
         btn.setVisibility(View.VISIBLE);
         btn.setAlpha(1f);

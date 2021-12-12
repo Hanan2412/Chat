@@ -157,7 +157,8 @@ public class TabFragment extends Fragment implements MainGUI {
                     @Override
                     public void onClick(View v) {
                         String search = searchQuery.getText().toString();
-                        conversationsAdapter2.Search(search);
+                        if (search!=null)
+                            conversationsAdapter2.Search(search);
                     }
                 });
                 recyclerView = view.findViewById(R.id.recycle_view);

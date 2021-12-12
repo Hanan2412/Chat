@@ -89,7 +89,7 @@
 
         </androidx.viewpager.widget.ViewPager>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/smsConversation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -99,12 +99,15 @@
             android:backgroundTint="#fff"
             android:contentDescription="chat conversation"
             android:elevation="8dp"
-            android:src="@drawable/ic_baseline_sms_24"
+            app:icon="@drawable/ic_baseline_sms_24"
+            android:textColor="@android:color/holo_orange_dark"
+            app:iconTint="@android:color/holo_orange_dark"
             android:visibility="gone"
             app:fabSize="mini"
+            android:text="sms"
             app:rippleColor="@color/lightestBlue" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/chatConversation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -114,9 +117,12 @@
             android:backgroundTint="#fff"
             android:contentDescription="chat conversation"
             android:elevation="8dp"
-            android:src="@drawable/ic_baseline_chat_bubble_outline_24"
+            app:icon="@drawable/ic_baseline_chat_bubble_outline_24"
+            app:iconTint="@android:color/holo_blue_light"
+            android:textColor="@android:color/holo_blue_light"
             android:visibility="gone"
             app:fabSize="mini"
+            android:text="chat"
             app:rippleColor="@color/lightestBlue" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

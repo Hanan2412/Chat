@@ -332,10 +332,11 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         ArrayList<Conversation> conversationsCopy = new ArrayList<>();
         for(Conversation conversation : conversations)
         {
-            if(conversation.getRecipientName().toLowerCase().contains(search.toLowerCase()))
-            {
-                conversationsCopy.add(conversation);
-            }
+            if (conversation.getRecipientName()!=null)
+                if(conversation.getRecipientName().toLowerCase().contains(search.toLowerCase()))
+                {
+                    conversationsCopy.add(conversation);
+                }
         }
         conversations = conversationsCopy;
     }

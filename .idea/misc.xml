@@ -6,6 +6,7 @@
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/background_gradient.xml" value="0.36574074074074076" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/background_gradient2.xml" value="0.36574074074074076" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/border.xml" value="0.25" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/border2.xml" value="0.3333333333333333" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/button.xml" value="0.33611111111111114" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/conversation_cell_not_selected.xml" value="0.24114583333333334" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/conversation_cell_selected.xml" value="0.23697916666666666" />
@@ -26,7 +27,7 @@
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_recent_actors_24.xml" value="0.21979166666666666" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_send_24.xml" value="0.23125" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/drawable/ic_baseline_sms_24.xml" value="0.3592592592592593" />
-        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/activity_main.xml" value="0.18" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/backdrop_layout.xml" value="0.1" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/bottom_sheet_layout.xml" value="0.5" />
         <entry key="..\:/Users/hanan/AndroidStudioProjects/WoofMeow/app/src/main/res/layout/camera.xml" value="0.36666666666666664" />
