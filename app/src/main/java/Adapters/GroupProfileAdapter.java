@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.woofmeow.R;
+import com.google.android.material.appbar.AppBarLayout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,12 +79,15 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
         ListView listView;
         ImageView profilePic;
         ImageButton muteBtn,blockBtn;
+        AppBarLayout appBarLayout;
         public GroupViewHolder(@NonNull View itemView) {
             super(itemView);
             listView = itemView.findViewById(R.id.userDetails);
             profilePic = itemView.findViewById(R.id.profileImage);
             muteBtn = itemView.findViewById(R.id.mute);
             blockBtn = itemView.findViewById(R.id.block);
+            appBarLayout = itemView.findViewById(R.id.appbarLayout);
+            appBarLayout.setVisibility(View.GONE);
         }
     }
 }
