@@ -99,12 +99,9 @@ public class TabFragment extends Fragment implements MainGUI {
 
     public interface UpdateMain {
         void onUserUpdate(User user);
-
         void onLoadUserFromMemory(User user);
-
-        void onUserQuery(User user);
-
-        void onNewMessage(boolean group);
+        void onNewMessage(String conversationID);
+        void onOpenedConversation(String conversationID);
     }
 
 
@@ -230,7 +227,6 @@ public class TabFragment extends Fragment implements MainGUI {
                         SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
                         String title = sharedPreferences.getString("title", "noTitle");
                         String link = sharedPreferences.getString("link", "noLink");
-                        Log.d("tabFragment", "link: " + link);
                         if (!link.equals("noLink")) {
                             startConversationIntent.putExtra("title", title);
                             startConversationIntent.putExtra("link", link);
@@ -239,6 +235,7 @@ public class TabFragment extends Fragment implements MainGUI {
                             editor.remove("link");
                             editor.apply();
                         }
+                        callback.onOpenedConversation(conversation.getConversationID());
                         requireActivity().startActivity(startConversationIntent);
                     }
 
@@ -498,7 +495,7 @@ public class TabFragment extends Fragment implements MainGUI {
 
     @Override
     public void onReceiveUsersQuery(User user) {
-        callback.onUserQuery(user);
+        //callback.onUserQuery(user);
     }
 
     @Deprecated
@@ -624,6 +621,7 @@ public class TabFragment extends Fragment implements MainGUI {
                         Conversation conversation = conversationsAdapter2.findConversation(message.getConversationID());//new Conversation(message.getConversationID());
                         conversation.setConversationMetaData(message);
                         UpdateConversationsInDataBase(conversation, false);
+                        callback.onNewMessage(conversation.getConversationID());
                     }
                     if (messageAction == MessageAction.edit_message) {
                         //if the message to update is the last message in the conversation

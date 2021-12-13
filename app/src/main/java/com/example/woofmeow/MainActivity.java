@@ -55,12 +55,10 @@ import com.squareup.picasso.Target;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import Consts.MessageType;
 import Consts.Tabs;
-import Fragments.NewChatFragment2;
 import Fragments.TabFragment;
 import NormalObjects.*;
 
@@ -69,7 +67,7 @@ import Services.FirebaseMessageService;
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
 
 //this app is to be published
-public class MainActivity extends AppCompatActivity implements TabFragment.UpdateMain, NewChatFragment2.NewChat2 {
+public class MainActivity extends AppCompatActivity implements TabFragment.UpdateMain {
 
     private DrawerLayout drawerLayout;
     private CoordinatorLayout coordinatorLayout;
@@ -87,13 +85,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     public static final String STANDBY_S = "standby";
     public static final String OFFLINE_S = "offline";
     private String currentStatus = ONLINE_S;
-    private boolean search = false;
-
+    private final String MISSED_MESSAGES = "missed messages";
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;
-    private ExtendedFloatingActionButton smsBtn,chatBtn,groupBtn;
+    private ExtendedFloatingActionButton smsBtn, chatBtn, groupBtn;
     private final int READ_SMS = 1;
+
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         chatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               Tabs tab = Tabs.values()[pagePosition];
+                Tabs tab = Tabs.values()[pagePosition];
                 switch (tab) {
                     case chat:
                         Intent chat = new Intent(MainActivity.this, NewChat.class);
@@ -171,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             @Override
             public void onClick(View v) {
                 //opens sms conversation
-                if(askPermission(MessageType.sms)) {
+                if (askPermission(MessageType.sms)) {
                     Intent sms = new Intent(MainActivity.this, NewSMS.class);
                     rotateAndShowOut();
                     startActivity(sms);
@@ -181,23 +179,29 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         groupBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
-                rotateAndShowOut();
-                startActivity(chat);
+                Tabs tab = Tabs.values()[pagePosition];
+                switch (tab) {
+                    case chat:
+                        Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
+                        rotateAndShowOut();
+                        startActivity(chat);
+                        break;
+                    case somethingElse:
+                        //probably video calls
+                        break;
+                }
+
             }
         });
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isRotate = rotateFab(floatingActionButton,!isRotate);
-                if (isRotate)
-                {
+                isRotate = rotateFab(floatingActionButton, !isRotate);
+                if (isRotate) {
                     showIn(smsBtn);
                     showIn(groupBtn);
                     showIn(chatBtn);
-                }
-                else
-                {
+                } else {
                     showOut(smsBtn);
                     showOut(groupBtn);
                     showOut(chatBtn);
@@ -267,28 +271,25 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         //DropBox();
     }
 
-    private void rotateAndShowOut()
-    {
-        rotateFab(floatingActionButton,!isRotate);
+    private void rotateAndShowOut() {
+        rotateFab(floatingActionButton, !isRotate);
         showOut(smsBtn);
         showOut(groupBtn);
         showOut(chatBtn);
         isRotate = false;
     }
 
-    private boolean rotateFab(FloatingActionButton btn,boolean rotate)
-    {
+    private boolean rotateFab(FloatingActionButton btn, boolean rotate) {
         btn.animate().setDuration(200).setListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
             }
-        }).rotation(rotate ? 180f:0f);
+        }).rotation(rotate ? 180f : 0f);
         return rotate;
     }
 
-    private void showIn(ExtendedFloatingActionButton btn)
-    {
+    private void showIn(ExtendedFloatingActionButton btn) {
         btn.setVisibility(View.VISIBLE);
         btn.setAlpha(0f);
         btn.setTranslationY(btn.getHeight());
@@ -301,8 +302,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }).alpha(1f).start();
     }
 
-    private void showOut(ExtendedFloatingActionButton btn)
-    {
+    private void showOut(ExtendedFloatingActionButton btn) {
         btn.shrink(new ExtendedFloatingActionButton.OnChangedCallback() {
             @Override
             public void onShrunken(ExtendedFloatingActionButton extendedFab) {
@@ -323,12 +323,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     }
 
-    private void initAnimation(View view)
-    {
-        view.setVisibility(View.GONE);
-        view.setTranslationY(view.getHeight());
-        view.setAlpha(0f);
-    }
     private void ShareTextMessage(String text) {
 
         String[] textSplit = text.split("\n");
@@ -472,7 +466,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     private void LoadCurrentUserPicture() {
         FileManager fileManager = FileManager.getInstance();
-        Bitmap profileBitmap = fileManager.readImage(this,FileManager.user_profile_images,currentUser);
+        Bitmap profileBitmap = fileManager.readImage(this, FileManager.user_profile_images, currentUser);
         profileImage.setImageBitmap(profileBitmap);
         shapeableImageView.setImageBitmap(profileBitmap);
         if (profileBitmap == null)
@@ -490,7 +484,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                         FileManager fileManager = FileManager.getInstance();
-                        fileManager.saveProfileImage(bitmap,currentUser,MainActivity.this,false);
+                        fileManager.saveProfileImage(bitmap, currentUser, MainActivity.this, false);
                         profileImage.setImageBitmap(bitmap);//loads user image to drawer header
                         shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
                     }
@@ -518,52 +512,53 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
     @Override
-    public void onUserQuery(User user) {
-        Fragment fragment = getSupportFragmentManager().findFragmentByTag("tag");
-        if (fragment instanceof NewChatFragment2) {
-            NewChatFragment2 newChatFragment2 = (NewChatFragment2) fragment;
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("user", user);
-            newChatFragment2.setArguments(bundle);
+    public void onOpenedConversation(String conversationID) {
+        SharedPreferences sharedPreferences = getSharedPreferences(MISSED_MESSAGES, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        boolean missedConversation = sharedPreferences.getBoolean(conversationID, false);
+        if (missedConversation) {
+            editor.putBoolean(conversationID, false);
+            setTabTitle(false);
+            editor.apply();
         }
     }
 
     @Override
-    public void onNewMessage(boolean group) {
-        if (!group) {
-            TabLayout.Tab tab = tabLayout.getTabAt(viewPager.getCurrentItem());
-            if (tab != null) {
-                String tabTitle = pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
-                String[] split = tabTitle.split(" ");
-                StringBuilder builder = new StringBuilder();
-                if (split.length > 1) {
-                    int messageCount = Integer.parseInt(split[0]);
-                    builder.append(messageCount);
+    public void onNewMessage(String conversationID) {
+        SharedPreferences sharedPreferences = getSharedPreferences(MISSED_MESSAGES, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        boolean missedConversation = sharedPreferences.getBoolean(conversationID, false);
+        if (!missedConversation) {
+            editor.putBoolean(conversationID, true);
+            editor.apply();
+            setTabTitle(true);
+        }
+    }
 
-                } else {
-                    builder.append("1");
-                }
-                builder.append(" ");
-                builder.append(tabTitle);
-                tab.setText(builder.toString());
+    private void setTabTitle(boolean add) {
+        int appendNumber;
+        String appendReset;
+        if (add) {
+            appendNumber = 1;
+            appendReset = "1";
+        } else {
+            appendReset = "";
+            appendNumber = -1;
+        }
+        String title = pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
+        TabLayout.Tab tab = tabLayout.getTabAt(viewPager.getCurrentItem());
+        if (tab != null) {
+            String[] s = title.split(" ");
+            StringBuilder builder = new StringBuilder();
+            builder.append(s[0]);
+            builder.append(" ");
+            if (s.length > 1) {
+                int messageCount = Integer.parseInt(s[1]);
+                builder.append((messageCount + appendNumber));
+            } else {
+                builder.append(appendReset);
             }
-
-        }
-    }
-
-    @Override
-    public void onNewQuery(String query) {
-        Toast.makeText(this, "searching...", Toast.LENGTH_SHORT).show();
-        Bundle bundle = new Bundle();
-        search = false;
-        bundle.putString("query", query);
-        List<Fragment> fragmentList = getSupportFragmentManager().getFragments();
-        for (Fragment fragment : fragmentList) {
-            if (!search)
-                if (fragment instanceof TabFragment) {
-                    fragment.setArguments(bundle);
-                    search = true;
-                }
+            tab.setText(builder.toString());
         }
     }
 
@@ -627,19 +622,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
 
-
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-        {
+        if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Intent sms = new Intent(MainActivity.this, NewSMS.class);
             rotateAndShowOut();
             startActivity(sms);
-        }
-        else if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_DENIED)
-        {
+        } else if (requestCode == READ_SMS && grantResults[0] == PackageManager.PERMISSION_DENIED) {
             Toast.makeText(this, "can't start sms conversation without read sms permission", Toast.LENGTH_SHORT).show();
         }
     }
@@ -680,20 +670,16 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     }
 
 
-    private boolean askPermission(MessageType messageType)
-    {
-        switch (messageType)
-        {
+    private boolean askPermission(MessageType messageType) {
+        switch (messageType) {
             case sms:
                 int hasPermission = this.checkSelfPermission(Manifest.permission.RECEIVE_SMS);
-                if (hasPermission!= PackageManager.PERMISSION_GRANTED)
-                {
-                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS,Manifest.permission.SEND_SMS},READ_SMS);
+                if (hasPermission != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS, Manifest.permission.SEND_SMS}, READ_SMS);
                     return false;
-                }
-                else return true;
+                } else return true;
             default:
-                Log.e("ERROR","ask permission error in main activity");
+                Log.e("ERROR", "ask permission error in main activity");
         }
         return false;
     }
