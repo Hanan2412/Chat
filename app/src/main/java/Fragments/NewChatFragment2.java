@@ -34,7 +34,7 @@ import java.util.Objects;
 
 import Adapters.UserListAdapter;
 import NormalObjects.User;
-
+@Deprecated
 @SuppressWarnings("Convert2Lambda")
 public class NewChatFragment2 extends Fragment implements UserListAdapter.userListInterface {
 
