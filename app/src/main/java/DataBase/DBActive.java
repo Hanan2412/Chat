@@ -149,7 +149,7 @@ public class DBActive {
             String selection = DataBaseContract.Conversations.USER_UID + " LIKE ?";
             String orderBy = DataBaseContract.Conversations.LAST_MESSAGE_TIME + " DESC";
             if (user != null && user.getUserUID() != null) {
-                String[] selectionArgs = {user.getUserUID()};
+                String[] selectionArgs = {currentUserUID};
                 Cursor cursor = db.query(DataBaseContract.Conversations.CONVERSATIONS_TABLE, projections, selection, selectionArgs, null, null, orderBy);
                 while (cursor.moveToNext()) {
                     String conversationIDs = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
@@ -538,7 +538,29 @@ public class DBActive {
         if (db != null) {
             ContentValues values = new ContentValues();
             if (message.getRecipients().size() == 1)
-                values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipients().get(0));
+            {
+                List<String>recipient = new ArrayList<>();
+                if (!message.getRecipients().get(0).equals(currentUserUID))
+                {
+                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipients().get(0));
+                    recipient = message.getRecipients();
+                }
+                else
+                {
+                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getSender());
+                    recipient.add(message.getSender());
+                }
+                createNewGroup(message.getConversationID(),recipient);
+            }
+            else
+            {
+                if (message.getRecipients().contains(currentUserUID)) {
+                    message.getRecipients().remove(currentUserUID);
+                    message.getRecipients().add(message.getSender());
+                }
+                createNewGroup(message.getConversationID(),message.getRecipients());
+            }
+            values.put(DataBaseContract.Conversations.USER_UID,currentUserUID);
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
@@ -553,24 +575,6 @@ public class DBActive {
             if (newConversationID == -1)
                 Log.e(DataBaseError, "inserted more than 1 row");
             printConversationTable();
-            if (!message.getRecipients().contains(currentUserUID))
-            {
-                createNewGroup(message.getConversationID(),message.getRecipients());
-            }
-            else
-            {
-                List<String> recipients = message.getRecipients();
-                for (String s : recipients)
-                {
-                    if (s.equals(currentUserUID))
-                    {
-                        recipients.remove(s);
-                        break;
-                    }
-                }
-                recipients.add(message.getSender());
-                createNewGroup(message.getConversationID(),recipients);
-            }
         }
     }
 
@@ -594,41 +598,7 @@ public class DBActive {
         }
         return type;
     }
-    @Deprecated
-    public void createNewConversation(Message message) {
-        if (db != null) {
-            ContentValues values = new ContentValues();
-            values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
-            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
-            values.put(DataBaseContract.Conversations.MUTED, false);
-            long newConversationID = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
-            if (newConversationID == -1)
-                Log.e(DataBaseError, "inserted more than 1 row");
-            printConversationTable();
-            if (!message.getRecipients().contains(currentUserUID))
-            {
-                createNewGroup(message.getConversationID(),message.getRecipients());
-            }
-            else
-            {
-                List<String> recipients = message.getRecipients();
-                for (String s : recipients)
-                {
-                    if (s.equals(currentUserUID))
-                    {
-                        recipients.remove(s);
-                        break;
-                    }
-                }
-                recipients.add(message.getSender());
-                createNewGroup(message.getConversationID(),recipients);
-            }
-        }
-    }
+
 
     private synchronized void createNewGroup(String conversationID,List<String>recipients)
     {
@@ -849,6 +819,7 @@ public class DBActive {
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Conversations.CONVERSATIONS_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Messages.MESSAGES_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.User.USER_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS " + DataBaseContract.Group.GroupTable);
         //dbHelper.onUpgrade(db, db.getVersion(), db.getVersion() + 1);
         dbHelper.onCreate(db);
     }

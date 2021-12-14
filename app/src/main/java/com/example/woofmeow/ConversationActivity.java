@@ -17,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfRenderer;
@@ -37,7 +38,9 @@ import android.os.ParcelFileDescriptor;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.text.Editable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.Gravity;
@@ -64,6 +67,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.ActionMenuItemView;
+import androidx.appcompat.view.menu.MenuBuilder;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.core.content.res.ResourcesCompat;
@@ -327,9 +333,22 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             actionBar.setDisplayShowTitleEnabled(false);
 
         if (smsConversation)
+        {
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark,getTheme()));
+            toolbar.setPopupTheme(R.style.sms);
+        }
         else if (recipients.size() > 1)
+        {
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple,getTheme()));
+            toolbar.setPopupTheme(R.style.group);
+        }
+        else if (recipients.size() == 1)
+        {
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light,getTheme()));
+            toolbar.setPopupTheme(R.style.single);
+        }
+        else
+            Log.e(NULL_ERROR, "ZERO! recipients in conversation activity");
         searchLayout = findViewById(R.id.searchLayout);
         searchText = findViewById(R.id.searchText);
         Button searchBtn = findViewById(R.id.searchBtn);
@@ -2318,19 +2337,21 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 recyclerView.startAnimation(out);
             }
         } else if (item.getItemId() == R.id.copy) {
-            ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            ClipData clipData = ClipData.newPlainText("message", selectedMessage.getMessage());
-            if (clipboardManager != null) {
-                clipboardManager.setPrimaryClip(clipData);
-                Toast.makeText(this, "Copied message", Toast.LENGTH_SHORT).show();
-            } else
-                Snackbar.make(this, recyclerView, "oops, something went wrong", Snackbar.LENGTH_SHORT).setAction("Submit error report", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        //opens error activity or fragment for the user to fill in OR sends information of this error automatically
-                        Toast.makeText(ConversationActivity.this, "Error report was submitted, thank you", Toast.LENGTH_SHORT).show();
-                    }
-                }).show();
+            if(selectedMessage!=null) {
+                ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                ClipData clipData = ClipData.newPlainText("message", selectedMessage.getMessage());
+                if (clipboardManager != null) {
+                    clipboardManager.setPrimaryClip(clipData);
+                    Toast.makeText(this, "Copied message", Toast.LENGTH_SHORT).show();
+                } else
+                    Snackbar.make(this, recyclerView, "oops, something went wrong", Snackbar.LENGTH_SHORT).setAction("Submit error report", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            //opens error activity or fragment for the user to fill in OR sends information of this error automatically
+                            Toast.makeText(ConversationActivity.this, "Error report was submitted, thank you", Toast.LENGTH_SHORT).show();
+                        }
+                    }).show();
+            }else Toast.makeText(ConversationActivity.this, "select a message to copy it", Toast.LENGTH_SHORT).show();
         } else if (item.getItemId() == R.id.starMessage) {
             selectedMessage.setStar(!selectedMessage.isStar());
             dbActive.updateMessage(selectedMessage);

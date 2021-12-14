@@ -7,6 +7,7 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+
     <style name="layoutBorder" parent="Theme.AppCompat.Light">
         <item name="android:background">@drawable/border</item>
     </style>
@@ -16,6 +17,19 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <style name="group" parent="Theme.MaterialComponents.Light">
+        <item name="popupMenuBackground">@android:color/holo_purple</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+    <style name="single" parent="Theme.MaterialComponents.Light">
+        <item name="popupMenuBackground">@android:color/holo_blue_dark</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+    <style name="sms" parent="Theme.MaterialComponents.Light">
+        <item name="popupMenuBackground">@android:color/holo_orange_dark</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+    <!--
     <style name="preferenceStyleDark">
         <item name="android:textColor">@android:color/white</item>
         <item name="backgroundColor">@android:color/black</item>
@@ -28,10 +42,13 @@
         <item name="backgroundColor">@android:color/white</item>
         <item name="backgroundTint">@android:color/white</item>
     </style>
+    -->
 
     <style name="TextAppearance">
-        <item name="android:textColor">@android:color/white</item>
-        <item name="android:textColorSecondary">@android:color/white</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textColorSecondary">@android:color/black</item>
+        <item name="actionMenuTextColor">@color/black</item>
+        <item name="android:actionMenuTextColor">@color/black</item>
         <item name="android:textSize">15sp</item>
     </style>
 

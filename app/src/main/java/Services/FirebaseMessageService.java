@@ -738,7 +738,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private void SendBroadcast(String conversationID, Message message) {
 
         //if this is the current on going conversation
-        if (isConversationExists(conversationID)) {
+        //if (isConversationExists(conversationID))
             if (isOpenConversation(conversationID)) {
                 if (!isConversationBlocked(conversationID))
                     if (!isBlocked(message.getSender())) {
@@ -750,7 +750,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         markAsSeen(message);
                     }
             }
-        }//is the conversation exist at all
+        //is the conversation exist at all
         else if (isConversationExists(conversationID)) {
             if (isNotificationsAllowed())
                 if (!isConversationBlocked(message.getConversationID()))

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
     <item android:id="@+id/copy"
         android:title="Copy message"
         android:icon="@drawable/ic_baseline_file_copy_black"
@@ -9,6 +9,7 @@
     <item android:id="@+id/starMessage"
         android:title="Star message"
         android:icon="@android:drawable/star_big_on"
+        android:visible="false"
         />
 
     <item
