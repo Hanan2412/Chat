@@ -1,5 +1,6 @@
 # Chat app
 # A fully working chat application for Android written in Java
+## phase 1 - data messages
 [![Build Status](https://travis-ci.org/element-io/svg-tags.svg?branch=master)](https://travis-ci.org/element-io/svg-tags)
 ***
 chat app is an android application that as the name implies, allows its users to comunicate with other chat app members
@@ -77,13 +78,14 @@ download the apk to your android device and run it
 ## Development!
 
 ### Road map
-| chat | development start (estimated) |development finished (estimated)|version|
+| platform | development start (estimated) |development finished (estimated)|version|
 |------|---------------------------------|------------------------------|-------|
-|android app|april 2021|june 2022|0.7 beta
-|backend|december 2021| january 2023|0
-|android wear| february 2022|july 2022|0
-|web interface|july 2022|august 2023|0
-|windows|july 2023|august 2024|0
+|android app - phase 1|april 2021|febuery 2022|0.7 
+|android app - phase 2|febuery 2022|december 2022| 
+|backend|| |
+|android wear|||
+|web interface||
+|windows|||
 
 the road map is not final and **will** probably change
 
