@@ -78,7 +78,7 @@ download the apk to your android device and run it
 ## Development!
 
 ### Road map
-| chat | development start (estimated) |development finished (estimated)|version|
+| platform | development start (estimated) |development finished (estimated)|version|
 |------|---------------------------------|------------------------------|-------|
 |android app - phase 1|april 2021|febuery 2022|0.7 
 |android app - phase 2|febuery 2022|december 2022| 
