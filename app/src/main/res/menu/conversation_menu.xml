@@ -6,11 +6,6 @@
         android:title="Copy message"
         android:icon="@drawable/ic_baseline_file_copy_black"
         />
-    <item android:id="@+id/starMessage"
-        android:title="Star message"
-        android:icon="@android:drawable/star_big_on"
-        android:visible="false"
-        />
 
     <item
         android:id="@+id/addPhoneNumber"
@@ -55,13 +50,11 @@
         android:icon="@drawable/ic_baseline_share_white"
         />
 
+    <item android:id="@+id/blockConversation"
+        android:icon="@drawable/ic_baseline_block_black"
+        android:title="block this conversation"
+        app:showAsAction="never"/>
 
-    <item
-        android:id="@+id/block"
-        android:icon="@drawable/ic_baseline_block_white"
-        android:title="block this user"
-        android:visible="true"
-        app:showAsAction="never" />
     <item android:title="meetUp!"
         android:visible="false"
         app:showAsAction="never"

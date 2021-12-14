@@ -1,25 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <EditText
+        android:id="@+id/editTextDialog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Phone number"
+        android:autofillHints=""
         android:gravity="center"
+        android:hint="Phone number"
         android:inputType="textMultiLine"
-        android:contentDescription="recipient phone number"
-        android:id="@+id/editTextDialog"
-        android:visibility="visible"
-        />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="visible"
-        android:text="ok"
-        android:id="@+id/okBtn"
-        >
+        android:visibility="visible" />
 
-    </Button>
 </LinearLayout>

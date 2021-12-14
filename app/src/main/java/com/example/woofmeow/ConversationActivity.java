@@ -2210,6 +2210,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.conversation_menu, menu);
+        if (recipients.size()>1)
+        {
+            menu.findItem(R.id.callBtn).setVisible(false);
+            menu.findItem(R.id.addAsContact).setVisible(false);
+            menu.findItem(R.id.addPhoneNumber).setVisible(false);
+        }
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -2218,11 +2224,15 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.callBtn) {
             //opening dialer to call the recipient number if exists
-            if (recipientPhoneNumber != null)
+            if (recipients.get(0).getPhoneNumber()!=null) {
                 if (directCall)
                     CallPhone(askPermission(MessageType.callPhone));
                 else
                     CallPhone(false);
+            }
+            else
+                Toast.makeText(ConversationActivity.this, "no number, can't call if no number is provided", Toast.LENGTH_SHORT).show();
+
         } else if (item.getItemId() == R.id.addAsContact) {
             //adds current recipient as a contact to contacts list
             Intent addContactIntent = new Intent(Intent.ACTION_INSERT);
@@ -2237,7 +2247,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             View builderView = getLayoutInflater().inflate(R.layout.edit_text_dialog, null);
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             EditText text = builderView.findViewById(R.id.editTextDialog);
-            Button button = builderView.findViewById(R.id.okBtn);
             AlertDialog alert = builder.setTitle("Add a phone number to this contact")
                     .setMessage("choose a phone number from contacts or type one")
                     .setCancelable(true)
@@ -2255,42 +2264,24 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
                         }
+                    }).setNeutralButton("add", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            String phoneNumber = text.getText().toString();
+                            recipients.get(0).setPhoneNumber(phoneNumber);
+                            dbActive.updateUser(recipients.get(0));
+                            dialog.dismiss();
+                        }
                     }).setView(builderView).create();
             alert.show();
-
-            button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    String phoneNumber = text.getText().toString();
-                    recipients.get(0).setPhoneNumber(phoneNumber);
-                    dbActive.updateUser(recipients.get(0));
-                    alert.dismiss();
-                }
-            });
-        } else if (item.getItemId() == R.id.meetUp) {
-            //sets a calendar appointment for both participants (after asking permission from the recipient) - not implemented yet
-            GeneralFragment fragment = new GeneralFragment();
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.add(R.id.contentContainer, fragment, "MeetUp");
-            transaction.addToBackStack(null);
-            transaction.commit();
-                /*Intent calendarIntent = new Intent(Intent.ACTION_INSERT)
-                        .setData(CalendarContract.Events.CONTENT_URI)
-                        .putExtra(CalendarContract.Events.TITLE, "MeetUp")
-                        .putExtra(CalendarContract.Events.EVENT_LOCATION, "address")
-                        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, "TIME EVENT STARTS")
-                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, "TIME EVENT ENDS");
-                if (calendarIntent.resolveActivity(getPackageManager()) != null)
-                    startActivity(calendarIntent);*/
-        } else if (item.getItemId() == R.id.block) {
-            //blocks current recipient from sending messages to current user
+        }  else if (item.getItemId() == R.id.blockConversation)
+        {
             if(dbActive.blockConversation(conversationID))
                 Toast.makeText(ConversationActivity.this,"conversation was blocked!",Toast.LENGTH_SHORT).show();
             else
                 Toast.makeText(ConversationActivity.this,"conversation was un-blocked!",Toast.LENGTH_SHORT).show();
-
-        } else if (item.getItemId() == R.id.share) {
+        }
+        else if (item.getItemId() == R.id.share) {
             if (selectedMessage != null) {
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(Intent.ACTION_SEND);
@@ -2307,12 +2298,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 Bundle backDropBundle = new Bundle();
                 final String conversationType = "conversationType";
                 backDropBundle.putSerializable("message",selectedMessage);
-                if (smsConversation)
-                    backDropBundle.putInt(conversationType,ConversationType.sms.ordinal());
-                else if (recipients.size() == 1)
-                    backDropBundle.putInt(conversationType,ConversationType.single.ordinal());
-                else if (recipients.size() > 1)
-                    backDropBundle.putInt(conversationType,ConversationType.group.ordinal());
+                backDropBundle.putInt(conversationType,this.conversationType.ordinal());
                 backdropFragment.setArguments(backDropBundle);
                 backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
                 selectedMessage = null;
@@ -2352,13 +2338,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         }
                     }).show();
             }else Toast.makeText(ConversationActivity.this, "select a message to copy it", Toast.LENGTH_SHORT).show();
-        } else if (item.getItemId() == R.id.starMessage) {
-            selectedMessage.setStar(!selectedMessage.isStar());
-            dbActive.updateMessage(selectedMessage);
-            chatAdapter.UpdateMessageStar(selectedMessage.getMessageID(), selectedMessage.isStar());
-            selectedMessage = null;
-            messageLongPress = false;
-            invalidateOptionsMenu();
         } else
             Log.e(ERROR_CASE, "menu error");
         return super.onOptionsItemSelected(item);
@@ -2377,7 +2356,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             callRecipientIntent = new Intent(Intent.ACTION_DIAL);
         }
         if (callRecipientIntent != null) {
-            callRecipientIntent.setData(Uri.parse("tel:" + recipientPhoneNumber));//should be recipient phone number
+            callRecipientIntent.setData(Uri.parse("tel:" + recipients.get(0).getPhoneNumber()));
             if (callRecipientIntent.resolveActivity(getPackageManager()) != null)
                 startActivity(callRecipientIntent);
         }
