@@ -35,7 +35,6 @@ import com.example.woofmeow.R;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 
 import Consts.MessageType;
 import Consts.Messaging;
@@ -45,6 +44,7 @@ import Audio.AudioPlayer;
 import NormalObjects.FileManager;
 import NormalObjects.Message;
 import NormalObjects.Web;
+import Time.TimeFormat;
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -291,8 +291,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
         }
         // }
-
-        Calendar calendar = Calendar.getInstance();
+        TimeFormat timeFormat = new TimeFormat();
+        long time = 0;
 
         //show the time of the messages i sent
         if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
@@ -302,33 +302,15 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     timeSent = Long.parseLong(message.getSendingTime());
                 else
                     timeSent = Long.parseLong(message.getMessageID());
-                calendar.setTimeInMillis(timeSent);
+                time = timeSent;
             } catch (NumberFormatException e) {
                 e.printStackTrace();
             }
 
         } else {
-            calendar.setTimeInMillis(Long.parseLong(message.getArrivingTime()));
+            time = Long.parseLong(message.getArrivingTime());
         }
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
-        int seconds = calendar.get(Calendar.SECOND);
-
-        String minuteW = minute + "", hourW = hour + "", secondsW = seconds + "", monthW = month + 1 + "";
-        if (minute < 10)
-            minuteW = "0" + minute + "";
-        if (hour < 10)
-            hourW = "0" + hour;
-        if (seconds < 10)
-            secondsW = "0" + seconds;
-        if (month < 10)
-            monthW = "0" + month;
-        String time = hourW + ":" + minuteW + ":" + secondsW;
-        String date = day + "/" + monthW + "/" + year;
-        String finalDate = date + " " + time;
+        String finalDate = timeFormat.getFormattedDate(time);
         holder.timeReceived.setText(finalDate);
 
         if (holder.extraOptionsLayout != null)

@@ -6,14 +6,18 @@ import android.media.MediaRecorder;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import Time.TimeFormat;
+
 public class AudioRecorder extends MediaRecorder implements Runnable {
 
     private AudioHelper callback;
     private boolean recording;
     private int seconds = 0,minutes = 0;
     private final String fileName;
+    private TimeFormat format;
     public AudioRecorder(Context context)
     {
+        format = new TimeFormat();
         setAudioSource(MediaRecorder.AudioSource.MIC);
         setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         fileName = context.getExternalCacheDir().getAbsolutePath() + "/audioRecording_" + System.currentTimeMillis() + ".3pg";
@@ -77,6 +81,7 @@ public class AudioRecorder extends MediaRecorder implements Runnable {
 
     private String formatProgress()
     {
+
         if (seconds == 60) {
             seconds = 0;
             minutes++;
@@ -84,16 +89,7 @@ public class AudioRecorder extends MediaRecorder implements Runnable {
         if (minutes == 60) {
             minutes = 0;
         }
-        String minuteStr;
-        if (minutes < 10)
-            minuteStr = "0" + minutes;
-        else minuteStr = minutes + "";
-        String secondsStr;
-        if (seconds < 10)
-            secondsStr = "0" + seconds;
-        else
-            secondsStr = seconds + "";
-        return minuteStr + ":" + secondsStr;
+        return format.getFormattedTime(minutes*60*1000L+seconds*1000L);
     }
 
     @Override
