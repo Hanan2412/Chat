@@ -17,15 +17,12 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfRenderer;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.media.MediaPlayer;
-import android.media.MediaRecorder;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -38,9 +35,7 @@ import android.os.ParcelFileDescriptor;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.text.Editable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.Gravity;
@@ -67,9 +62,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.ActionMenuItemView;
-import androidx.appcompat.view.menu.MenuBuilder;
-import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.core.content.res.ResourcesCompat;
@@ -77,6 +69,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -100,15 +93,16 @@ import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import Backend.ConversationViewModel;
 import BroadcastReceivers.SMSBroadcastSent;
 import Consts.ConversationType;
+import Audio.AudioHelper;
+import Audio.AudioManager;
+import Audio.AudioPlayer;
+import Audio.AudioRecorder;
 import NormalObjects.Web;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -116,10 +110,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,8 +124,6 @@ import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.HttpsURLConnection;
-
 import Adapters.ChatAdapter;
 
 import Consts.ButtonType;
@@ -142,7 +132,6 @@ import Consts.MessageType;
 import Controller.CController;
 import Fragments.BackdropFragment;
 import Fragments.BottomSheetFragment;
-import Fragments.GeneralFragment;
 import Fragments.PickerFragment;
 import DataBase.DataBaseContract;
 import Fragments.TimePickerFragment;
@@ -166,11 +155,8 @@ import retrofit2.Response;
 @SuppressWarnings("Convert2Lambda")
 public class ConversationActivity extends AppCompatActivity implements ChatAdapter.MessageInfoListener, PickerFragment.onPickerClick, BottomSheetFragment.onSheetClicked, BackdropFragment.onBottomSheetAction, Serializable, ConversationGUI, Runnable, TimePickerFragment.onTimePicked {
 
-    private static final String LOG_TAG = "AudioRecordingTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private static String fileName;
-    private MediaRecorder recorder = null;
-    private MediaPlayer player = null;
 
     public static final String MESSAGE_SEEN = "MESSAGE_SEEN";
     public static final String MESSAGE_SENT = "MESSAGE_SENT";
@@ -408,11 +394,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         closeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                AudioManager manager = AudioManager.getInstance();
+                manager.releasePlayer(fileName);
                 fileName = null;
-                if (player != null) {
-                    player.stop();
-                    stopPlaying();
-                }
+                startPlaying1 = true;
                 recordingTimeText.setText(R.string.zero_time);
                 resetToText();
                 buttonState = RECORD_VOICE;
@@ -502,8 +487,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
         recyclerView.setAdapter(chatAdapter);
 
-        //LoadMessagesFromDataBase();
-
         recyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
 
             @Override
@@ -560,54 +543,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
             @Override
             public void onClick(View v) {
-                if (player == null) {
-                    PlayOrNot();
-                } else if (player.isPlaying()) {
-                    player.pause();
-                    SetCorrectColor(ButtonType.play);
-                } else {
-                    player.start();
-                    startPlaying1 = !startPlaying1;
-                    Thread playBackThread = new Thread(ConversationActivity.this);
-                    playBackThread.setName("playBackThread");
-                    playBackThread.start();
-                    SetCorrectColor(ButtonType.pause);
-                }
+                playRecording();
             }
         });
         voiceSeek = findViewById(R.id.voiceSeek);
-        voiceSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (player != null) {
-                    player.seekTo(seekBar.getProgress());
-                    if (seekBar.getProgress() == 0) {
-                        String zeroTime = 0 + "";
-                        recordingTimeText.setText(zeroTime);
-                    } else {
-                        String s;
-                        int p = seekBar.getProgress() / 1000;
-                        if (p < 10)
-                            s = "00:0" + p;
-                        else
-                            s = "00:" + p;
-                        recordingTimeText.setText(s);
-                    }
-                } else
-                    Toast.makeText(ConversationActivity.this, "start the player, pause it and move the time indicator", Toast.LENGTH_SHORT).show();
-            }
-        });
         sendActionBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1246,51 +1185,19 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void RecordingSoundStart() {
-        MediaPlayer startRecordingSound = MediaPlayer.create(getApplicationContext(), R.raw.recording_sound_start);
-        startRecordingSound.start();
-        startRecordingSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                startRecordingSound.reset();
-                startRecordingSound.release();
-            }
-        });
+        new AudioPlayer(getApplicationContext(),R.raw.recording_sound_start);
     }
 
     private void RecordingSoundStopped() {
-        MediaPlayer stopRecordingSound = MediaPlayer.create(getApplicationContext(), R.raw.recording_sound_stopped);
-        stopRecordingSound.start();
-        stopRecordingSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                stopRecordingSound.reset();
-                stopRecordingSound.release();
-            }
-        });
+        new AudioPlayer(getApplicationContext(),R.raw.recording_sound_stopped);
     }
 
     private void playNewMessageSound() {
-        MediaPlayer startNewMessageSound = MediaPlayer.create(getApplicationContext(), R.raw.new_message_arrived);
-        startNewMessageSound.start();
-        startNewMessageSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                startNewMessageSound.reset();
-                startNewMessageSound.release();
-            }
-        });
+        new AudioPlayer(getApplicationContext(),R.raw.new_message_arrived);
     }
 
     private void SendMessageSound() {
-        MediaPlayer sendMessageSound = MediaPlayer.create(getApplicationContext(), R.raw.send_message_sound);
-        sendMessageSound.start();
-        sendMessageSound.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                sendMessageSound.reset();
-                sendMessageSound.release();
-            }
-        });
+        new AudioPlayer(getApplicationContext(),R.raw.send_message_sound);
     }
 
     private void PrepareSendMessage() {
@@ -1317,7 +1224,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         recorded = false;
         buttonState = RECORD_VOICE;
         startRecording = true;
-        stopPlaying();
+        if (fileName != null) {
+            AudioManager manager = AudioManager.getInstance();
+            manager.releasePlayer(fileName);
+            startPlaying1 = true;
+            RecordOrNot();
+        }
         if (smsConversation)
             sendActionBtn.setVisibility(View.GONE);
     }
@@ -1333,8 +1245,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void LongPressToRecordVoice() {
-        fileName = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath();
-        fileName += "/audioRecordingTest.3gp";
         if (askPermission(MessageType.VoiceMessage)) {
             RecordOrNot();
         }
@@ -1353,117 +1263,56 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void RecordOrNot() {
-
-        onRecord(startRecording);
-        if (startRecording) {
-            SetCorrectColor(ButtonType.recording);
-        } else {
-            SetCorrectColor(ButtonType.microphone);
-        }
-    }
-
-    private void PlayOrNot() {
-        onPlay(startPlaying1);
-        if (startPlaying1) {
-            SetCorrectColor(ButtonType.pause);
-        } else {
-            SetCorrectColor(ButtonType.play);
-        }
-    }
-
-    private void onRecord(boolean start) {
-        if (start)
-            startRecording();
-        else
-            stopRecording();
-    }
-
-    private void stopRecording() {
-        if (recorder != null) {
-            try {
-                recorder.stop();
-                recorder.release();
-                recorder = null;
-            } catch (RuntimeException ex) {
-                Log.e("RECORDER ERROR", "failed to stop");
-            }
-            messageSent.setVisibility(View.GONE);
-            recordingTimeText.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void onPlay(boolean start) {
-        if (start)
-            startPlaying();
-        else
-            stopPlaying();
-    }
-
-    private void startPlaying() {
-        player = new MediaPlayer();
-        try {
-
-
-            player.setDataSource(fileName);
-            player.prepare();
-            player.start();
-            //playingON = true;
-            voiceSeek.setMax(player.getDuration());
-            recordingTimeText.setVisibility(View.VISIBLE);
-            messageSent.setVisibility(View.GONE);
-            Thread playBackThread = new Thread(this);
-            playBackThread.setName("playBackThread");
-            playBackThread.start();
-
-
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
-        }
-    }
-
-    private void stopPlaying() {
-        if (player != null) {
-            player.reset();
-            player.release();
-        }
-        player = null;
-        startPlaying1 = true;
-        stopRecording();
-    }
-
-    private void startRecording() {
-
-        recorder = new MediaRecorder();
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        recorder.setOutputFile(fileName);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-        try {
-            recorder.prepare();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare failed");
-        }
-        recorder.start();
-        recorded = true;
         messageSent.setVisibility(View.GONE);
         recordingTimeText.setVisibility(View.VISIBLE);
-        Thread countRecordingTimeThread = new Thread(this);
-        countRecordingTimeThread.setName("recording thread");
-        countRecordingTimeThread.start();
+        AudioManager manager = AudioManager.getInstance();
+        AudioRecorder audioRecorder = manager.getAudioRecorder(conversationID,this);
+        audioRecorder.setListener(new AudioHelper() {
+            @Override
+            public void onProgressChange(String formattedProgress, int progress) {
+                recordingTimeText.setText(formattedProgress);
+            }
+
+            @Override
+            public void onPlayingStatusChange(boolean isPlaying) {
+                if (isPlaying) {
+                    SetCorrectColor(ButtonType.recording);
+                } else {
+                    manager.releaseRecorder(conversationID);
+                    SetCorrectColor(ButtonType.microphone);
+                    messageSent.setVisibility(View.GONE);
+                    recordingTimeText.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+        fileName = audioRecorder.getRecordingPath();
+        audioRecorder.recordStopAudio();
+        recorded = true;
+
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (recorder != null) {
-            recorder.release();
-            recorder = null;
-        }
-        if (player != null) {
-            player.reset();
-            player.release();
-            player = null;
-        }
+    private void playRecording()
+    {
+        recordingTimeText.setVisibility(View.VISIBLE);
+        messageSent.setVisibility(View.GONE);
+        AudioManager manager = AudioManager.getInstance();
+        AudioPlayer audioPlayer = manager.getAudioPlayer(fileName,voiceSeek);
+        audioPlayer.setListener(new AudioHelper() {
+            @Override
+            public void onProgressChange(String formattedProgress, int progress) {
+                recordingTimeText.setText(formattedProgress);
+            }
+
+            @Override
+            public void onPlayingStatusChange(boolean isPlaying) {
+                if (isPlaying) {
+                    SetCorrectColor(ButtonType.pause);
+                } else {
+                    SetCorrectColor(ButtonType.play);
+                }
+            }
+        });
+        audioPlayer.playPauseAudio();
     }
 
     @Override
@@ -1727,16 +1576,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         SharedPreferences.Editor editor = conversationPreferences.edit();
         editor.putString("liveConversation", "noConversation");
         editor.apply();
-
-        if (player != null) {
-            try {
-                player.release();
-                player = null;
-            } catch (Exception e) {
-                Log.e("onDestroy", "player close operation failed");
-                e.printStackTrace();
-            }
-        }
 
         LocalBroadcastManager.getInstance(this).unregisterReceiver(MessageReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiveNewMessages);
@@ -2395,69 +2234,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     @Override
     public void run() {
-        int seconds = 0, minutes = 0;
-        String minuteString, secondsString;
-        if (player != null && startPlaying1)
-            player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    startPlaying1 = !startPlaying1;
-                    SetCorrectColor(ButtonType.play);
-                    voiceSeek.setProgress(0);
-                    recordingTimeText.setText(getResources().getString(R.string.zero_time));
-                }
-            });
-        while (startRecording) {
-            try {
-                if (seconds == 60) {
-                    seconds = 0;
-                    minutes++;
-                }
-                if (minutes == 60) {
-                    minutes = 0;
-                }
-                if (minutes < 10)
-                    minuteString = "0" + minutes;
-                else minuteString = minutes + "";
-                if (seconds < 10)
-                    secondsString = "0" + seconds;
-                else
-                    secondsString = seconds + "";
-                String recordingTime = minuteString + ":" + secondsString;
-                recordingTimeText.setText(recordingTime);
-                TimeUnit.SECONDS.sleep(1);
-                seconds++;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        if (player != null)
-            while (player.isPlaying()) {
-                String playBackTimeString;
-                seconds = player.getCurrentPosition() / 1000;
-                int secondsReset = seconds % 60;
-                if (secondsReset == 0 && seconds != 0) {
-                    minutes++;
-                }
 
-                if (secondsReset < 10)
-                    secondsString = "0" + secondsReset;
-                else
-                    secondsString = secondsReset + "";
-                if (minutes < 10)
-                    minuteString = "0" + minutes;
-                else
-                    minuteString = minutes + "";
-                playBackTimeString = minuteString + ":" + secondsString;
-                Handler handler = new Handler(getMainLooper());
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        recordingTimeText.setText(playBackTimeString);
-                    }
-                });
-                voiceSeek.setProgress(player.getCurrentPosition());
-            }
     }
 
     private void dataBaseSetUp() {
@@ -2767,7 +2544,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             case new_message:
                 int amount = chatAdapter.getItemCount();
                 if (amount == 0) {//sending the first message in a conversation
-                    CreateNewConversation(message);
+                    createNewConversation(message);
                     for (User user : recipients) {
                         getRecipientToken(user.getUserUID());
                         dbActive.insertUser(user);
@@ -2794,7 +2571,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             InteractionMessage(message.getConversationID(), message.getMessageID(), READ_TIME);
     }
 
-    private void CreateNewConversation(Message message) {
+    private void startViewModel(Message message)
+    {
+        ConversationViewModel model = new ViewModelProvider(this).get(ConversationViewModel.class);
+        model.createNewConversation(message,currentUser,conversationType);
+    }
+
+    private void createNewConversation(Message message) {
+        startViewModel(message);
         dbActive.createNewConversation(message, conversationType);
         //dbActive.createNewConversation(message);
     }

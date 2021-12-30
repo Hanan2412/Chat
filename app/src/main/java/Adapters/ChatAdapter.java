@@ -2,12 +2,8 @@ package Adapters;
 
 import android.annotation.SuppressLint;
 
-import android.content.ContentResolver;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageDecoder;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -36,27 +32,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import Consts.MessageType;
 import Consts.Messaging;
+import Audio.AudioHelper;
+import Audio.AudioManager;
+import Audio.AudioPlayer;
 import NormalObjects.FileManager;
 import NormalObjects.Message;
 import NormalObjects.Web;
@@ -67,13 +52,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     private ArrayList<Message> messages = new ArrayList<>();
     private String currentUserUID;
-    private boolean playing = false;
-    private MediaPlayer player = null;
     private final String ERROR = "CHAT_ADAPTER_ERROR";
     private float textSize = 30;
-    private HashMap<Integer, MediaPlayer> players = new HashMap<>();
-    private HashMap<Integer, SeekBar> seeks = new HashMap<>();
-    private HashMap<Integer, TextView> playBackTimes = new HashMap<>();
 
 
     public interface MessageInfoListener {
@@ -379,19 +359,42 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.playPauseBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (playing) {
-                        Log.d("playing voice message", "voice message is paused");
-                        holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
-                        //onPlay(false, position);
-                        onPlay1(false, position, holder.voiceSeek, holder.message, holder.playPauseBtn);
-                    } else {
-                        Log.d("playing voice message", "voice message is playing");
-                        holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
-                        //onPlay(true, position);
-                        onPlay1(true, position, holder.voiceSeek, holder.message, holder.playPauseBtn);
+                    AudioManager manager = AudioManager.getInstance();
+                    if (messages.get(position).getRecordingPath()!=null) {
+                        AudioPlayer audioPlayer = manager.getAudioPlayer(messages.get(position).getRecordingPath(), holder.voiceSeek);
+                        audioPlayer.setListener(new AudioHelper() {
+                            @Override
+                            public void onProgressChange(String formattedProgress, int progress) {
+                                holder.message.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+                                holder.message.setGravity(Gravity.CENTER);
+                                holder.message.setText(formattedProgress);
+                            }
+
+                            @Override
+                            public void onPlayingStatusChange(boolean isPlaying) {
+                                if (isPlaying)
+                                    holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_circle_outline_white);
+                                else
+                                    holder.playPauseBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
+                            }
+                        });
+                        audioPlayer.playPauseAudio();
                     }
+                    else
+                        Toast.makeText(holder.itemView.getContext(), "error accrued while trying to play recording", Toast.LENGTH_SHORT).show();
                 }
             });
+        }
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        AudioManager manager = AudioManager.getInstance();
+        for (Message message: messages)
+        {
+            if (message.getMessageType() == MessageType.VoiceMessage.ordinal())
+                manager.releasePlayer(message.getRecordingPath());
         }
     }
 
@@ -517,155 +520,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             return Messaging.outgoing.ordinal();
         else
             return Messaging.incoming.ordinal();
-    }
-
-
-    private void onPlay(boolean start, int position) {
-
-        playing = !playing;
-
-        if (start)
-            startPlaying(position);
-        else
-            pausePlaying(position);
-    }
-
-    private void onPlay1(boolean start, int position, SeekBar seek, TextView textView, ImageButton playPauseBtn) {
-        playing = !playing;
-
-        if (start)
-            startPlaying1(position, seek, textView, playPauseBtn);
-        else
-            pausePlaying1();
-    }
-
-    private void startPlaying1(int position, SeekBar seek, TextView text, ImageButton playPauseBtn) {
-        if (player != null) {
-            //player.stop();
-            player.release();
-
-        }
-        player = new MediaPlayer();
-        String recordingPath = messages.get(position).getRecordingPath();
-        if (recordingPath != null) {
-            try {
-                player.setDataSource(recordingPath);
-                player.prepare();
-                player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override
-                    public void onCompletion(MediaPlayer mp) {
-                        playPauseBtn.setImageResource(R.drawable.ic_baseline_play_circle_outline_white);
-                        text.setText(R.string.zero_time);
-                        seek.setProgress(0);
-                        player.stop();
-                        player.release();
-                        playing = !playing;
-                    }
-                });
-                if (seek.getProgress() != 0)
-                    player.seekTo(seek.getProgress());
-                else
-                    seek.setProgress(0);
-                seek.setMax(player.getDuration());
-                text.setText(R.string.zero_time);
-                text.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-                text.setGravity(Gravity.CENTER);
-                seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                    @Override
-                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-                    }
-
-                    @Override
-                    public void onStartTrackingTouch(SeekBar seekBar) {
-
-                    }
-
-                    @Override
-                    public void onStopTrackingTouch(SeekBar seekBar) {
-                        if (seekBar.getProgress() / 1000 < 10) {
-                            String progress = "00:0" + seekBar.getProgress() / 1000;
-                            text.setText(progress);
-                        } else {
-                            String progress = "00:" + seekBar.getProgress() / 1000;
-                            text.setText(progress);
-                        }
-                    }
-                });
-                player.start();
-                Thread seekThread = new Thread() {
-                    @Override
-                    public void run() {
-                        super.run();
-                        while (player.isPlaying()) {
-                            int currentPosition = player.getCurrentPosition();
-                            seek.setProgress(currentPosition);
-                            String post;
-                            if (currentPosition / 1000 < 10) {
-                                post = "00:0" + currentPosition / 1000;
-                            } else {
-                                post = "00:" + currentPosition / 1000;
-                            }
-                            text.setText(post);
-                        }
-                    }
-                };
-                seekThread.setName("playing recording thread");
-                seekThread.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            Log.e("NULL", "voice recording path is null");
-            Toast.makeText(text.getContext(), "and error happened while trying to play the recording, try again later", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void pausePlaying1() {
-        if (player != null)
-            player.pause();
-    }
-
-    private void startPlaying(int position) {
-
-        MediaPlayer player = players.get(position);
-        SeekBar seek = seeks.get(position);
-        TextView playback = playBackTimes.get(position);
-        if (player != null && seek != null && playback != null) {
-            player.start();
-            playback.setGravity(Gravity.CENTER);
-            playback.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    super.run();
-                    while (player.isPlaying()) {
-                        int currentPosition = player.getCurrentPosition();
-                        seek.setProgress(currentPosition);
-                        String post;
-                        if (currentPosition / 1000 < 10) {
-                            post = "00:0" + currentPosition / 1000;
-                        } else {
-                            post = "00:" + currentPosition / 1000;
-                        }
-                        playback.setText(post);
-
-                    }
-                }
-            };
-            thread.setName("playing recording thread");
-            thread.start();
-        }
-
-    }
-
-
-    private void pausePlaying(int position) {
-
-        MediaPlayer player = players.get(position);
-        if (player != null)
-            player.pause();
-
     }
 
     public int findQuotedMessageLocation(ArrayList<Message> messages, int min, int max, long key) {
