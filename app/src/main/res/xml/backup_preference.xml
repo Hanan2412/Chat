@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <DropDownPreference
+        android:entries="@array/backupEntries"
+        android:entryValues="@array/backupValues"
+        android:icon="@drawable/ic_baseline_location_on_24"
+        android:key="backupPlace"
+        android:summary="My Computer"
+        android:title="backup location" />
+
+    <DropDownPreference
+        android:entries="@array/backupTime"
+        android:entryValues="@array/backupTimeValues"
+        android:icon="@drawable/ic_baseline_access_time_black"
+        android:key="backupTime"
+        android:summary="daily"
+        android:title="backup schedule" />
+    <Preference
+        android:icon="@drawable/ic_baseline_backup_24"
+        android:key="backupNow"
+        android:title="backup now" />
+    <SwitchPreferenceCompat
+        android:key="wifiOnly"
+        android:title="backup only when connected to wifi"
+        android:icon="@drawable/ic_baseline_wifi_24"
+        android:defaultValue="false"
+        />
+    <Preference android:key="restore"
+        android:title="restore data"
+        android:icon="@drawable/ic_baseline_cloud_download_24"
+        />
+</PreferenceScreen>

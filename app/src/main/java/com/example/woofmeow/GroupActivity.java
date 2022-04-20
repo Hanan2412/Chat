@@ -2,6 +2,7 @@ package com.example.woofmeow;
 
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -11,18 +12,27 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
 import Adapters.GroupProfileAdapter;
-import DataBase.DBActive;
+import Backend.AppViewModel;
+import Backend.ConversationVM;
+import Backend.UserVM;
+//import DataBase.DBActive;
 import NormalObjects.User;
 
-@SuppressWarnings("Convert2Lambda")
+@SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef"})
 public class GroupActivity extends AppCompatActivity {
 
+    private UserVM userVM;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,7 +50,6 @@ public class GroupActivity extends AppCompatActivity {
             }
         });
         String conversationID = getIntent().getStringExtra("conversationID");
-        DBActive db = DBActive.getInstance(this);
         RecyclerView groupMembers = findViewById(R.id.groupMembers);
         groupMembers.setHasFixedSize(true);
         groupMembers.setItemViewCacheSize(20);
@@ -48,20 +57,68 @@ public class GroupActivity extends AppCompatActivity {
         groupMembers.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         groupMembers.setLayoutManager(layoutManager);
-        List<User> recipients = db.loadUsers(conversationID);
+        userVM = new ViewModelProvider(this).get(UserVM.class);
+        ConversationVM conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
+        LiveData<List<User>> recipients = conversationVM.getRecipients(conversationID);
         GroupProfileAdapter adapter = new GroupProfileAdapter();
+        recipients.observe(this, new Observer<List<User>>() {
+            @Override
+            public void onChanged(List<User> users) {
+                if (users == null)
+                    Log.e("GroupActivityError","recipients are null");
+                adapter.setRecipients(users);
+            }
+        });
         adapter.setListener(new GroupProfileAdapter.onUserInteraction() {
             @Override
             public void onMute(String userID) {
-                 db.muteConversation(conversationID);
+                mute(userID);
             }
 
             @Override
             public void onBlock(String userID) {
-                db.blockConversation(conversationID);
+                block(userID);
             }
         });
-        adapter.setRecipients(recipients);
         groupMembers.setAdapter(adapter);
     }
+
+    private void mute(String uid)
+    {
+        LiveData<Boolean>muteUser = userVM.isUserMuted(uid);
+        muteUser.observe(GroupActivity.this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (aBoolean)
+                {
+                    userVM.unMuteUser(uid);
+
+                }
+                else
+                {
+                    userVM.muteUser(uid);
+
+                }
+            }
+        });
+    }
+
+    private void block(String uid)
+    {
+        LiveData<Boolean>blockUser = userVM.isUserBlocked(uid);
+        blockUser.observe(GroupActivity.this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (aBoolean)
+                {
+                    userVM.unBlockUser(uid);
+                }
+                else
+                {
+                    userVM.blockUser(uid);
+                }
+            }
+        });
+    }
+
 }

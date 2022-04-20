@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.GravityCompat;
@@ -11,6 +12,9 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
 
@@ -51,17 +55,27 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+import com.vanniktech.emoji.EmojiManager;
+import com.vanniktech.emoji.ios.IosEmojiProvider;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
+import Backend.ConversationVM;
+import Backend.UserVM;
 import Consts.MessageType;
 import Consts.Tabs;
 import Fragments.TabFragment;
+import Messages.BaseMessage;
+import Messages.SendMessage;
+import Messages.TextMessage;
 import NormalObjects.*;
 
+import Retrofit.Server;
 import Services.FirebaseMessageService;
 
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
@@ -91,11 +105,12 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private boolean isRotate = false;
     private ExtendedFloatingActionButton smsBtn, chatBtn, groupBtn;
     private final int READ_SMS = 1;
-
+    private UserVM userVM;
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EmojiManager.install(new IosEmojiProvider());
         setContentView(R.layout.activity_main);
         if (currentUser == null) {
             SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
@@ -103,9 +118,10 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             if (!uid.equals("ERROR: NO UID"))
                 currentUser = uid;
         }
-
+        userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
+        toolbar.setPopupTheme(R.style.single);
         setSupportActionBar(toolbar);
         tabLayout = findViewById(R.id.tabs_layout);
         coordinatorLayout = findViewById(R.id.coordinator1);
@@ -123,20 +139,19 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 if (item.getItemId() == R.id.profile) {
                     Intent intent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
-                    intent.putExtra("currentUser", user);
+                    intent.putExtra("user", user);
                     startActivity(intent);
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else if (item.getItemId() == R.id.disconnect) {
                     FirebaseMessaging.getInstance().deleteToken();
                     FirebaseAuth.getInstance().signOut();
+                    userVM.reset();
                     Intent intent = new Intent(MainActivity.this, FirstPageActivity.class);
                     startActivity(intent);
                     finish();
                 } else if (item.getItemId() == R.id.settings) {
                     startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
                     drawerLayout.closeDrawer(GravityCompat.START);
-                } else if (item.getItemId() == R.id.backUp) {
-                    UploadFileToDropbox();
                 }
                 return false;
             }
@@ -144,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         smsBtn = findViewById(R.id.smsConversation);
         chatBtn = findViewById(R.id.chatConversation);
         groupBtn = findViewById(R.id.groupConversation);
+
         smsBtn.shrink();
         chatBtn.shrink();
         groupBtn.shrink();
@@ -182,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 Tabs tab = Tabs.values()[pagePosition];
                 switch (tab) {
                     case chat:
-                        Intent chat = new Intent(MainActivity.this, NewGroupChat.class);
+                        Intent chat = new Intent(MainActivity.this, NewGroupChat2Activity.class);
                         rotateAndShowOut();
                         startActivity(chat);
                         break;
@@ -201,6 +217,14 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     showIn(smsBtn);
                     showIn(groupBtn);
                     showIn(chatBtn);
+                    int smsWidth = smsBtn.getMinWidth();
+                    int chatWidth = chatBtn.getMinWidth();
+                    int groupWidth = groupBtn.getMinWidth();
+                    int bigger = Math.max(smsWidth,chatWidth);
+                    bigger = Math.max(bigger,groupWidth);
+                    smsBtn.setMinWidth(bigger);
+                    chatBtn.setMinWidth(bigger);
+                    groupBtn.setMinWidth(bigger);
                 } else {
                     showOut(smsBtn);
                     showOut(groupBtn);
@@ -269,6 +293,35 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }
         //ConnectedToInternet();
         //DropBox();
+
+//        Server server = Server.getInstance();
+//        server.setFileDownloadListener(new Server.onFileDownload() {
+//            @Override
+//            public void onDownloadStarted() {
+//
+//            }
+//
+//            @Override
+//            public void onProgress(int progress) {
+//
+//            }
+//
+//            @Override
+//            public void onDownloadFinished(File file) {
+//
+//            }
+//
+//            @Override
+//            public void onFileDownloadFinished(String messageID, File file) {
+//                Log.d("fileDownload","msgID: " + messageID + "fileName: " + file.getName());
+//            }
+//
+//            @Override
+//            public void onDownloadError(String errorMessage) {
+//
+//            }
+//        });
+//        server.downloadFile("audioRecording_1647556275702.3pg","123",this);
     }
 
     private void rotateAndShowOut() {
@@ -441,14 +494,20 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 case ONLINE_S:
                     item.setIcon(R.drawable.circle_green);
                     currentStatus = OFFLINE_S;
+                    user.setStatus(currentStatus);
+                    userVM.updateUser(user);
                     break;
                 case OFFLINE_S:
                     item.setIcon(R.drawable.circle_red);
                     currentStatus = STANDBY_S;
+                    user.setStatus(currentStatus);
+                    userVM.updateUser(user);
                     break;
                 case STANDBY_S:
                     item.setIcon(R.drawable.circle_yellow);
                     currentStatus = ONLINE_S;
+                    user.setStatus(currentStatus);
+                    userVM.updateUser(user);
                     break;
             }
             onUserUpdate = false;
@@ -467,6 +526,10 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private void LoadCurrentUserPicture() {
         FileManager fileManager = FileManager.getInstance();
         Bitmap profileBitmap = fileManager.readImage(this, FileManager.user_profile_images, currentUser);
+        if (profileBitmap == null)
+            if (user!=null)
+                if (user.getPictureLink()!=null)
+                    onUserUpdate(user);
         profileImage.setImageBitmap(profileBitmap);
         shapeableImageView.setImageBitmap(profileBitmap);
         if (profileBitmap == null)
@@ -518,47 +581,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         boolean missedConversation = sharedPreferences.getBoolean(conversationID, false);
         if (missedConversation) {
             editor.putBoolean(conversationID, false);
-            setTabTitle(false);
             editor.apply();
-        }
-    }
-
-    @Override
-    public void onNewMessage(String conversationID) {
-        SharedPreferences sharedPreferences = getSharedPreferences(MISSED_MESSAGES, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        boolean missedConversation = sharedPreferences.getBoolean(conversationID, false);
-        if (!missedConversation) {
-            editor.putBoolean(conversationID, true);
-            editor.apply();
-            setTabTitle(true);
-        }
-    }
-
-    private void setTabTitle(boolean add) {
-        int appendNumber;
-        String appendReset;
-        if (add) {
-            appendNumber = 1;
-            appendReset = "1";
-        } else {
-            appendReset = "";
-            appendNumber = -1;
-        }
-        String title = pagerAdapter.getPageTitle(viewPager.getCurrentItem()) + "";
-        TabLayout.Tab tab = tabLayout.getTabAt(viewPager.getCurrentItem());
-        if (tab != null) {
-            String[] s = title.split(" ");
-            StringBuilder builder = new StringBuilder();
-            builder.append(s[0]);
-            builder.append(" ");
-            if (s.length > 1) {
-                int messageCount = Integer.parseInt(s[1]);
-                builder.append((messageCount + appendNumber));
-            } else {
-                builder.append(appendReset);
-            }
-            tab.setText(builder.toString());
         }
     }
 

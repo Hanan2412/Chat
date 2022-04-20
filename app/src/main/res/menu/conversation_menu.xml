@@ -7,6 +7,18 @@
         android:icon="@drawable/ic_baseline_file_copy_black"
         />
 
+    <group android:visible="false" android:id="@+id/groupConversation">
+        <item android:id="@+id/addNewMember"
+            android:title="add new members"
+            app:showAsAction="ifRoom"
+            android:icon="@drawable/ic_baseline_group_add_24"
+            />
+        <item android:id="@+id/leaveGroup"
+            android:title="leave group"
+            app:showAsAction="never"
+            android:icon="@drawable/ic_baseline_exit_to_app_24"
+            />
+    </group>
     <item
         android:id="@+id/addPhoneNumber"
         android:enabled="true"

@@ -10,4 +10,5 @@
     <color name="lightestBlue">#BFCEF3</color>
     <color name="green">#0CCD00</color>
     <color name="yellow">#FFEB3B</color>
+    <color name="dm">#E2000000</color>
 </resources>

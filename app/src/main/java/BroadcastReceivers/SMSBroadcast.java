@@ -11,50 +11,69 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import Backend.ChatDao;
+import Backend.ChatDataBase;
+
 import Consts.ConversationType;
 import Consts.MessageType;
-import DataBase.DBActive;
-import Model.NewMessage;
+
+import Controller.NotificationsController;
+import NormalObjects.Conversation;
+import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.User;
 
 //reads incoming sms messages
-public class SMSBroadcast extends BroadcastReceiver implements NewMessage {
-    //private static final String pdu_type = "pdus";
+@SuppressWarnings({"AnonymousHasLambdaAlternative", "Convert2Lambda"})
+public class SMSBroadcast extends BroadcastReceiver {
     @SuppressWarnings("FieldMayBeFinal")
     private List<String> conversations;
-    private DBActive db;
     private Context context;
+    private final String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+    private ChatDao dao;
+    private boolean blocked = false;
 
-    public SMSBroadcast()
-    {
+    public SMSBroadcast() {
         conversations = new ArrayList<>();
     }
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        db = DBActive.getInstance(context);
+        ChatDataBase chatDataBase = ChatDataBase.getInstance(context);
+        dao = chatDataBase.chatDao();
         this.context = context;
         Message msg = new Message();
         SmsMessage smsMessage = Telephony.Sms.Intents.getMessagesFromIntent(intent)[0];
         String phone = smsMessage.getDisplayOriginatingAddress();
         String message = smsMessage.getMessageBody();
-
+        LiveData<Boolean>blockedUser = dao.isUserBlocked(phone);
+        Observer<Boolean>blockedObserver = new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (aBoolean != null)
+                    blocked = aBoolean;
+            }
+        };
+        blockedUser.observeForever(blockedObserver);
         msg.setMessageType(MessageType.sms.ordinal());
         msg.setMessage(message);
         msg.setContactPhone(phone);
@@ -67,121 +86,154 @@ public class SMSBroadcast extends BroadcastReceiver implements NewMessage {
         msg.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
         msg.setArrivingTime(currentTime);
         msg.setSender(phone);
-        msg.setSenderName("");
-        String conversationID = db.findConversationByUserPhone(phone);//will be null if it doesn't exist
-        Intent newSmsIntent = new Intent();
-        newSmsIntent.putExtra("message", msg);
-        newSmsIntent.putExtra("messageID",msg.getMessageID());
-        if (conversationID != null) {
-            newSmsIntent.putExtra("conversationID",conversationID);
-            msg.setConversationID(conversationID);
-            String groupName = db.loadConversationName(conversationID);
-            msg.setGroupName(groupName);
-            db.updateConversation(msg);
-            newSmsIntent.setAction("Update Conversation");
-        }
-        else
-        {
-            conversationID = createConversationID();
-            msg.setConversationID(conversationID);
-            msg.setGroupName(phone);
-            String userID = saveUser(phone);
-            msg.addRecipient(userID);
-            msg.setSenderName("");
-            db.createNewConversation(msg, ConversationType.sms);
-            newSmsIntent.putExtra("conversationID",conversationID);
-            newSmsIntent.putExtra("messageID",msg.getMessageID());
-            newSmsIntent.setAction("New Conversation");
-        }
-        LocalBroadcastManager.getInstance(context).sendBroadcast(newSmsIntent);
-        if (!isConversationBlocked(conversationID))
-        {
-            saveMessage(msg);
-            if (!isConversationOpen(conversationID)) {
-                //alerts tab fragment that a new message has arrived
-                if (isNotificationsAllowed())
-                {
-                    if (!isConversationMuted(conversationID))
-                    {
-                        conversations.add(conversationID);
+        msg.setSenderName(phone);
+        msg.setSendingTime(System.currentTimeMillis() + "");
+        msg.setGroupName(phone);
+        LiveData<String> conversationLiveData = dao.getConversationIDByPhone(phone);
+        Observer<String> observer = new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                if (!blocked) {
+                    if (s != null) {
+                        msg.setConversationID(s);
+                        LiveData<Conversation> conversation = dao.getConversation(s);
+                        Observer<Conversation> conversationObserver = new Observer<Conversation>() {
+                            @Override
+                            public void onChanged(Conversation conversation1) {
+                                if (conversation1.getGroupName() != null)
+                                    msg.setGroupName(conversation1.getGroupName());
+                                Thread thread = new Thread() {
+                                    @Override
+                                    public void run() {
+                                        dao.updateConversation(msg.getMessage(), msg.getMessageID(), msg.getMessageType() + "", msg.getArrivingTime(), msg.getGroupName(), msg.getConversationID());
+                                    }
+                                };
+                                thread.setName("update conversation");
+                                thread.start();
+                                conversation.removeObserver(this);
+                                sendNotification(conversation1.getConversationID(), msg);
+                            }
+                        };
+                        conversation.observeForever(conversationObserver);
+                    } else {
+                        s = createConversationID();
+                        msg.setConversationID(s);
+                        msg.setGroupName(phone);
+                        String userID = saveUser(phone);
+                        msg.addRecipient(userID);
+                        msg.setSenderName("");
+                        createNewConversation(msg, currentUser, ConversationType.sms);
+                        conversations.add(s);
                         createNotification(msg);
                     }
+                    saveMessage(msg);
                 }
+                conversationLiveData.removeObserver(this);
             }
-        }
+        };
+        conversationLiveData.observeForever(observer);
     }
 
-    private String saveUser(String phoneNumber)
-    {
+    private void sendNotification(String conversationID, Message msg) {
+        LiveData<Boolean> blocked = dao.isConversationBlocked(conversationID);
+        Observer<Boolean> observer = new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (!aBoolean) {
+                    //saveMessage(msg);
+                    if (!isConversationOpen(conversationID)) {
+                        if (isNotificationsAllowed()) {
+                            LiveData<Boolean> muted = dao.isConversationMuted(conversationID);
+                            Observer<Boolean> mutedConversationObserver = new Observer<Boolean>() {
+                                @Override
+                                public void onChanged(Boolean aBoolean) {
+                                    if (!aBoolean) {
+                                        conversations.add(conversationID);
+                                        createNotification(msg);
+                                        muted.removeObserver(this);
+                                    }
+                                }
+                            };
+                            muted.observeForever(mutedConversationObserver);
+                        }
+                    }
+                }
+                blocked.removeObserver(this);
+            }
+        };
+        blocked.observeForever(observer);
+    }
+
+
+    private String saveUser(String phoneNumber) {
         User user = new User();
-        user.setUserUID(UUID.randomUUID()+"");
+        user.setUserUID(UUID.randomUUID() + "");
         user.setPhoneNumber(phoneNumber);
         user.setName(phoneNumber);
         user.setLastName("");
-        db.insertUser(user);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.insertNewUser(user);
+            }
+        };
+        thread.setName("insert user");
+        thread.start();
         return user.getUserUID();
     }
 
-    @Override
-    public boolean isConversationExists(String conversationID) {
-        return db.isConversationExists(conversationID);
-    }
 
-    @Override
     public boolean isNotificationsAllowed() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         return preferences.getBoolean("allowNotifications", true);
     }
 
-    @Override
-    public boolean isConversationBlocked(String conversationID) {
-        return db.isConversationBlocked(conversationID);
-    }
 
-    @Override
-    public boolean isUserBlocked(String userID) {
-        return false;
-    }
-
-    @Override
     public boolean isConversationOpen(String conversationID) {
         SharedPreferences conversationPreferences = context.getSharedPreferences("Conversation", MODE_PRIVATE);
         String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
         return liveConversation.equals(conversationID);
     }
 
-    @Override
-    public boolean isConversationMuted(String conversationID) {
-        return db.isMuted(conversationID);
-    }
-
-    @Override
-    public boolean isUserMuted(String userID) {
-        return false;
-    }
 
     private String createConversationID() {
         return "S_" + System.currentTimeMillis();
     }
 
     private void saveMessage(Message msg) {
-        db.saveMessage(msg);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.insertNewMessage(msg);
+            }
+        };
+        thread.setName("insert message");
+        thread.start();
+
     }
 
-    private void createNotification(Message msg)
-    {
+    private void createNotification(Message msg) {
         createNotificationChannel();
         String notificationTitle;
-        int notificationID = getNotificationID(msg.getConversationID());
+        NotificationsController notificationsController = NotificationsController.getInstance();
+        int notificationID = notificationsController.getNotificationID(msg.getConversationID());
+        notificationsController.addOnRemoveListener(new NotificationsController.onNotificationRemoveListener() {
+            @Override
+            public void onNotificationRemoved(int notificationID) {
+                NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
+                notificationManagerCompat.cancel(notificationID);
+            }
+        });
+        //int notificationID = getNotificationID(msg.getConversationID());
         if (msg.getSenderName() != null)
             notificationTitle = "New Message From " + msg.getSenderName();
         else
             notificationTitle = "New Message From " + msg.getContactPhone();
         Intent tapOnNotification = new Intent(context, ConversationActivity.class);
-        tapOnNotification.putExtra("conversationID",msg.getConversationID());
+        tapOnNotification.putExtra("conversationID", msg.getConversationID());
         tapOnNotification.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context,notificationID,tapOnNotification,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT );
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context,"Receive_SMS_Messages_Channel")
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationID, tapOnNotification, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "Receive_SMS_Messages_Channel")
                 .setSmallIcon(R.drawable.ic_baseline_sms_24)
                 .setContentTitle(notificationTitle)
                 .setContentText(msg.getMessage())
@@ -192,26 +244,10 @@ public class SMSBroadcast extends BroadcastReceiver implements NewMessage {
                 .setNotificationSilent()
                 .setDefaults(NotificationCompat.DEFAULT_ALL);
         NotificationManagerCompat nmc = NotificationManagerCompat.from(context);
-        nmc.notify(notificationID,builder.build());
+        nmc.notify(notificationID, builder.build());
     }
 
-    private int getNotificationID(String conversationID)
-    {
-        int i = 0;
-        if (conversations.isEmpty())
-            return i;
-        for (String conversation : conversations)
-        {
-            if (conversation.equals(conversationID))
-                break;
-            else
-                i++;
-        }
-        return i;
-    }
-
-    private void createNotificationChannel()
-    {
+    private void createNotificationChannel() {
         String channelName = "ReceiveSMSMessages";
         String channelDescription = "Receive sms messages";
         int importance = NotificationManager.IMPORTANCE_HIGH;
@@ -221,5 +257,67 @@ public class SMSBroadcast extends BroadcastReceiver implements NewMessage {
         NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
         assert notificationManager != null;
         notificationManager.createNotificationChannel(channel);
+    }
+
+
+    public void createNewConversation(Message message, String currentUser, ConversationType type) {
+        if (message.getRecipients().size() > 1 && type == ConversationType.single)
+            Log.e("DB ERROR", "conversation type and recipient amount mismatch");
+        Conversation conversation = createConversation(message, type);
+        if (message.getRecipients().size() == 1) {
+            List<String> recipients = new ArrayList<>();
+            if (!message.getRecipients().get(0).equals(currentUser)) {
+                conversation.setRecipient(message.getRecipients().get(0));
+                recipients = message.getRecipients();
+            } else {
+                conversation.setRecipient(message.getSender());
+                recipients.add(message.getSender());
+            }
+            createNewGroup(message.getConversationID(), recipients);
+        } else {
+            if (message.getRecipients().contains(currentUser)) {
+                message.getRecipients().remove(currentUser);
+                message.getRecipients().add(message.getSender());
+            }
+            createNewGroup(message.getConversationID(), message.getRecipients());
+        }
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.insertNewConversation(conversation);
+            }
+        };
+        thread.setName("insert conversation");
+        thread.start();
+
+    }
+
+
+    private Conversation createConversation(Message message, ConversationType type) {
+        Conversation conversation = new Conversation(message.getConversationID());
+        conversation.setLastMessageID(message.getMessageID());
+        conversation.setLastMessage(message.getMessage());
+        conversation.setMessageType(message.getMessageType());
+        conversation.setLastMessageTime(System.currentTimeMillis() + "");
+        conversation.setGroupName(message.getGroupName());
+        conversation.setMuted(false);
+        conversation.setBlocked(false);
+        conversation.setConversationType(type);
+        return conversation;
+    }
+
+    private void createNewGroup(String conversationID, List<String> recipients) {
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                for (String uid : recipients) {
+                    Group group = new Group(conversationID, uid);
+                    dao.insertNewGroup(group);
+                }
+            }
+        };
+        thread.setName("group thread");
+        thread.start();
+
     }
 }

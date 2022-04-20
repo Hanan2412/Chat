@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import DataBase.DBActive;
+//import DataBase.DBActive;
 import Services.FirebaseMessageService;
 
 @SuppressWarnings("Convert2Lambda")
@@ -98,6 +98,7 @@ public class FileManager {
                             bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(path)));
                         } catch (IOException e) {
                             e.printStackTrace();
+                            listener.onFailed();
                         }
                     } else
                     {
@@ -110,6 +111,7 @@ public class FileManager {
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
+                            listener.onFailed();
                         }
                         //bitmap = BitmapFactory.decodeFile(path);
                     }
@@ -163,7 +165,7 @@ public class FileManager {
             File imageFile = new File(directory, childPath + "_Image");
             return BitmapFactory.decodeStream(new FileInputStream(imageFile));
         }catch (FileNotFoundException e){
-            e.printStackTrace();
+            Log.e("file Manager","bad directory");
         }
         return null;
     }

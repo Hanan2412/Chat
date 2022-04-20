@@ -7,8 +7,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,8 +23,15 @@ import com.example.woofmeow.R;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
 import Consts.ConversationType;
 import NormalObjects.Message;
+import Time.TimeFormat;
 
 @SuppressWarnings("Convert2Lambda")
 public class BackdropFragment extends BottomSheetDialogFragment {
@@ -57,18 +67,15 @@ public class BackdropFragment extends BottomSheetDialogFragment {
         Bundle bundle = getArguments();
         if(bundle!=null) {
             Message message = (Message) bundle.getSerializable("message");
+            ListView listView = coordinatorLayout.findViewById(R.id.list);
+            TimeFormat timeFormat = new TimeFormat();
+            String time = timeFormat.getFormattedTime(Long.parseLong(message.getSendingTime()));
+            String[] messageArray = {message.getMessage(),message.getSenderName(),time,message.getArrivingTime(),message.getReadAt() + ""};
+            List<String> list = new ArrayList<>(Arrays.asList(messageArray));
+            list.removeIf(Objects::isNull);
+            ArrayAdapter<String>adapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1,list);
+            listView.setAdapter(adapter);
             int conversationType = bundle.getInt("conversationType",-1);
-            TextView senderNameTv = coordinatorLayout.findViewById(R.id.messageSender);
-            TextView messageTv = coordinatorLayout.findViewById(R.id.message);
-            TextView messageTime = coordinatorLayout.findViewById(R.id.messageTime);
-            TextView messageSeen = coordinatorLayout.findViewById(R.id.messageSeen);
-            if (message.getSenderName() == null)
-                senderNameTv.setText("name " + message.getGroupName());
-            else
-                senderNameTv.setText(message.getSenderName());
-            //messageTv.setText(message.getMessage());
-            messageTime.setText("sending time " + message.getSendingTime());
-            messageSeen.setText("arrival time " + message.getArrivingTime());
             LinearLayout picking = coordinatorLayout.findViewById(R.id.picking);
             SwipeRefreshLayout refreshLayout = coordinatorLayout.findViewById(R.id.swipeRefresh);
             if (conversationType!=-1) {

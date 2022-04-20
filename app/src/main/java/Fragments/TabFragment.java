@@ -3,11 +3,11 @@ package Fragments;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
+
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
+
 import android.content.SharedPreferences;
 
 import android.net.Uri;
@@ -32,14 +32,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
+
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.woofmeow.ConversationActivity;
-import com.example.woofmeow.MainGUI;
 import com.example.woofmeow.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -49,20 +51,28 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 import Adapters.ConversationsAdapter2;
-import Consts.MessageAction;
-import Consts.Tabs;
-import Controller.CController;
 
-import Model.MessageSender;
+import Backend.ConversationVM;
+import Backend.UserVM;
+
+import Consts.MessageType;
+import Consts.Tabs;
+
+import Messages.BaseMessage;
+import Messages.SendMessage;
+import Messages.TextMessage;
+import Model.Server3;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationTouch;
-import NormalObjects.Message;
+
 import NormalObjects.TouchListener;
 import NormalObjects.User;
-import DataBase.*;
+import Retrofit.Server;
+
 import static android.content.Context.MODE_PRIVATE;
 import static com.example.woofmeow.MainActivity.OFFLINE_S;
 import static com.example.woofmeow.MainActivity.ONLINE_S;
@@ -70,12 +80,10 @@ import static com.example.woofmeow.MainActivity.STANDBY_S;
 
 
 @SuppressWarnings("Convert2Lambda")
-public class TabFragment extends Fragment implements MainGUI {
+public class TabFragment extends Fragment{
 
     private static final String tabNumber = "tabNumber";
     private String currentUser;
-    private ArrayList<Conversation> conversations = new ArrayList<>();
-    private CController controller;
     private User user;
     private String currentStatus = ONLINE_S;
     private boolean openingActivity = false;
@@ -84,10 +92,9 @@ public class TabFragment extends Fragment implements MainGUI {
     private ArrayList<Conversation> selectedConversations = new ArrayList<>();
     private RecyclerView recyclerView;
     private final String FCM_ERROR = "fcm error";
-    private View view;
     private LinearLayout searchLayout;
-    private DBActive dbActive;
-
+    private UserVM userModel;
+    private ConversationVM conversationVM;
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
         Bundle bundle = new Bundle();
@@ -100,34 +107,19 @@ public class TabFragment extends Fragment implements MainGUI {
     public interface UpdateMain {
         void onUserUpdate(User user);
         void onLoadUserFromMemory(User user);
-        void onNewMessage(String conversationID);
         void onOpenedConversation(String conversationID);
-    }
-
-
-    @Override
-    public void setArguments(@Nullable Bundle args) {
-        super.setArguments(args);
-        if (args != null && args.containsKey("query")) {
-            controller.onFindUsersQuery((String) args.get("query"), requireContext());
-        }
     }
 
     private UpdateMain callback;
 
-
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        controller = CController.getController();
-        controller.setMainGUI(this);
         try {
             callback = (UpdateMain) context;
         } catch (ClassCastException e) {
             throw new ClassCastException("Activity must implement UpdateMain interface");
         }
-
-
     }
 
     public TabFragment() {
@@ -137,15 +129,15 @@ public class TabFragment extends Fragment implements MainGUI {
     @Nullable
     @Override
     public View onCreateView(@NonNull final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        view = null;
+        View view = null;
         assert getArguments() != null;
         currentUser = getArguments().getString("currentUser");
         setHasOptionsMenu(true);
-        conversationsAdapter2 = new ConversationsAdapter2();
-        init();
         Tabs tab = Tabs.values()[getArguments().getInt(tabNumber)];
         switch (tab) {
             case chat: {
+                conversationsAdapter2 = new ConversationsAdapter2();
+                init();
                 view = inflater.inflate(R.layout.conversations_layout2, container, false);
                 searchLayout = view.findViewById(R.id.searchLayout);
                 Button searchBtn = view.findViewById(R.id.searchBtn);
@@ -180,7 +172,7 @@ public class TabFragment extends Fragment implements MainGUI {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             Conversation conversation = conversationsAdapter2.getConversation(viewHolder.getAdapterPosition());
-                                            DeleteConversation(conversation.getConversationID());
+                                            deleteConversation(conversation.getConversationID());
                                             Toast.makeText(requireContext(), "Selected conversations were deleted", Toast.LENGTH_SHORT).show();
                                         }
                                     }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -194,7 +186,7 @@ public class TabFragment extends Fragment implements MainGUI {
                         }
                         //swiping right will promote to mute the conversation
                         else if (direction == ItemTouchHelper.RIGHT) {
-                            MuteConversation(conversationsAdapter2.getConversation(viewHolder.getAdapterPosition()).getConversationID());
+                            muteConversation(conversationsAdapter2.getConversation(viewHolder.getAdapterPosition()).getConversationID());
                         }
                     }
 
@@ -280,7 +272,7 @@ public class TabFragment extends Fragment implements MainGUI {
             if (selected == 1)
                 CallPhone();
         } else if (item.getItemId() == R.id.block)
-            BlockUser();
+            blockConversation();
         else if (item.getItemId() == R.id.searchConversation) {
             Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
             Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
@@ -298,7 +290,7 @@ public class TabFragment extends Fragment implements MainGUI {
                 }, out.getDuration());
                 searchLayout.startAnimation(out);
                 recyclerView.startAnimation(out);
-                LoadConversations();
+                loadConversations();
             }
         } else if (item.getItemId() == R.id.status) {
             switch (currentStatus) {
@@ -327,17 +319,16 @@ public class TabFragment extends Fragment implements MainGUI {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean status = preferences.getBoolean("status", true);//settings preference - allow contacts to see your online status
-        if(user!=null)
-            if(status)
-            {
+        if(user!=null) {
+            if (status) {
                 user.setStatus(currentStatus);
-                editor.putString("status",currentStatus);
-            }
-            else
-            {
+                editor.putString("status", currentStatus);
+            } else {
                 user.setStatus(OFFLINE_S);
-                editor.putString("status",OFFLINE_S);
+                editor.putString("status", OFFLINE_S);
             }
+            userModel.updateUser(user);
+        }
         editor.apply();
     }
 
@@ -353,7 +344,6 @@ public class TabFragment extends Fragment implements MainGUI {
         } else
             throw new IndexOutOfBoundsException("selected can't be lower than 0");
     }
-
 
     private void CallPhone() {
         //needs to check for recipient phone number, if it doesn't exist - display appropriate message
@@ -381,36 +371,50 @@ public class TabFragment extends Fragment implements MainGUI {
         }
     }
 
-    private void BlockUser() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Confirm Action")
-                .setMessage("Are you sure you would like to block this user? any message they will send will not arrive and all data will be deleted")
-                .setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_baseline_block_white, requireActivity().getTheme()))
-                .setPositiveButton("Block", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (!selectedConversations.isEmpty()) {
-                            if (user != null) {
-                                for (int i = 0; i < selectedConversations.size(); i++) {
-                                    String userToBlock = selectedConversations.get(i).getRecipient();
-                                    String conversationID = selectedConversations.get(i).getConversationID();
-                                    BlockUser(userToBlock, conversationID);
-                                }
-                            }
-                            requireActivity().invalidateOptionsMenu();
-                            UnSelectAll();
-                            Toast.makeText(requireContext(), "Blocked all selected users", Toast.LENGTH_SHORT).show();
-                        }
+    private void blockConversation() {
+        if (!selectedConversations.isEmpty()) {
+            String conversationID = selectedConversations.get(0).getConversationID();
+            LiveData<Boolean>blockedConversation = conversationVM.isConversationBlocked(conversationID);
+            blockedConversation.observe(requireActivity(), new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean aBoolean) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+                    if (aBoolean)
+                    {
+                        builder.setTitle("un block conversation")
+                                .setMessage("unblock this conversation to start receiving messages from the conversation")
+                                .setPositiveButton("unblock", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        conversationVM.unBlockConversation(conversationID);
+                                        Toast.makeText(requireContext(), "conversation was unblocked", Toast.LENGTH_SHORT).show();
+                                    }
+                                }).setCancelable(true)
+                                .create()
+                                .show();
                     }
-                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Toast.makeText(requireContext(), "Will not block", Toast.LENGTH_SHORT).show();
-                requireActivity().invalidateOptionsMenu();
-            }
-        }).setCancelable(true)
-                .create()
-                .show();
+                    else
+                    {
+                        builder.setTitle("block conversation")
+                                .setMessage("block this conversation to stop receiving messages from this conversation")
+                                .setPositiveButton("block", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        conversationVM.blockConversation(conversationID);
+                                        Toast.makeText(requireContext(), "conversation was blocked", Toast.LENGTH_SHORT).show();
+                                    }
+                                }).setCancelable(true)
+                                .create()
+                                .show();
+
+                    }
+                    blockedConversation.removeObservers(requireActivity());
+                }
+            });
+            requireActivity().invalidateOptionsMenu();
+            UnSelectAll();
+
+        }
     }
 
     private void PinConversation() {
@@ -419,92 +423,87 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
     private void DataBaseSetUp() {
-        dbActive = DBActive.getInstance(requireContext());
-        //dbActive.ResetDB();
-       /* dbActive.setListener(new DBActive.onResetDB() {
-            @Override
-            public void onReset() {
-                conversationsAdapter2.Reset();
-            }
-        });*/
-    }
-
-
-
-
-    //called only if user doesn't exists - the first lunch of the app
-    private void InsertUser(User user) {
-        dbActive.checkIfUserExist(user);
-    }
-
-    //on each login, the user table is updated with the current login user
-    private void UpdateUser(User user) {
-        dbActive.updateUser(user);
+        userModel = new ViewModelProvider(this).get(UserVM.class);
+        conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
     }
 
     //if the user exists in the database - load it, if not - download it from firebase database
     private void LoadCurrentUserFromDataBase() {
-        user = dbActive.loadUserFromDataBase(currentUser);
-        if(user!=null)
-            callback.onLoadUserFromMemory(user);
-        else
-            controller.onDownloadUser(requireContext(), currentUser);
-    }
-
-
-    @Override
-    public void onReceiveUser(User user) {
-        if (user.getUserUID().equals(currentUser)) {//us - the user login
-            InsertUser(user);
-            this.user = user;
-            //sends the data to mainActivity
-            callback.onUserUpdate(user);
-        }
+        userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
+            @Override
+            public void onChanged(User user) {
+                TabFragment.this.user = user;
+                if(user!=null)
+                {
+                    callback.onLoadUserFromMemory(user);
+                }
+                else {
+                    userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
+                        @Override
+                        public void downloadedUser(User user) {
+                            if (user.getUserUID().equals(currentUser)) {
+                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
+                                userExists.observe(requireActivity(), new Observer<Boolean>() {
+                                    @Override
+                                    public void onChanged(Boolean aBoolean) {
+                                        if (aBoolean)
+                                        {
+                                            callback.onUserUpdate(user);
+                                            userModel.updateUser(user);
+                                        }
+                                        else
+                                        {
+                                            userModel.insertUser(user);
+                                            callback.onUserUpdate(user);
+                                        }
+                                        userExists.removeObserver(this);
+                                    }
+                                });
+                                TabFragment.this.user = user;
+                            }
+                        }
+                    });
+                    userModel.downloadUser(currentUser);
+//                    userModel.downloadUser(currentUser);
+//                    userModel.setOnUserDownloadListener(new Server3.onUserDownloaded() {
+//                        @Override
+//                        public void downloadedUser(User user) {
+//                            if (user.getUserUID().equals(currentUser)) {
+//                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
+//                                userExists.observe(requireActivity(), new Observer<Boolean>() {
+//                                    @Override
+//                                    public void onChanged(Boolean aBoolean) {
+//                                        if (aBoolean)
+//                                        {
+//                                            callback.onUserUpdate(user);
+//                                            userModel.updateUser(user);
+//                                        }
+//                                        else
+//                                        {
+//                                            userModel.insertUser(user);
+//                                            callback.onUserUpdate(user);
+//                                        }
+//                                        userExists.removeObserver(this);
+//                                    }
+//                                });
+//                                TabFragment.this.user = user;
+//                            }
+//                        }
+//                    });
+//                    userModel.downloadUser(currentUser);
+                }
+            }
+        });
     }
 
 
     private void UpdateConversationsInDataBase(Conversation conversation, boolean image) {
-
-        dbActive.updateConversation(conversation);
+        conversationVM.updateConversation(conversation);
+        //dbActive.updateConversation(conversation);
         if (!image)
             conversationsAdapter2.updateConversation(conversation);
 
     }
-
-    @Deprecated
-    @Override
-    public void onReceiveConversations(ArrayList<Conversation> conversations) {
-
-    }
-
-    //this method is only called on lunch or when a new conversation begins
-    @Deprecated
-    @Override
-    public void onReceiveConversation(Conversation conversation) {
-    }
-
-    @Deprecated
-    @Override
-    public void onChangedConversation(Conversation conversation) {
-    }
-
-    @Deprecated
-    @Override
-    public void onRemoveConversation(Conversation conversation) {
-    }
-
-    @Override
-    public void onReceiveUsersQuery(User user) {
-        //callback.onUserQuery(user);
-    }
-
-    @Deprecated
-    @Override
-    public void onVersionChange(float newVersionNumber) {
-
-    }
-
-
     private void TokenUpdate() {
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
@@ -517,13 +516,14 @@ public class TabFragment extends Fragment implements MainGUI {
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putString("token", token);
                     editor.apply();
-                    HashMap<String, Object> tokenMap = new HashMap<>();
+                    //HashMap<String, Object> tokenMap = new HashMap<>();
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         String currentUserUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
                         // TryToken tryToken = new TryToken(token);
-                        tokenMap.put(currentUserUID, token);
-                        controller.onUpdateData("Tokens", tokenMap);
-                        //Server.updateServer("Tokens", tokenMap);
+                       // tokenMap.put(currentUserUID, token);
+                        //userModel.updateFBData("Tokens",tokenMap);
+                        userModel.updateToken(currentUserUID,token);
+                        Log.d("token", "updated token");
                     }
                 }
             }
@@ -543,46 +543,29 @@ public class TabFragment extends Fragment implements MainGUI {
         if (!openingActivity)
             ChangeStatus(OFFLINE_S);
         openingActivity = false;
-        controller.setMainGUI(null);
 
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        controller = CController.getController();
-        controller.setMainGUI(this);
         ChangeStatus(ONLINE_S);
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("New Conversation", MODE_PRIVATE);
-        String newConversation = sharedPreferences.getString("new conversation", "no new conversation");
-        if (!newConversation.equals("no new conversation")) {
-            LoadNewConversation(newConversation);
-            sharedPreferences.edit().putString("new conversation", "no new conversation").apply();
-        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         System.out.println("on destroy fragment");
-        controller.removeInterface(0);
-        controller.setMainGUI(null);
-        //controller.onUpdateData("users/" + currentUser + "/status", OFFLINE_S);
-
     }
-
-
-    //---------------------------------------------------------------------------------------------------------------------------------------------//
 
     //calls all the functions needed to start the fragment
     private void init() {
         DataBaseSetUp();
         NullifyData();
         LoadCurrentUserFromDataBase();
-        LoadConversations();
+        loadConversations();
+        loadNewOrUpdatedConversation();
         TokenUpdate();
-        onNewConversation();
-        onUpdateConversation();
     }
 
     private void NullifyData() {
@@ -593,108 +576,67 @@ public class TabFragment extends Fragment implements MainGUI {
     }
 
 
-    private void onNewConversation() {
-        BroadcastReceiver newConversationReceiver = new BroadcastReceiver() {
+    //called when the fragment is lunched
+    private void loadConversations() {
+        LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
+        conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
             @Override
-            public void onReceive(Context context, Intent intent) {
-                String newConversationID = intent.getStringExtra("conversationID");
-                LoadNewConversation(newConversationID);
-
+            public void onChanged(List<Conversation> conversations) {
+                conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
+                conversationLiveData.removeObserver(this);
             }
-        };
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(newConversationReceiver, new IntentFilter("New Conversation"));
+        });
     }
 
-    private void onUpdateConversation() {
-        BroadcastReceiver updateConversationReceiver = new BroadcastReceiver() {
+    private void loadNewOrUpdatedConversation()
+    {
+        conversationVM.getNewOrUpdatedConversation().observe(requireActivity(), new Observer<Conversation>() {
             @Override
-            public void onReceive(Context context, Intent intent) {
-                Message message = (Message) intent.getSerializableExtra("message");
-                //updates the conversation
-                if (message != null) {
-                    if(message.getArrivingTime() == null)
-                    {
-                        message.setArrivingTime(System.currentTimeMillis() + "");
-                    }
-                    MessageAction messageAction = message.getMessageAction();
-                    if (messageAction == MessageAction.new_message) {
-                        Conversation conversation = conversationsAdapter2.findConversation(message.getConversationID());//new Conversation(message.getConversationID());
-                        conversation.setConversationMetaData(message);
-                        UpdateConversationsInDataBase(conversation, false);
-                        callback.onNewMessage(conversation.getConversationID());
-                    }
-                    if (messageAction == MessageAction.edit_message) {
-                        //if the message to update is the last message in the conversation
-                        if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
-                            Conversation conversation = new Conversation(message.getConversationID());
-                            conversation.setConversationMetaData(message);
-                            UpdateConversationsInDataBase(conversation, false);
-                        }
-                    } else if (messageAction == MessageAction.delete_message) {
-                        if (conversationsAdapter2.getConversation(conversationsAdapter2.getItemCount() - 1).getLastMessageID().equals(message.getMessageID())) {
-                            Conversation conversation = new Conversation(message.getConversationID());
-                            conversation.setConversationMetaData(message);
-                            conversation.setLastMessage("message was deleted");
-                            UpdateConversationsInDataBase(conversation, false);
-                        }
+            public void onChanged(Conversation conversation) {
+                if (conversation!=null) {
+                    Conversation existingConversation = conversationsAdapter2.findConversation(conversation.getConversationID());
+                    if (existingConversation != null) {
+                        conversationsAdapter2.updateConversation(conversation);
+                    } else {
+                        conversationsAdapter2.setConversation(conversation, 0);
                     }
                 }
             }
-        };
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateConversationReceiver, new IntentFilter("Update Conversation"));
+        });
     }
 
-    private void LoadNewConversation(String conversationID) {
-        Conversation conversation = dbActive.getNewConversation(conversationID);
-        conversationsAdapter2.setConversation(conversation,0);
+    private void muteConversation(String conversationID) {
 
+        LiveData<Boolean> mutedConversation = conversationVM.isConversationMuted(conversationID);
+        mutedConversation.observe(requireActivity(), new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                String dialog;
+                if(!aBoolean)
+                {
+                    dialog = "Conversation was Muted";
+                    conversationVM.muteConversation(conversationID);
+
+                }
+                else
+                {
+                    dialog = "Conversation was unMuted";
+                    conversationVM.unMuteConversation(conversationID);
+                }
+                mutedConversation.removeObservers(requireActivity());
+                Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)
+                        .setAction("undo", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                muteConversation(conversationID);
+                            }
+                        }).show();
+            }
+        });
     }
 
-    //called when the fragment is lunched
-    private void LoadConversations() {
-        ArrayList<Conversation> list =(ArrayList<Conversation>) dbActive.getConversations();
-        conversationsAdapter2.setConversations(list);
-
-    }
-
-    private void MuteConversation(String conversationID) {
-        boolean mute = dbActive.muteConversation(conversationID);
-        String dialog;
-        if(mute)
-            dialog = "Conversation was Muted";
-        else
-            dialog = "Conversation was unMuted";
-        Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)
-                .setAction("undo", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        MuteConversation(conversationID);
-                    }
-                }).show();
-        conversationsAdapter2.MuteConversation(conversationID,mute);
-    }
-
-    private void BlockUser(String uid, String conversationID) {
-        boolean blocked =  dbActive.blockUser(uid);
-        conversationsAdapter2.BlockConversation(blocked,conversationID);
-    }
-
-    private void DeleteConversation(String conversationID) {
+    private void deleteConversation(String conversationID) {
         conversationsAdapter2.DeleteConversation(conversationID);
-        dbActive.deleteConversation(conversationID);
-    }
-
-    public void RequestStatus()
-    {
-        for(Conversation conversation : conversations)
-        {
-            String token = conversation.getRecipientToken();
-            Message message = new Message();
-            message.setMessage(currentStatus);
-            message.setMessageKind("requestStatus");
-           // message.setMessageType(MessageType.requestStatus.ordinal());
-            MessageSender sender = MessageSender.getInstance();
-            sender.sendMessage(message,token);
-        }
+        conversationVM.deleteConversation(conversationID);
     }
 }

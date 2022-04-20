@@ -10,6 +10,7 @@
         <shape android:shape="oval">
             <solid android:color="@color/green" />
             <size android:width="10dp" android:height="10dp" />
+            <stroke android:color="@color/lightestBlue" android:width="0.1dp"/>
         </shape>
     </item>
 </selector>

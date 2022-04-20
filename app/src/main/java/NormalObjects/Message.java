@@ -1,11 +1,21 @@
 package NormalObjects;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import Consts.MessageAction;
 
+@Entity(tableName = "messages")
 public class Message implements Serializable {
+
+
+    @PrimaryKey(autoGenerate = true)
+    int p_key;
+    private String messageID;
 
     private String message;
     private String sender;
@@ -14,7 +24,6 @@ public class Message implements Serializable {
     private String latitude;
     private String longitude;
     private String locationAddress;
-    private String messageID;
     private String to;
     private String conversationID;
     private String messageTime;
@@ -29,6 +38,7 @@ public class Message implements Serializable {
     private int quotedMessagePosition = -1;
     private String quotedMessageID;
     private long readAt=-1;
+    @Ignore
     private boolean star = false;
     private String starTime;
     //private String recipientName;
@@ -38,7 +48,15 @@ public class Message implements Serializable {
     private String senderToken;
     private String messageKind = "newMessage";
     private String contactName,contactPhone;
+    @Ignore
+    private boolean uploading = false;
+    @Ignore
+    private boolean error = false;
+    @Ignore
+    private boolean sent = true;
+    @Ignore
     private List<String>recipients;
+    @Ignore
     private List<String>recipientNames;
     private String groupName;
 
@@ -46,6 +64,42 @@ public class Message implements Serializable {
     {
         recipients = new ArrayList<>();
         recipientNames = new ArrayList<>();
+    }
+
+    public void setP_key(int p_key) {
+        this.p_key = p_key;
+    }
+
+    public int getP_key() {
+        return p_key;
+    }
+
+    public boolean isUploading() {
+        return uploading;
+    }
+
+    public void setUploading(boolean uploading) {
+        this.uploading = uploading;
+    }
+
+    public boolean isError() {
+        return error;
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
+    }
+
+    public void setRecipientNames(List<String> recipientNames) {
+        this.recipientNames = recipientNames;
+    }
+
+    public boolean isSent() {
+        return sent;
+    }
+
+    public void setSent(boolean sent) {
+        this.sent = sent;
     }
 
     public String getGroupName() {

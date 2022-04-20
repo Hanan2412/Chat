@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -32,13 +33,15 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import Controller.CController;
-import DataBase.DBActive;
+
+import Backend.UserVM;
+//import Controller.CController;
+//import DataBase.DBActive;
 import NormalObjects.User;
 
 
 @SuppressWarnings("Convert2Lambda")
-public class UserCreationActivity extends AppCompatActivity implements UserCreationGUI {
+public class UserCreationActivity extends AppCompatActivity{
 
     private Bitmap imageBitmap;
     private int WRITE_PERMISSION = 2;
@@ -47,7 +50,8 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
     private  String photoPath;
     private Uri imageUri;
     private ImageView userImage;
-    private CController cController;
+    //private CController cController;
+    private UserVM userVM;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,8 +63,7 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
         Button cameraBtn = findViewById(R.id.openCameraBtn);
         Button galleryBtn = findViewById(R.id.openGalleryBtn);
         Button continueBtn = findViewById(R.id.nextBtn);
-        cController = CController.getController();
-        cController.setUserCreationGUI(this);
+        userVM = new ViewModelProvider(this).get(UserVM.class);
         String currentUserUID = getIntent().getStringExtra("UID");
         continueBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,17 +73,17 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
                     name = firstName.getText().toString();
                 if(lastName.getText()!=null)
                     last = lastName.getText().toString();
-                /*if(nickname.getText()!=null)
-                    nick = nickname.getText().toString();*/
 
                 if(!name.equals("")&&!last.equals("")) {
-                    createNewUser(name, last, nick,imageBitmap);
+                    //createNewUser(name, last, nick,imageBitmap);
                     User user = new User();
                     user.setUserUID(currentUserUID);;
                     user.setName(name);
                     user.setLastName(last);
                     user.setTimeCreated(System.currentTimeMillis() + "");
                     user.setLastTimeLogIn(System.currentTimeMillis() + "");
+                    user.setStatus(MainActivity.ONLINE_S);
+                    createNewUser(user);
                     saveUser(user);
                     Intent intent = new Intent(UserCreationActivity.this,MainActivity.class);
                     intent.putExtra("newUser",true);
@@ -109,8 +112,9 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
 
     private void saveUser(User user)
     {
-        DBActive dbActive = DBActive.getInstance(this);
-        dbActive.insertUser(user);
+        userVM.insertUser(user);
+        //DBActive dbActive = DBActive.getInstance(this);
+        //dbActive.insertUser(user);
         SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("UID",user.getUserUID());
@@ -120,13 +124,16 @@ public class UserCreationActivity extends AppCompatActivity implements UserCreat
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        cController.setUserCreationGUI(null);
+    }
+
+    private void createNewUser(User user)
+    {
+        userVM.createNewUser(user);
     }
 
     private void createNewUser(String name, String lastName, String nickname, Bitmap userImage)
     {
-        cController.onNewUser(name,lastName,nickname,userImage,this);
-        //Server.createNewUser(name,lastName,nickname,userImage,UserCreationActivity.this);
+        userVM.createNewUser(name, lastName, nickname, userImage);
     }
 
     private void requestCamera()

@@ -11,6 +11,9 @@ import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
@@ -19,6 +22,7 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 
 
 @SuppressWarnings("Convert2Lambda")
@@ -34,7 +38,7 @@ public abstract class Uploads {
     }
 
     private onResult result;
-    public void SetListener(onResult result){this.result = result;}
+    public void setOnResultListener(onResult result){this.result = result;}
 
     public void uploadImageBitmap(Bitmap imageBitmap) {
         String firebasePath = System.currentTimeMillis() + "image";
@@ -147,6 +151,59 @@ public abstract class Uploads {
                 result.onError("Failed to upload image, try again later");
             }
         });
+    }
+
+    public void uploadProfileImage(Bitmap imageBitmap)
+    {
+        if (FirebaseAuth.getInstance().getCurrentUser()!=null) {
+            final String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            final String path = "users/" + uid;
+            String firebasePath = System.currentTimeMillis() + "image";
+            StorageReference storageReference = FirebaseStorage.getInstance().getReference();
+            Bitmap bitmap = Bitmap.createScaledBitmap(imageBitmap, 500, 450, false);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, out);
+            String childPath = "feed/";
+            final StorageReference pictureReference = storageReference.child(childPath + firebasePath);
+            StorageTask<UploadTask.TaskSnapshot> uploadTask;
+            uploadTask = pictureReference.putStream(new ByteArrayInputStream(out.toByteArray()));
+            uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (task.isSuccessful()) {
+                        Log.i(UPLOAD_INFO, "started upload of image bitmap");
+                    }
+                    else {
+                        if (task.getException() != null) {
+                            Log.e(UPLOAD_ERROR, "Error while uploading image bitmap");
+                            throw task.getException();
+                        }
+                    }
+                    return pictureReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+                        Uri uri = task.getResult();
+                        if (uri != null) {
+                            String sUri = uri.toString();
+                            FirebaseDatabase database = FirebaseDatabase.getInstance();
+                            DatabaseReference reference = database.getReference(path);
+                            HashMap<String, Object> pictureMap = new HashMap<>();
+                            pictureMap.put("pictureLink", sUri);
+                            reference.updateChildren(pictureMap);
+                        }
+                    }
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.e(UPLOAD_ERROR,"uploading error");
+                    e.printStackTrace();
+                }
+            });
+        }
     }
 
     public void uploadFile(String filePath)

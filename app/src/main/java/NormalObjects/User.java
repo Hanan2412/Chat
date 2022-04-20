@@ -1,35 +1,67 @@
 package NormalObjects;
 
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+@Entity(tableName = "users")
 public class User implements Serializable {
+
+
+    @PrimaryKey(autoGenerate = true)
+    private int p_key;
+    private String userUID;
 
     private String name,nickName,lastName,pictureLink;
     private String timeCreated,lastTimeLogIn,activityTime;
-    private String userUID;
-    private ArrayList<String>savedFeed;
+    @Ignore
     private ArrayList<String>conversations;
+    @Ignore
     private ArrayList<String>blockedUsers;
     private String status;
+    @Ignore
     private ArrayList<String>mutedConversations;
+    @Ignore
     private ArrayList<String>mutedUsersUID;
     private String phoneNumber;
+    @Ignore
     private HashMap<String,String>phoneNumbers;
+    @Ignore
     private HashMap<String,String>meetUps;
     private String token;
     private boolean blocked;
+    private boolean muted;
 
     public User() {
         conversations = new ArrayList<>();
         blockedUsers = new ArrayList<>();
-        savedFeed = new ArrayList<>();
         mutedConversations = new ArrayList<>();
         phoneNumbers = new HashMap<>();
         mutedUsersUID = new ArrayList<>();
         blocked = false;
+        muted = false;
+    }
+
+    public void setP_key(int p_key) {
+        this.p_key = p_key;
+    }
+
+    public int getP_key() {
+        return p_key;
+    }
+
+    public boolean isMuted() {
+        return muted;
+    }
+
+    public void setMuted(boolean muted) {
+        this.muted = muted;
     }
 
     public boolean isBlocked() {
@@ -108,19 +140,12 @@ public class User implements Serializable {
         this.activityTime = activityTime;
     }
 
-    public ArrayList<String> getSavedFeed() {
-        return savedFeed;
-    }
-
-    public void setSavedFeed(ArrayList<String> savedFeed) {
-        this.savedFeed = savedFeed;
-    }
-
+    @NonNull
     public String getUserUID() {
         return userUID;
     }
 
-    public void setUserUID(String userUID) {
+    public void setUserUID(@NonNull String userUID) {
         this.userUID = userUID;
     }
 
@@ -145,12 +170,6 @@ public class User implements Serializable {
 
     public String getBlockedUserUID(int blockedUserIndex){
         return blockedUsers.get(blockedUserIndex);
-    }
-    public void addSavedFeed(String feedUID){
-        savedFeed.add(feedUID);
-    }
-    public String getSavedFeedUID(int FeedIndex){
-        return savedFeed.get(FeedIndex);
     }
 
     public String getStatus() {

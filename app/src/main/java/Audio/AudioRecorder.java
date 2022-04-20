@@ -51,6 +51,10 @@ public class AudioRecorder extends MediaRecorder implements Runnable {
         }
     }
 
+    public AudioHelper getListener()
+    {
+        return callback;
+    }
     @Override
     public void start() throws IllegalStateException {
         super.start();

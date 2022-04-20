@@ -1,6 +1,8 @@
 package Adapters;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,7 +34,17 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
     public void setListener(onUserInteraction listener){callback = listener;}
     private List<User>recipients;
 
-    public void setRecipients(List<User>recipients){this.recipients = recipients;}
+    public GroupProfileAdapter()
+    {
+        recipients = new ArrayList<>();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void setRecipients(List<User>recipients)
+    {
+        this.recipients = recipients;
+        notifyDataSetChanged();
+    }
 
     @NonNull
     @Override
@@ -70,6 +82,8 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
 
     @Override
     public int getItemCount() {
+        if (recipients == null)
+            Log.e("GroupProfileAdapterError","recipients are null");
         return recipients.size();
     }
 

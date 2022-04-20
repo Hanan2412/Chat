@@ -59,43 +59,30 @@
 
                 </RelativeLayout>
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_marginStart="5dp"
-                    android:orientation="vertical">
+                    >
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/conversationName"
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1">
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white"
+                        android:text="conversation name"
+                        android:layout_centerVertical="true"
+                        android:textSize="24sp" />
 
-                        <TextSwitcher
-                            android:id="@+id/toolbarTextSwitch"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
-                    </LinearLayout>
 
-                    <LinearLayout
+                    <TextSwitcher
+                        android:id="@+id/typingIndicator"
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
-
-                        <TextSwitcher
-                            android:id="@+id/toolbarStatusTextSwitch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent" />
-
-                        <TextSwitcher
-                            android:id="@+id/typingIndicator"
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent" />
-                    </LinearLayout>
-
-                </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentBottom="true"/>
 
 
+                </RelativeLayout>
             </LinearLayout>
         </androidx.appcompat.widget.Toolbar>
 
@@ -299,15 +286,24 @@
             android:id="@+id/userInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            >
+            android:layout_alignParentBottom="true">
 
-            <EditText
+            <ImageButton
+                android:id="@+id/emojiBtn"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/circle"
+                android:contentDescription="emoji button"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_baseline_tag_faces_24" />
+
+            <com.vanniktech.emoji.EmojiEditText
                 android:id="@+id/MessageToSend"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="15dp"
                 android:layout_toStartOf="@id/ActionBtn"
+                android:layout_toEndOf="@id/emojiBtn"
                 android:autofillHints=""
                 android:focusable="true"
                 android:gravity="center"
@@ -333,13 +329,13 @@
                 style="?android:attr/buttonBarStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:layout_marginEnd="30dp"
                 android:layout_toStartOf="@+id/sendImageSwitch"
                 android:background="@android:color/transparent"
                 android:contentDescription="@string/location"
-                android:src="@drawable/ic_baseline_location_on_24"
-                android:layout_centerVertical="true"
-                android:foregroundGravity="center"/>
+                android:foregroundGravity="center"
+                android:src="@drawable/ic_baseline_location_on_24" />
 
             <TextView
                 android:id="@+id/smsCharCount"
@@ -355,15 +351,14 @@
 
             <ImageSwitcher
                 android:id="@+id/sendImageSwitch"
+                style="?android:attr/buttonBarStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                style="?android:attr/buttonBarStyle"
                 android:layout_alignParentEnd="true"
-                android:contentDescription="@string/action_btn"
-                android:foregroundGravity="center"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="20dp"
-                />
+                android:contentDescription="@string/action_btn"
+                android:foregroundGravity="center" />
 
         </RelativeLayout>
     </RelativeLayout>

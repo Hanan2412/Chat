@@ -48,6 +48,11 @@ public class ConversationTouch extends ItemTouchHelper.SimpleCallback {
                 c.drawRect((float) itemView.getLeft(), (float) itemView.getTop(), dX,
                         (float) itemView.getBottom(), paint);
                 paint.setColor(Color.BLUE);
+                if (adapter2.getConversation(viewHolder.getAdapterPosition()) == null)
+                {
+                    int position = viewHolder.getAdapterPosition();
+                    System.out.print("nulllllllll");
+                }
                 action =  !adapter2.getConversation(viewHolder.getAdapterPosition()).isMuted();
                 if(action)
                      c.drawText(recyclerView.getContext().getResources().getString(R.string.mute),(float) (itemView.getLeft() + (itemView.getRight()/12)),(float) (itemView.getBottom()-(h/2)+18),paint);

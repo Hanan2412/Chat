@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
@@ -81,6 +82,12 @@ public class UsersAdapter extends BaseAdapter {
             Button singleTalk = convertView.findViewById(R.id.individual);
             Button remove = convertView.findViewById(R.id.remove);
             ImageButton removeSelection = convertView.findViewById(R.id.removeBtn);
+            convertView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    listener.onStart(user);
+                }
+            });
             remove.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

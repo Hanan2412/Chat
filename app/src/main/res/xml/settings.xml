@@ -3,11 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory android:title="Looks And Feel">
 
-        <SwitchPreferenceCompat
-            android:key="darkView"
-            android:summaryOff="you are a Jedi, Harry"
-            android:summaryOn="The dark side welcomes you, we have cookies!"
-            android:title="Lights off" />
+        <DropDownPreference
+            android:entries="@array/lookName"
+            android:entryValues="@array/lookValues"
+            android:icon="@drawable/ic_baseline_format_paint_24"
+            android:key="darkMode"
+            android:summary="system default"
+            android:title="Look" />
 
     </PreferenceCategory>
     <PreferenceCategory android:title="Communication">
@@ -18,7 +20,7 @@
             android:title="Chat"
             app:fragment="Fragments.SecondPagePreferenceFragment" />
         <Preference
-            android:icon="@drawable/ic_baseline_account_circle_black"
+            android:icon="@drawable/ic_baseline_account_circle_24"
             android:key="AccountPreference"
             android:summary="decide how your profile will look to others"
             android:title="Account"
@@ -31,21 +33,28 @@
             android:title="notifications"
             app:fragment="Fragments.SecondPagePreferenceFragment" />
 
+        <Preference
+            android:icon="@drawable/ic_baseline_backup_24"
+            android:key="backup"
+            android:summary="backup your data to the cloud or restore your data"
+            android:title="backup and restore"
+            app:fragment="Fragments.SecondPagePreferenceFragment" />
     </PreferenceCategory>
 
 
     <PreferenceCategory android:title="App">
         <Preference
             android:key="version"
-            android:summary="version 19/09/21  \ndeveloped by Hanan Dorfman"
+            android:summary="Version 1.0 \nCompletion date: 11/02/2022 \nDeveloped by Hanan Dorfman"
             android:title="Version" />
-        <Preference
-            android:key="resetDB"
-            android:summary="reset database - deletes all the data from the database"
-            android:title="Database"
-            />
-
     </PreferenceCategory>
-
-
+    <PreferenceCategory android:title="Thanks and Gratitude">
+        <Preference
+            android:summary="Special thanks to Dina Elisha for contributing
+             her time for testing the application"
+            android:title="Thanks" />
+        <!--  android:summary="Thanks to Dina Elisha for user like testing the
+          application and submitting feedback to make this app work"-->
+        />
+    </PreferenceCategory>
 </PreferenceScreen>

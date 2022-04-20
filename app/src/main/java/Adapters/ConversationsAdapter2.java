@@ -3,7 +3,6 @@ package Adapters;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,16 +14,9 @@ import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.woofmeow.MainActivity;
 import com.example.woofmeow.R;
 import com.google.android.material.imageview.ShapeableImageView;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
+import com.vanniktech.emoji.EmojiTextView;
 
 import java.util.ArrayList;
 
@@ -34,6 +26,7 @@ import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.Message;
+import Time.TimeFormat;
 
 @SuppressWarnings("Convert2Lambda")
 public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAdapter2.ConversationsViewHolder> {
@@ -82,7 +75,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         if(conversation!=null) {
             conversations.add(position, conversation);
             notifyItemInserted(position);
-            notifyItemRangeChanged(0, conversations.size());
+            notifyItemRangeChanged(position, conversations.size());
         }
     }
     private void init()
@@ -91,19 +84,25 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             conversations = new ArrayList<>();
     }
     public void updateConversation(Conversation conversation) {
-            int index = FindCorrectConversationIndex(conversation.getConversationID());
+            int index = findCorrectConversationIndex(conversation.getConversationID());
             if (index > -1) {
-                //places the conversation at the beginning of the list
                 if (!conversation.isTyping()){
-                //if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessage()) && !conversation.getLastMessage().equals(conversations.get(index).getLastMessage())) {
-                    //this if prevents the update if the only update is the typing indicator
-                    conversation.setRecipient(conversations.get(index).getRecipient());
-                    conversations.remove(index);
-                    notifyItemRemoved(index);
-                    conversations.add(0,conversation);
-                    notifyItemInserted(0);
-                    notifyItemRangeChanged(0,conversations.size());
-                    //notifyItemMoved(index,0);
+                    if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessageID()))
+                    {
+                        conversations.remove(index);
+                        conversations.add(0,conversation);
+                        notifyItemMoved(index,0);
+                    }
+                    else {
+                        conversations.set(index, conversation);
+                        notifyItemChanged(index);
+                    }
+//                    conversation.setRecipient(conversations.get(index).getRecipient());
+//                    conversations.remove(index);
+//                    notifyItemRemoved(index);
+//                    conversations.add(0,conversation);
+//                    notifyItemInserted(0);
+//                    notifyItemRangeChanged(0,conversations.size());
                 }
             }
 
@@ -111,7 +110,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     public void UpdateConversation(Message message,String conversationID)
     {
-        int index = FindCorrectConversationIndex(conversationID);
+        int index = findCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
         conversation.setLastMessageTime(message.getArrivingTime());
         conversation.setLastMessage(message.getMessage());
@@ -121,13 +120,15 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     public Conversation findConversation(String conversationID)
     {
-        int index = FindCorrectConversationIndex(conversationID);
-        return conversations.get(index);
+        int index = findCorrectConversationIndex(conversationID);
+        if(index>=0)
+            return conversations.get(index);
+        return null;
     }
 
     public void MuteConversation(String conversationID,boolean mute)
     {
-        int index =  FindCorrectConversationIndex(conversationID);
+        int index =  findCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
         conversation.setMuted(mute);
         notifyItemChanged(index);
@@ -137,11 +138,11 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     public void DeleteConversation(String conversationID)
     {
-        int index = FindCorrectConversationIndex(conversationID);
+        int index = findCorrectConversationIndex(conversationID);
         conversations.remove(index);
         notifyItemRemoved(index);
     }
-    private int FindCorrectConversationIndex(String conversationID) {
+    private int findCorrectConversationIndex(String conversationID) {
         for (int i = 0; i < conversations.size(); i++) {
             if (conversationID.equals(conversations.get(i).getConversationID()))
                 return i;
@@ -150,7 +151,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
     public void deleteConversation(Conversation conversation) {
-        int index = FindCorrectConversationIndex(conversation.getConversationID());
+        int index = findCorrectConversationIndex(conversation.getConversationID());
         if (index > -1) {
             conversations.remove(index);
             notifyItemRemoved(index);
@@ -193,17 +194,26 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.lastMessage.setText(R.string.voice_message);
         else
             holder.lastMessage.setText(conversation.getLastMessage());
-        holder.lastMessageTime.setText(conversation.getLastMessageTime());
+        TimeFormat timeFormat = new TimeFormat();
+        String lastMessageTime;
+        if (conversation.getLastMessageTime() == null)
+            conversation.setLastMessageTime(conversation.getLastMessageID());
+        if (conversation.getLastMessageTime().contains("/"))
+            lastMessageTime = conversation.getLastMessageTime();
+        else
+            lastMessageTime = timeFormat.getFormattedDate(Long.parseLong(conversation.getLastMessageTime()));
+        holder.lastMessageTime.setText(lastMessageTime);
         holder.recipientName.setText(conversation.getGroupName());
         if (conversation.isMuted())
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
             holder.conversationStatus.setVisibility(View.GONE);
-        Bitmap bitmap = null;
-        if (conversation.getConversationType() == ConversationType.group)
-            bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.conversationProfileImage,conversation.getConversationID());
-        else if (conversation.getConversationType() == ConversationType.single)
-            bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.user_profile_images,conversation.getRecipient());
+        Bitmap bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.conversationProfileImage,conversation.getConversationID());
+        if (bitmap == null)
+            if (conversation.getConversationType() == ConversationType.group)
+                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.conversationProfileImage,conversation.getConversationID());
+            else if (conversation.getConversationType() == ConversationType.single)
+                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.user_profile_images,conversation.getRecipient());
         if (bitmap!=null)
             holder.profileImage.setImageBitmap(bitmap);
         else Log.e("bitmap - conversationsAdapter2", "no image for conversation");
@@ -268,11 +278,17 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.conversationStatus.setVisibility(View.GONE);
             holder.conversationStatus.setImageDrawable(null);
         }
+        if (conversation.getUnreadMessages()!=0)
+        {
+            holder.unreadMessages.setVisibility(View.VISIBLE);
+            holder.unreadMessages.setText(String.valueOf(conversation.getUnreadMessages()));
+            Log.e("unread","unread should be visible");
+        }
     }
 
 
     public void PinConversation(Conversation conversation) {
-      int index = FindCorrectConversationIndex(conversation.getConversationID());
+      int index = findCorrectConversationIndex(conversation.getConversationID());
       Conversation conversation1 = conversations.get(index);
       conversations.add(0,conversation1);
       conversations.remove(index);
@@ -281,7 +297,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
     public void BlockConversation(boolean blocked,String conversationID)
     {
-        int index =  FindCorrectConversationIndex(conversationID);
+        int index =  findCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
         conversation.setBlocked(blocked);
         notifyItemChanged(index);
@@ -310,8 +326,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     @SuppressWarnings("InnerClassMayBeStatic")
     public class ConversationsViewHolder extends RecyclerView.ViewHolder {
         ShapeableImageView profileImage;
-        TextView lastMessage, lastMessageTime, recipientName;
-        ImageView conversationStatus, statusView;
+        EmojiTextView lastMessage;
+        TextView lastMessageTime, recipientName,unreadMessages;
+        ImageView conversationStatus;
         RelativeLayout rootLayout;
 
         public ConversationsViewHolder(@NonNull View itemView) {
@@ -321,7 +338,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             lastMessageTime = itemView.findViewById(R.id.timeLastMessage);
             recipientName = itemView.findViewById(R.id.recipientName);
             conversationStatus = itemView.findViewById(R.id.conversationStatus);
-            statusView = itemView.findViewById(R.id.statusView);
+            unreadMessages = itemView.findViewById(R.id.unreadMessages);
             rootLayout = itemView.findViewById(R.id.conversationCell);
         }
 

@@ -163,8 +163,43 @@
             android:background="@drawable/outgoing_message_look"
             android:contentDescription="the preview of an active message"
             android:src="@drawable/ic_baseline_location_on_24"
-            android:visibility="gone" />
-
+            android:visibility="visible"
+            android:elevation="0dp"/>
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:id="@+id/imageProgressBar"
+            android:indeterminate="true"
+            android:indeterminateBehavior="cycle"
+            android:indeterminateTint="@color/lightestBlue"
+            android:visibility="gone"
+            android:elevation="15dp"
+            />
+        <ImageButton
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_baseline_upload_to_all_24"
+            android:id="@+id/reFile"
+            android:layout_centerInParent="true"
+            android:background="@drawable/circle_green"
+            android:contentDescription="upload failed upload"
+            android:visibility="gone"
+            android:elevation="15dp"
+            />
+        <ImageButton
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_baseline_refresh_24"
+            android:id="@+id/refresh"
+            android:layout_centerInParent="true"
+            android:background="@drawable/circle_green"
+            android:contentDescription="upload failed upload"
+            android:visibility="gone"
+            android:layout_toEndOf="@id/reFile"
+            android:layout_marginStart="10dp"
+            android:elevation="15dp"
+            />
         <LinearLayout
             android:id="@+id/playRecordingLayout"
             android:layout_width="match_parent"
@@ -238,7 +273,7 @@
 
             </RelativeLayout>
 
-            <TextView
+            <com.vanniktech.emoji.EmojiTextView
                 android:id="@+id/message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -52,33 +52,11 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/message"
+                <ListView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="message"
-                    android:textSize="30sp" />
-
-                <TextView
-                    android:id="@+id/messageSender"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="sender"
-                    android:textSize="30sp" />
-
-                <TextView
-                    android:id="@+id/messageTime"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="messageTime"
-                    android:textSize="30sp" />
-
-                <TextView
-                    android:id="@+id/messageSeen"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="messageSeen"
-                    android:textSize="30sp" />
+                    android:layout_height="match_parent"
+                    android:id="@+id/list"
+                    />
 
             </LinearLayout>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

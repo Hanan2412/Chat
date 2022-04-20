@@ -16,7 +16,34 @@
         <item>Delayed Message</item>
         <item>Video Message</item>
     </string-array>
-
+    <string-array name="lookValues">
+        <item>system default</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+    <string-array name="lookName">
+        <item>System</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="backupEntries">
+        <item>My Computer</item>
+        <item>Dropbox</item>
+    </string-array>
+    <string-array name="backupValues">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    <string-array name="backupTime">
+        <item>daily</item>
+        <item>weekly</item>
+        <item>monthly</item>
+    </string-array>
+    <string-array name="backupTimeValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
     <string-array name="textSizeValue">
         <item>small</item>
         <item>medium</item>
@@ -54,4 +81,8 @@
     <string name="camera">open camera</string>
     <string name="gallery">open gallery</string>
     <string name="delay">delayed message</string>
+    <string name="blocked_conversations">Blocked Conversations</string>
+    <string name="blocked_users">Blocked Users</string>
+    <string name="muted_conversations">Muted Conversations</string>
+    <string name="muted_users">Muted Users</string>
 </resources>

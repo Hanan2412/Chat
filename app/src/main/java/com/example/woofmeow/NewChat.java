@@ -11,26 +11,34 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import java.util.ArrayList;
+import java.util.List;
+
 import Adapters.UsersAdapter;
-import Controller.CController;
+//import Controller.CController;
+import Backend.UserVM;
+import Model.Server3;
 import NormalObjects.User;
+import Retrofit.Server;
 
 @SuppressWarnings("Convert2Lambda")
 public class NewChat extends AppCompatActivity implements FoundUsers{
 
     private UsersAdapter adapter;
-    private final CController controller;
+    //private final CController controller;
     private ArrayList<User> group;
     private String currentUser;
     private final String NEW_CHAT = "New Chat";
+    private UserVM userVM;
     public NewChat() {
         if(FirebaseAuth.getInstance().getCurrentUser()!=null)
             currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        controller = CController.getController();
-        controller.setFoundUsers(this);
+        /*controller = CController.getController();
+        controller.setFoundUsers(this);*/
     }
 
 
@@ -38,6 +46,7 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.new_chat2);
+        userVM = new ViewModelProvider(this).get(UserVM.class);
         TextInputEditText searchUsers = findViewById(R.id.searchUsers);
         ImageButton searchBtn = findViewById(R.id.searchBtn);
         ListView usersList = findViewById(R.id.searchList);
@@ -89,18 +98,39 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
                 if(searchUsers.getText()!=null) {
                     String search = searchUsers.getText().toString();
                     if (search != null) {
-                        controller.onFindUsersQuery(search, NewChat.this);
+                       userVM.searchForUsers(search);
+                        //controller.onFindUsersQuery(search, NewChat.this);
                     }
                 }
             }
         });
+        userVM.setOnUserFoundListener(new Server.onUsersFound() {
+            @Override
+            public void foundUsers(List<User> users) {
+                for (User user :users)
+                    if(!user.getUserUID().equals(currentUser))
+                        adapter.addUser(user);
+            }
+
+            @Override
+            public void error(String errorMessage) {
+                    Log.e("ERROR","error finding users");
+            }
+        });
+//        userVM.setOnUsersFoundListener(new Server3.onUserFound() {
+//            @Override
+//            public void foundUser(User user) {
+//                if(!user.getUserUID().equals(currentUser))
+//                    adapter.addUser(user);
+//            }
+//        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        controller.setFoundUsers(null);
-        controller.removeInterface(6);
+        /*controller.setFoundUsers(null);
+        controller.removeInterface(6);*/
     }
 
     private void startSingleConversation(User user)

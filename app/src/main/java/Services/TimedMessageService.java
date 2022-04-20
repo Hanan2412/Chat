@@ -14,12 +14,18 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.woofmeow.ConversationActivity;
 
 import java.math.BigInteger;
 import java.util.Calendar;
 
+import Backend.ChatDao;
+import Backend.ChatDataBase;
+import Backend.ConversationVM;
+import Controller.NotificationsController;
 import DataBase.DBActive;
 import Model.MessageSender;
 import NormalObjects.Message;
@@ -71,7 +77,7 @@ public class TimedMessageService extends Service{
                         .build();
                 builder.setSmallIcon(android.R.drawable.star_on)
                         .setContentTitle("waiting to send message")
-                        .setContentText("message: " + message.getMessage() + "will be sent to: " + message.getGroupName())
+                        .setContentText("message: " + message.getMessage() + " will be sent to: " + message.getGroupName())
                         .setSubText("message will be sent at: " + calendar.getTime().toString())
                         .setContentIntent(alarmPendingIntent).addAction(action);
                 if (manager != null) {
@@ -81,8 +87,11 @@ public class TimedMessageService extends Service{
                             if(token!=null) {
                                 MessageSender sender = MessageSender.getInstance();
                                 sender.sendMessage(message, token);
-                                DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
-                                dbActive.saveMessage(message);
+                                ChatDataBase chatDataBase = ChatDataBase.getInstance(TimedMessageService.this);
+                                ChatDao chatDao = chatDataBase.chatDao();
+                                chatDao.insertNewMessage(message);
+                                //DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
+                                //dbActive.saveMessage(message);
                                 Log.d(FOREGROUND_SERVICE, "stopped foreground service - onAlarm");
                             }
                             else

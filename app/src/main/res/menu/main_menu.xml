@@ -18,7 +18,7 @@
     </group>
     <group
         android:id="@+id/active"
-        android:visible="false">
+        android:visible="true">
         <item
             android:id="@+id/pinConversation"
             android:icon="@drawable/ic_baseline_bookmark_24"

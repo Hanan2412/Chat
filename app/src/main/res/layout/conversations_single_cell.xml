@@ -29,16 +29,24 @@
         app:shapeAppearanceOverlay="@style/circleImageView" />
 
 
-    <ImageView
-        android:id="@+id/statusView"
-        android:layout_width="15dp"
-        android:layout_height="15dp"
+    <TextView
+        android:id="@+id/unreadMessages"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignBottom="@id/conversationImage"
         android:layout_marginStart="-12dp"
         android:layout_marginBottom="8dp"
         android:layout_toEndOf="@id/conversationImage"
-        android:background="@drawable/circle_green"
-        android:contentDescription="UserStatus" />
+        android:background="@drawable/circle_blue"
+        android:contentDescription="number of unread messages"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        android:textStyle="normal"
+        android:gravity="center"
+        android:textSize="14sp"
+        android:paddingStart="3dp"
+        android:paddingEnd="3dp"
+        />
 
     </RelativeLayout>
 
@@ -58,7 +66,7 @@
             android:text="you are talking with me"
             android:textColor="@android:color/white" />
 
-        <TextView
+        <com.vanniktech.emoji.EmojiTextView
             android:id="@+id/lastMessageSent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -6,18 +6,18 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import android.widget.Toast;
@@ -26,6 +26,8 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.RemoteInput;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
@@ -44,16 +46,17 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,51 +68,56 @@ import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import Backend.ChatDao;
+import Backend.ChatDataBase;
 import BroadcastReceivers.ReplyMessageBroadcast;
 import Consts.ConversationType;
 import Consts.MessageAction;
 import Consts.MessageType;
-import Controller.CController;
+//import Controller.CController;
 
+import Controller.NotificationsController;
+import Messages.BaseMessage;
+import Messages.MessageDeserializer;
+import Messages.TextMessage;
 import Model.MessageSender;
+import Model.Server3;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
+import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.User;
 
+import Retrofit.Server;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-import DataBase.*;
 
-@SuppressWarnings("Convert2Lambda")
-public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener, Notifications {
+@SuppressWarnings({"Convert2Lambda", "AnonymousHasLambdaAlternative"})
+public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener{
 
     private final String CHANNEL_ID = "MessagesChannel";
     private final String GROUP_CONVERSATIONS = "conversations";
-    public static ArrayList<String> conversations;
     private static ArrayList<NotificationCompat.Builder> builders;
     public static String myName = "";
-    private CController controller;
+    //private CController controller;
     private String currentUser;
-    private DBActive dbActive;
+    private ChatDao dao;
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
     private final String NOTIFICATION_INFO = "notification_info";
+    private NotificationsController notificationsController;
 
     public FirebaseMessageService() {
         super();
         Log.i(NOTIFICATION_INFO, "messaging service constructor");
-        if (conversations == null)
-            conversations = new ArrayList<>();
         if (builders == null)
             builders = new ArrayList<>();
         if (buildersHashMap == null)
             buildersHashMap = new HashMap<>();
-        controller = CController.getController();
-        controller.setNotifications(this);
-        //DisableActiveNotification();
+        notificationsController = NotificationsController.getInstance();
         if (FirebaseAuth.getInstance().getCurrentUser() != null)
             currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
         try {
-            DisableActiveNotification();
+            disableActiveNotification();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -125,9 +133,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         editor.apply();
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            controller = CController.getController();
-            controller.setNotifications(this);
-            controller.onUpdateData("Tokens/" + currentUser, s);
+            Server server = Server.getInstance();
+            server.saveToken(s,currentUser);
+            //Server3.getInstance().updateData("Tokens/" + currentUser, s);
         }
     }
 
@@ -137,6 +145,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         super.onMessageReceived(remoteMessage);
         DataBaseSetUp();
         Map<String, String> data = remoteMessage.getData();
+//        Type responseType = BaseMessage.class;
+//        Gson gson = new GsonBuilder().registerTypeAdapter(responseType,new MessageDeserializer()).setLenient().create();
+//        String s = gson.toJson(data);
+//        JsonElement jsonElement = gson.toJsonTree(data);
+//        TextMessage textMessage = gson.fromJson(jsonElement, TextMessage.class);
         String action = data.get("messageKind");
         String conversationID = data.get("conversationID");
         if (action != null)
@@ -195,6 +208,15 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
                                 .putExtra("delete", false)
                                 .putExtra("messageID", messageID));
+                    } else {
+                        Thread thread = new Thread() {
+                            @Override
+                            public void run() {
+                                dao.deleteMessage(messageID);
+                            }
+                        };
+                        thread.setName("delete thread");
+                        thread.start();
                     }
                     break;
                 }
@@ -210,6 +232,24 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                                 .putExtra("message", message)
                                 .putExtra("edit_time", e_t));
                     }
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            Message message = new Message();
+                            String e_t = data.get("editTime");
+                            String content = data.get("message");
+                            String messageID = data.get("messageID");
+                            message.setConversationID(conversationID);
+                            message.setMessage(content);
+                            message.setMessageID(messageID);
+                            message.setEditTime(e_t);
+                            dao.updateMessage(messageID, content, e_t);
+                            dao.updateConversationLastMessage(conversationID, content);
+                        }
+                    };
+                    thread.setName("edit thread");
+                    thread.start();
+
                 }
                 case "status": {
                     SharedPreferences sharedPreferences = getSharedPreferences("Status", MODE_PRIVATE);
@@ -226,55 +266,122 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         Log.d("statusResponse", "conversation isn't open - no need to display user status");
                     break;
                 }
+                case "leave_group":
+                {
+                    String sender = data.get("sender");
+                    Thread thread = new Thread()
+                    {
+                        @Override
+                        public void run() {
+                            dao.removeMemberFromGroup(sender,conversationID);
+                        }
+                    };
+                    thread.setName("remove member from group");
+                    thread.start();
+                    break;
+                }
                 default:
                     Log.e("received message error", "default case in on message received");
             }
     }
 
     private void DataBaseSetUp() {
-        dbActive = DBActive.getInstance(this);
+        ChatDataBase chatDataBase = ChatDataBase.getInstance(this);
+        dao = chatDataBase.chatDao();
     }
 
 
-    private void downloadConversationImage(String conversationID) {
-        List<Conversation> conversationList = dbActive.getConversations();
-        for (Conversation conversation : conversationList) {
-            if (conversation.getConversationID().equals(conversationID)) {
-                if (conversation.getRecipientImagePath() == null) {
+    private void downloadConversationImage(String uid, String conversationID) {
+        LiveData<Conversation> conversationLiveData = dao.getConversation(conversationID);
+        Observer<Conversation> conversationObserver = new Observer<Conversation>() {
+            @Override
+            public void onChanged(Conversation conversation) {
+                if (conversation != null) {
                     //starts download of group image
-                    DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + conversationID + "/pictureLink");
-                    reference.addValueEventListener(new ValueEventListener() {
+                    Server server = Server.getInstance();
+                    server.setImageDownloadedListener(new Server.onImageDownloaded() {
                         @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            String pictureLink = snapshot.getValue(String.class);
-                            Picasso.get().load(pictureLink).into(new Target() {
-                                @Override
-                                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                                    saveImage(bitmap, conversationID, true);
-                                }
-
-                                @Override
-                                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                                    e.printStackTrace();
-                                }
-
-                                @Override
-                                public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                                }
-                            });
-                            reference.removeEventListener(this);
+                        public void downloadedImage(Bitmap bitmap) {
+                            saveImage(bitmap, conversationID, true);
+                            server.setImageDownloadedListener(null);
                         }
 
                         @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-
+                        public void downloadFailed(String message) {
+                            server.setImageDownloadedListener(null);
                         }
                     });
+//                    server.setFileDownloadListener(new Server.onFileDownload() {
+//                        @Override
+//                        public void onDownloadStarted() {
+//                            Log.d("FCM","conversation image download started");
+//                        }
+//
+//                        @Override
+//                        public void onProgress(int progress) {
+//
+//                        }
+//
+//                        @Override
+//                        public void onDownloadFinished(File file) {
+//                            Log.d("FCM","conversation image download finished");
+//                            String filePath = file.getAbsolutePath();
+//                            Bitmap bitmap = BitmapFactory.decodeFile(filePath);
+//                            saveImage(bitmap, conversationID, true);
+//                            server.setFileDownloadListener(null);
+//                        }
+//
+//                        @Override
+//                        public void onFileDownloadFinished(String messageID, File file) {
+//
+//                        }
+//
+//                        @Override
+//                        public void onDownloadError(String errorMessage) {
+//                            Log.e("Error downloading conversation image",errorMessage);
+//                        }
+//                  });
+                    server.downloadImage(uid);
+//                    DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + uid + "/pictureLink");
+//                    reference.addValueEventListener(new ValueEventListener() {
+//                        @Override
+//                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                            String pictureLink = snapshot.getValue(String.class);
+//                            Picasso.get().load(pictureLink).into(new Target() {
+//                                @Override
+//                                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+//                                    saveImage(bitmap, conversationID, true);
+//                                }
+//
+//                                @Override
+//                                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+//                                    e.printStackTrace();
+//                                }
+//
+//                                @Override
+//                                public void onPrepareLoad(Drawable placeHolderDrawable) {
+//
+//                                }
+//                            });
+//                            reference.removeEventListener(this);
+//                        }
+//
+//                        @Override
+//                        public void onCancelled(@NonNull DatabaseError error) {
+//
+//                        }
+//                    });
                 }
-
             }
-        }
+        };
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                conversationLiveData.observeForever(conversationObserver);
+            }
+        });
+
     }
 
     //saves the downloaded image in a directory determined by the boolean value
@@ -289,41 +396,57 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             FileManager fm = FileManager.getInstance();
             return fm.readImage(this, FileManager.user_profile_images, sender);
         } else {//if the image isn't downloaded , download it
-            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + sender + "/pictureLink");
-            reference.addValueEventListener(new ValueEventListener() {
+            Server server = Server.getInstance();
+            server.setImageDownloadedListener(new Server.onImageDownloaded() {
                 @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String pictureLink = snapshot.getValue(String.class);
-                    Picasso.get().load(pictureLink).into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            saveImage(bitmap, sender, false);
-                            SharedPreferences.Editor editor = savedImagesPreferences.edit();
-                            editor.putBoolean(sender, true);
-                            editor.apply();
-
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                            Log.e("Error", "couldn't load image");
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                        }
-                    });
-                    reference.removeEventListener(this);
-
-
+                public void downloadedImage(Bitmap bitmap) {
+                    saveImage(bitmap, sender, false);
+                    SharedPreferences.Editor editor = savedImagesPreferences.edit();
+                    editor.putBoolean(sender, true);
+                    editor.apply();
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    error.toException().printStackTrace();
+                public void downloadFailed(String message) {
+                    Log.e("sender image download",message);
                 }
             });
+            server.downloadImage(sender);
+//            DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users/" + sender + "/pictureLink");
+//            reference.addValueEventListener(new ValueEventListener() {
+//                @Override
+//                public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                    String pictureLink = snapshot.getValue(String.class);
+//                    Picasso.get().load(pictureLink).into(new Target() {
+//                        @Override
+//                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+//                            saveImage(bitmap, sender, false);
+//                            SharedPreferences.Editor editor = savedImagesPreferences.edit();
+//                            editor.putBoolean(sender, true);
+//                            editor.apply();
+//
+//                        }
+//
+//                        @Override
+//                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+//                            Log.e("Error", "couldn't load image");
+//                        }
+//
+//                        @Override
+//                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+//
+//                        }
+//                    });
+//                    reference.removeEventListener(this);
+//
+//
+//                }
+//
+//                @Override
+//                public void onCancelled(@NonNull DatabaseError error) {
+//                    error.toException().printStackTrace();
+//                }
+//            });
         }
         return null;
     }
@@ -347,7 +470,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
          */
 
         //int notificationID = conversations.indexOf(conversationID);
-        int notificationID = getNotificationID(conversationID);
+        int notificationID = notificationsController.getNotificationID(conversationID);
+        //int notificationID = getNotificationID(conversationID);
         String notificationTitle = "New Message From " + senderName;
         int summeryID = 100;
 
@@ -450,26 +574,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
     }
 
-    //if notification already exists, will return it id. else will create a new id for the notification
-    private int getNotificationID(String conversationID) {
-        int i = 0;
-        if (conversations.isEmpty()) {
-            conversations.add(conversationID);
-            return i;
-        }
-        for (String conversation : conversations) {
-            if (conversation.equals(conversationID))
-                break;
-            else
-                i++;
-        }
-        if (i >= conversations.size()) {
-            conversations.add(conversationID);
-        }
-
-        return i;
-    }
-
     @Override
     public void onReply(int notificationID) {
         if (notificationID != -1) {
@@ -504,7 +608,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
     private void UpdateMessageMetaDataInDataBase(String messageID, String messageStatus, String readAt) {
-        dbActive.updateMessageMetaData(messageID, messageStatus, readAt);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.updateMessageMetaData(messageID, messageStatus, readAt);
+            }
+        };
+        thread.setName("message data update");
+        thread.start();
     }
 
     private void HandleUserMessage(RemoteMessage remoteMessage) {
@@ -514,7 +625,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         if (messageID != null) {
             String status = remoteMessage.getData().get("messageStatus");
             if (!status.equals(ConversationActivity.MESSAGE_SENT)) {//message status update
-                dbActive.updateMessageStatus(messageID, status);
+                Thread thread = new Thread() {
+                    @Override
+                    public void run() {
+                        dao.updateMessageStatus(messageID, status);
+                    }
+                };
+                thread.setName("message status update");
+                thread.start();
                 if (isOpenConversation(conversationID)) {
                     Intent intent = new Intent("messageStatus");
                     intent.putExtra("status", status);
@@ -545,10 +663,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 }
                 String content = remoteMessage.getData().get("message");
                 String senderUID = remoteMessage.getData().get("sender");
-                if (list.size() == 1)
-                    loadSenderImageForNotification(senderUID);
-                else
-                    downloadConversationImage(conversationID);
+                downloadConversationImage(senderUID, conversationID);
                 String senderName = remoteMessage.getData().get("senderName");
                 String sendingTime = remoteMessage.getData().get("sendingTime");
                 String quote = remoteMessage.getData().get("quoteMessage");
@@ -582,7 +697,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 message.setQuoteMessage(quote);
                 message.setMessageType(type);
                 message.setRecipients(list);
-                message.setArrivingTime(System.currentTimeMillis() + "");
                 message.setLatitude(latitude);
                 message.setLongitude(longitude);
                 message.setLocationAddress(address);
@@ -599,34 +713,80 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 } else if (type == MessageType.videoMessage.ordinal()) {
                     DownloadVideoMessage(message);
                 }
-                SendBroadcast(conversationID, message);
+                prepareMessage(conversationID, message);
             }
         }
     }
 
     private void DownloadVoiceMessage(Message message) {
         if (message.getFilePath() != null) {
-            StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
-            try {
-                File file = File.createTempFile("recording" + message.getMessageID(), ".3gpp");
-                downloadAudioFile.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                    @Override
-                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        String path = file.getAbsolutePath();
-                        message.setRecordingPath(path);
-                        dbActive.updateMessage(message);
-                        Log.d("downloaded voice", "voice message was downloaded");
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e("file download error", "error downloading voice message file");
-                        e.printStackTrace();
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Server server = Server.getInstance();
+            server.setFileDownloadListener(new Server.onFileDownload() {
+                @Override
+                public void onDownloadStarted() {
+
+                }
+
+                @Override
+                public void onProgress(int progress) {
+
+                }
+
+                @Override
+                public void onDownloadFinished(File file) {
+
+                }
+
+                @Override
+                public void onFileDownloadFinished(String messageID, File file) {
+                    String path = file.getAbsolutePath();
+                    message.setRecordingPath(path);
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            dao.updateMessage(message);
+                        }
+                    };
+                    thread.setName("download voice");
+                    thread.start();
+                    Log.d("downloaded voice", "voice message was downloaded");
+                }
+
+                @Override
+                public void onDownloadError(String errorMessage) {
+                    Log.e("file download error", "error downloading voice message file, \n" + errorMessage);
+                }
+            });
+            String messageFilePath = message.getFilePath();
+            server.downloadFile(messageFilePath, message.getMessageID(),this);
+//            StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
+//            try {
+//                File file = File.createTempFile("recording" + message.getMessageID(), ".3gpp");
+//                downloadAudioFile.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+//                    @Override
+//                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+//                        String path = file.getAbsolutePath();
+//                        message.setRecordingPath(path);
+//                        Thread thread = new Thread() {
+//                            @Override
+//                            public void run() {
+//                                dao.updateMessage(message);
+//                            }
+//                        };
+//                        thread.setName("download voice");
+//                        thread.start();
+//                        Log.d("downloaded voice", "voice message was downloaded");
+//                    }
+//                }).addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//                        Log.e("file download error", "error downloading voice message file");
+//                        e.printStackTrace();
+//                    }
+//                });
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 
         } else {
             Log.e("file path doesn't exist", "cant download voice message - path is null");
@@ -650,7 +810,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         String path = manager.saveImage(bitmap, FirebaseMessageService.this);
                         if (path != null) {
                             message.setImagePath(path);
-                            dbActive.updateMessage(message);
+                            Thread thread = new Thread() {
+                                @Override
+                                public void run() {
+                                    dao.updateMessage(message);
+                                }
+                            };
+                            thread.setName("download image");
+                            thread.start();
                             Log.d("download image", "image message was downloaded");
                             if (isOpenConversation(message.getConversationID()))
                                 LocalBroadcastManager.getInstance(FirebaseMessageService.this).sendBroadcast(new Intent("DownloadedImage").putExtra("messageID", message.getMessageID()));
@@ -681,7 +848,14 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         Log.e("saved video", "saved video path is null");
                     else {
                         message.setRecordingPath(path);
-                        dbActive.updateMessage(message);
+                        Thread thread = new Thread() {
+                            @Override
+                            public void run() {
+                                dao.updateMessage(message);
+                            }
+                        };
+                        thread.setName("download video");
+                        thread.start();
                     }
                 }
             }).addOnFailureListener(new OnFailureListener() {
@@ -704,14 +878,53 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         sender.sendMessage(message, message.getSenderToken());
         String token = message.getSenderToken();
         Log.e("Senders Token", token);
-        dbActive.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
+            }
+        };
+        thread.setName("mark as delivered");
+        thread.start();
+        LiveData<Conversation>conversationLiveData = dao.getConversation(message.getConversationID());
+        Observer<Conversation>observer = new Observer<Conversation>() {
+            @Override
+            public void onChanged(Conversation conversation) {
+                conversation.setUnreadMessages(conversation.getUnreadMessages() + 1);
+                Thread thread1 = new Thread()
+                {
+                    @Override
+                    public void run() {
+                        dao.updateConversation(conversation);
+                    }
+                };
+                thread1.setName("update conversation");
+                thread1.start();
+                conversationLiveData.removeObserver(this);
+            }
+        };
+        Handler handler1 = new Handler(Looper.getMainLooper());
+        handler1.post(new Runnable() {
+            @Override
+            public void run() {
+                conversationLiveData.observeForever(observer);
+            }
+        });
+
     }
 
     private void markAsSeen(Message message) {
         message.setMessageStatus(MESSAGE_SEEN);
         MessageSender sender = MessageSender.getInstance();
         sender.sendMessage(message, message.getSenderToken());
-        dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_SEEN);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.updateMessageStatus(message.getMessageID(), MESSAGE_SEEN);
+            }
+        };
+        thread.setName("mark as seen");
+        thread.start();
     }
 
     private void SendStatusMessage(String status, String token, String conversationID) {
@@ -723,8 +936,17 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         sender.sendMessage(message, token);
     }
 
-    private void SaveToDataBase(Message message) {
-        dbActive.saveMessage(message);
+    private void saveMessage(Message message) {
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.insertNewMessage(message);
+                MessageType type = MessageType.values()[message.getMessageType()];
+                dao.updateConversation(message.getMessage(), message.getMessageID(), type.name(), System.currentTimeMillis() + "", message.getGroupName(), message.getConversationID());
+            }
+        };
+        thread.setName("saveMessage");
+        thread.start();
     }
 
 
@@ -735,143 +957,217 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
 
-    private void SendBroadcast(String conversationID, Message message) {
+    private void prepareMessage(String conversationID, Message message) {
 
         //if this is the current on going conversation
         //if (isConversationExists(conversationID))
-            if (isOpenConversation(conversationID)) {
-                if (!isConversationBlocked(conversationID))
-                    if (!isBlocked(message.getSender())) {
-                        message.setMessageStatus(MESSAGE_SEEN);
-                        SaveToDataBase(message);
-                        Intent newMessageIntent = new Intent(conversationID);
-                        newMessageIntent.putExtra("message", message);
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(newMessageIntent);
-                        markAsSeen(message);
+        if (isOpenConversation(conversationID)) {
+            LiveData<Boolean> blockedConversation = dao.isConversationBlocked(conversationID);
+            Observer<Boolean> blockedConversationObserver = new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean aBoolean) {
+                    if (!aBoolean) {
+                        LiveData<Boolean> blockedUser = dao.isUserBlocked(message.getSender());
+                        Observer<Boolean> blockedUserObserver = new Observer<Boolean>() {
+                            @Override
+                            public void onChanged(Boolean aBoolean) {
+                                if (!aBoolean) {
+                                    message.setMessageStatus(MESSAGE_SEEN);
+                                    saveMessage(message);
+                                    markAsSeen(message);
+                                    blockedUser.removeObserver(this);
+                                }
+                            }
+                        };
+                        blockedUser.observeForever(blockedUserObserver);
                     }
-            }
-        //is the conversation exist at all
-        else if (isConversationExists(conversationID)) {
-            if (isNotificationsAllowed())
-                if (!isConversationBlocked(message.getConversationID()))
-                    if (!isMuted(message.getConversationID()))
-                        if (!isUserMuted(message.getSender()))//
-                            if (!isBlocked(message.getSender()))
-                                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
-                                        , message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                                        message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
-            markAsDelivered(message);
-            SaveToDataBase(message);
-            Intent updateConversationIntent = new Intent("Update Conversation");
-            updateConversationIntent.putExtra("Message Action", message.getMessageAction());
-            updateConversationIntent.putExtra("message", message);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(updateConversationIntent);
+                    blockedConversation.removeObserver(this);
+                }
+            };
+            Handler handler1 = new Handler(Looper.getMainLooper());
+            handler1.post(new Runnable() {
+                @Override
+                public void run() {
+                    blockedConversation.observeForever(blockedConversationObserver);
+                }
+            });
 
-            //SaveToDataBase(message);
-        } else {//brand new conversation
-            if (isNotificationsAllowed())
-                createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName(),
-                        message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                        message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
-            CreateNewConversation(message);
-            markAsDelivered(message);
-            //SaveToDataBase(message);
-            Intent newConversationIntent = new Intent("New Conversation");
-            newConversationIntent.putExtra("conversationID", conversationID);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(newConversationIntent);
         }
-
+        //is the conversation exist at all
+        else {
+            Boolean isExists = dao.isConversationExists(conversationID);
+            if (isExists) {
+                Cursor cursor = dao.conversationUserCombo(message.getSender(), message.getConversationID());
+                Log.e("cursor", "count: " + cursor.getColumnCount());
+                boolean allFalse = true;
+                int i = 0;
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(i).equals("1")) {
+                        allFalse = false;
+                    }
+                    i++;
+                }
+                if (allFalse) {
+                    createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
+                            , message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                            message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+                }
+                markAsDelivered(message);
+                saveMessage(message);
+            } else {
+                if (isNotificationsAllowed())
+                    createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName(),
+                            message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                            message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
+                createNewConversation(message);
+                markAsDelivered(message);
+            }
+        }
     }
 
-    private void CreateNewConversation(Message message) {
-        if (message.getConversationID().startsWith("C"))
-            dbActive.createNewConversation(message, ConversationType.single);
-        else if (message.getConversationID().startsWith("G"))
-            dbActive.createNewConversation(message, ConversationType.group);
-        SaveToDataBase(message);
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference reference = database.getReference("users/" + message.getSender());
-        reference.addValueEventListener(new ValueEventListener() {
+    private void createNewConversation(Message message) {
+        ConversationType type = ConversationType.single;
+        if (message.getConversationID().startsWith("G"))
+            type = ConversationType.group;
+        Conversation conversation = createConversation(message, type);
+        Thread thread = new Thread() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                @SuppressWarnings("unchecked")
-                HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
-                if (userMap != null) {
+            public void run() {
+                dao.insertNewConversation(conversation);
+            }
+        };
+        thread.setName("create conversation");
+        thread.start();
+        saveMessage(message);
+        List<String> recipients = getRecipients(message.getRecipients(), message.getSender());
+        createNewGroup(message.getConversationID(), recipients);
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        for (String uid : recipients) {
+            DatabaseReference reference = database.getReference("users/" + uid);
+            reference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    @SuppressWarnings("unchecked")
+                    HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
+                    if (userMap != null) {
+                        String name = (String) userMap.get("name");
+                        User user = new User();
+                        user.setPictureLink((String) userMap.get("pictureLink"));
+                        user.setName(name);
+                        user.setLastName((String) userMap.get("lastName"));
+                        user.setUserUID(snapshot.getKey());
+                        reference.removeEventListener(this);
+                        LiveData<Boolean> userExists = dao.isUserExists(user.getUserUID());
+                        Observer<Boolean> userExistsObserver = new Observer<Boolean>() {
+                            @Override
+                            public void onChanged(Boolean aBoolean) {
+                                userExists.removeObserver(this);
+                                Thread thread1 = new Thread() {
+                                    @Override
+                                    public void run() {
+                                        if (aBoolean) {
+                                            dao.updateUser(user);
+                                        } else {
+                                            dao.insertNewUser(user);
+                                        }
+                                        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
+                                        ValueEventListener tokenListener = new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                                tokenReference.removeEventListener(this);
+                                                String token = (String) snapshot.getValue();
+                                                String uid = user.getUserUID();
+                                                if (token != null) {
+                                                    Thread thread1 = new Thread() {
+                                                        @Override
+                                                        public void run() {
+                                                            dao.updateUserToken(uid, token);
+                                                        }
+                                                    };
+                                                    thread1.setName("token update");
+                                                    thread1.start();
 
-                    String name = (String) userMap.get("name");
-                    User user = new User();
-                    user.setPictureLink((String) userMap.get("pictureLink"));
-                    user.setName(name);
-                    user.setLastName((String) userMap.get("lastName"));
-                    user.setUserUID(snapshot.getKey());
-                    reference.removeEventListener(this);
-                    dbActive.insertUser(user);
-                    Log.d("fcm user save", "saved new user from new conversation to database");
+                                                } else
+                                                    Log.e("NULL", "Recipient Token from fb is null");
+                                            }
+
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError error) {
+                                                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
+                                            }
+                                        };
+                                        tokenReference.addValueEventListener(tokenListener);
+                                    }
+                                };
+                                thread1.setName("update_insert user");
+                                thread1.start();
+
+                            }
+                        };
+                        userExists.observeForever(userExistsObserver);
+                        Log.d("fcm user save", "saved new user from new conversation to database");
+                    }
+
                 }
 
-            }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    error.toException().printStackTrace();
+                }
+            });
+        }
+    }
 
+    private List<String> getRecipients(List<String> recipients, String sender) {
+        List<String> recipients1 = new ArrayList<>();
+        if (recipients.size() == 1) {
+            recipients1.add(sender);
+        } else {
+            if (recipients.contains(currentUser)) {
+                recipients.remove(currentUser);
+                recipients.add(sender);
+                recipients1 = recipients;
+            }
+        }
+        return recipients1;
+    }
+
+    private Conversation createConversation(Message message, ConversationType type) {
+        Conversation conversation = new Conversation(message.getConversationID());
+        conversation.setLastMessageID(message.getMessageID());
+        conversation.setLastMessage(message.getMessage());
+        conversation.setMessageType(message.getMessageType());
+        conversation.setLastMessageTime(message.getSendingTime());
+        conversation.setGroupName(message.getGroupName());
+        conversation.setMuted(false);
+        conversation.setBlocked(false);
+        conversation.setConversationType(type);
+        return conversation;
+    }
+
+    private void createNewGroup(String conversationID, List<String> recipients) {
+        Thread thread = new Thread() {
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                error.toException().printStackTrace();
+            public void run() {
+                for (String uid : recipients) {
+                    Group group = new Group(conversationID, uid);
+                    dao.insertNewGroup(group);
+                }
+            }
+        };
+        thread.setName("createNewGroup");
+        thread.start();
+    }
+
+    private void disableActiveNotification() {
+
+        notificationsController.addOnRemoveListener(new NotificationsController.onNotificationRemoveListener() {
+            @Override
+            public void onNotificationRemoved(int notificationID) {
+                NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(FirebaseMessageService.this);
+                notificationManagerCompat.cancel(notificationID);
+                notificationManagerCompat.cancel(100);
             }
         });
-
-        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
-        ValueEventListener tokenListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String token = (String) snapshot.getValue();
-                if (token != null) {
-                    dbActive.updateUserToken(message.getSender(), token);
-                    tokenReference.removeEventListener(this);
-                } else Log.e("NULL", "Recipient Token from fb is null");
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
-            }
-        };
-        tokenReference.addValueEventListener(tokenListener);
-
-    }
-
-    private boolean isConversationExists(String conversationID) {
-        return dbActive.isConversationExists(conversationID);
-    }
-
-    private void DisableActiveNotification() {
-        BroadcastReceiver disableNotificationReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String conversationID = intent.getStringExtra("ConversationID");
-                int notificationID = getNotificationID(conversationID);
-                if (notificationID != -1) {
-                    NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
-                    notificationManagerCompat.cancel(notificationID);
-                    notificationManagerCompat.cancel(100);
-                }
-            }
-        };
-        LocalBroadcastManager.getInstance(this).registerReceiver(disableNotificationReceiver, new IntentFilter("disableNotifications"));
-    }
-
-
-    private boolean isUserMuted(String userID) {
-        return dbActive.isUserMuted(userID);
-    }
-
-    private boolean isMuted(String conversationID) {
-        return dbActive.isMuted(conversationID);
-    }
-
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean isBlocked(String uid) {
-        return dbActive.isBlocked(uid);
-    }
-
-    private boolean isConversationBlocked(String conversationID) {
-        return dbActive.isConversationBlocked(conversationID);
     }
 }

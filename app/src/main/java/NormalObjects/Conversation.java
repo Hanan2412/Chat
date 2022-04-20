@@ -2,43 +2,84 @@ package NormalObjects;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 import Consts.ConversationType;
-//Chat2 Object - a more up to date object to save a conversation at
 
+
+@Entity(tableName = "conversations")
 public class Conversation implements Serializable {
 
-    private String ConversationID;
+    @PrimaryKey(autoGenerate = true)
+    private int p_key;
+
+    private String conversationID;
+    //@Ignore
     private String recipient;
     private String lastMessage;
     private String lastMessageTime;
     private String recipientImagePath;
+    @Ignore
     private ArrayList<Message>messages;
     private String senderName;
     private boolean muted = false;
     private int messageType;
     private String lastMessageID;
+    @Ignore
     private boolean typing;
     private String recipientName;
     private String recipientPhoneNumber;
     private boolean blocked = false;
     private String recipientToken;
+    @Ignore
     private List<String> recipients;
+    @Ignore
     private List<String>tokens;
     private String lastMessageRecipient;
     private String groupName;
     private ConversationType conversationType = ConversationType.single;
+    private int type = 0;
 
-    public Conversation(String conversationID)
+    private int unreadMessages = 0;
+
+    public int getUnreadMessages() {
+        return unreadMessages;
+    }
+
+    public void setUnreadMessages(int unreadMessages) {
+        this.unreadMessages = unreadMessages;
+    }
+
+    public Conversation(@NonNull String conversationID)
     {
-        this.ConversationID = conversationID;
+        this.conversationID = conversationID;
         messages = new ArrayList<>();
         tokens = new ArrayList<>();
         recipients = new ArrayList<>();
+    }
+
+    public void setP_key(int p_key) {
+        this.p_key = p_key;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public int getP_key() {
+        return p_key;
     }
 
     public ConversationType getConversationType() {
@@ -58,11 +99,11 @@ public class Conversation implements Serializable {
     }
 
     public String getConversationID() {
-        return ConversationID;
+        return conversationID;
     }
 
     public void setConversationID(String conversationID) {
-        ConversationID = conversationID;
+        this.conversationID = conversationID;
     }
 
     public String getRecipient() {
@@ -91,7 +132,8 @@ public class Conversation implements Serializable {
     }
 
     public void setLastMessageTime(String lastMessageTime) {
-        if(lastMessageTime!=null) {
+        this.lastMessageTime = lastMessageTime;
+        /*if(lastMessageTime!=null) {
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(Long.parseLong(lastMessageTime));
             int minute = calendar.get(Calendar.MINUTE);
@@ -105,7 +147,7 @@ public class Conversation implements Serializable {
             else
                 minutes = minute + "";
             this.lastMessageTime = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
-        }
+        }*/
     }
     public void setLastMessageTimeFormatted(String lastMessageTime)
     {
