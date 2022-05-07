@@ -85,6 +85,12 @@ public class Server {
         void onMessagesRestored(List<Message>messages);
         void onConversationsRestored(List<Conversation>conversations);
     }
+
+    public interface onBackupListener{
+        void onBackupCompleted(String msg);
+        void onBackupFailed(String message);
+    }
+
     private onUsersFound foundUsers;
     private onUserDownload downloadedUsers;
     private onTokenDownloaded downloadedToken;
@@ -92,6 +98,7 @@ public class Server {
     private onFileDownload fileDownload;
     private onImageDownloaded imageDownloaded;
     private onRestoreListener onRestore;
+    private onBackupListener onBackupListener;
 
     public void setRestoreListener(onRestoreListener listener){
         onRestore = listener;
@@ -121,6 +128,10 @@ public class Server {
         this.fileDownload = fileDownload;
     }
 
+    public void setOnBackupListener(onBackupListener listener)
+    {
+        this.onBackupListener = listener;
+    }
     public static Server getInstance() {
         if (server == null)
             server = new Server();
@@ -357,11 +368,13 @@ public class Server {
             @Override
             public void onResponse(@NonNull Call<String> call,@NonNull Response<String> response) {
                 handleMessage(response);
+                onBackupListener.onBackupCompleted(response.message());
             }
 
             @Override
             public void onFailure(@NonNull Call<String> call,@NonNull Throwable t) {
                 t.printStackTrace();
+                onBackupListener.onBackupFailed(t.getMessage());
             }
         });
     }
@@ -471,7 +484,8 @@ public class Server {
             Log.e("error",response.code()+"");
         }
     }
-    public void downloadFile(String fileName,String messageID,Context context)
+
+    public void downloadFile(String fileName,String messageID)
     {
         fileDownload.onDownloadStarted();
         api.downloadFile(fileName).enqueue(new Callback<ResponseBody>() {
@@ -488,14 +502,18 @@ public class Server {
                                 {
                                     InputStream in = response.body().byteStream();
                                     File path = Environment.getExternalStorageDirectory();
-                                    File file = new File(path, fileName);
+                                    File file = new File(path, "/" + fileName);
+                                    file.createNewFile();
                                     FileOutputStream outputStream = new FileOutputStream(file);
                                     BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
                                     int byteRead;
                                     byte[] dataBuffer = new byte[1024];
                                     while ((byteRead = bufferedInputStream.read(dataBuffer, 0, 1024)) != -1)
                                         outputStream.write(dataBuffer, 0, byteRead);
-                                    fileDownload.onFileDownloadFinished(messageID, file);
+                                    if (messageID == null)
+                                        fileDownload.onDownloadFinished(file);
+                                    else
+                                        fileDownload.onFileDownloadFinished(messageID, file);
                                 } catch(
                                         IOException e)
 
@@ -523,9 +541,9 @@ public class Server {
     }
 
 
-    public void downloadImage(String iid)
+    public void downloadImage(String imagePath)
     {
-        Picasso.get().load("http://192.168.1.11:8081/downloadFile/"+iid).into(new Target() {
+        Picasso.get().load("http://192.168.1.11:8081/downloadFile/"+imagePath).into(new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 if (imageDownloaded!=null)

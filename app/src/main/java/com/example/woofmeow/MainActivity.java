@@ -29,6 +29,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
@@ -294,7 +295,37 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         //ConnectedToInternet();
         //DropBox();
 
-//        Server server = Server.getInstance();
+        Server server = Server.getInstance();
+        server.setFileDownloadListener(new Server.onFileDownload() {
+            @Override
+            public void onDownloadStarted() {
+
+            }
+
+            @Override
+            public void onProgress(int progress) {
+
+            }
+
+            @Override
+            public void onDownloadFinished(File file) {
+                System.out.println("this is file");
+                Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                System.out.println("this is bitmap");
+            }
+
+            @Override
+            public void onFileDownloadFinished(String messageID, File file) {
+                System.out.println("this is file");
+            }
+
+            @Override
+            public void onDownloadError(String errorMessage) {
+                System.out.println(errorMessage);
+            }
+        });
+        server.downloadFile("sarcasm sign.png",null);
+
 //        server.setFileDownloadListener(new Server.onFileDownload() {
 //            @Override
 //            public void onDownloadStarted() {

@@ -11,4 +11,7 @@
     <color name="green">#0CCD00</color>
     <color name="yellow">#FFEB3B</color>
     <color name="dm">#E2000000</color>
+    <color name="purple">#8DA1B9</color>
+    <color name="darkPurple">#95ADB6</color>
+    <color name="lightPurple">#CBB3BF</color>
 </resources>

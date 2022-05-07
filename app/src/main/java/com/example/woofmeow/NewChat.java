@@ -19,9 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import Adapters.UsersAdapter;
-//import Controller.CController;
 import Backend.UserVM;
-import Model.Server3;
 import NormalObjects.User;
 import Retrofit.Server;
 

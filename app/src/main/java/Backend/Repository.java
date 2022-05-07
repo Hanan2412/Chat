@@ -7,12 +7,10 @@ import android.net.Uri;
 
 import androidx.lifecycle.LiveData;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import Model.Server3;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;

@@ -27,10 +27,8 @@ import java.util.List;
 
 import Adapters.NewGroupChatAdapter;
 import Adapters.UsersAdapter2;
-//import Controller.CController;
 import Backend.UserVM;
 import Fragments.SingleFieldFragment;
-import Model.Server3;
 import NormalObjects.User;
 import Retrofit.Server;
 

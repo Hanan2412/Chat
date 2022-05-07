@@ -1,7 +1,6 @@
 package Backend;
 
 import android.app.Application;
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import androidx.annotation.NonNull;
@@ -10,11 +9,9 @@ import androidx.lifecycle.LiveData;
 
 import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import Model.Server3;
 import NormalObjects.User;
 import Retrofit.Server;
 

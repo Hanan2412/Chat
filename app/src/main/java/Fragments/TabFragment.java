@@ -50,7 +50,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,14 +57,7 @@ import Adapters.ConversationsAdapter2;
 
 import Backend.ConversationVM;
 import Backend.UserVM;
-
-import Consts.MessageType;
 import Consts.Tabs;
-
-import Messages.BaseMessage;
-import Messages.SendMessage;
-import Messages.TextMessage;
-import Model.Server3;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationTouch;
 
@@ -464,33 +456,6 @@ public class TabFragment extends Fragment{
                         }
                     });
                     userModel.downloadUser(currentUser);
-//                    userModel.downloadUser(currentUser);
-//                    userModel.setOnUserDownloadListener(new Server3.onUserDownloaded() {
-//                        @Override
-//                        public void downloadedUser(User user) {
-//                            if (user.getUserUID().equals(currentUser)) {
-//                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
-//                                userExists.observe(requireActivity(), new Observer<Boolean>() {
-//                                    @Override
-//                                    public void onChanged(Boolean aBoolean) {
-//                                        if (aBoolean)
-//                                        {
-//                                            callback.onUserUpdate(user);
-//                                            userModel.updateUser(user);
-//                                        }
-//                                        else
-//                                        {
-//                                            userModel.insertUser(user);
-//                                            callback.onUserUpdate(user);
-//                                        }
-//                                        userExists.removeObserver(this);
-//                                    }
-//                                });
-//                                TabFragment.this.user = user;
-//                            }
-//                        }
-//                    });
-//                    userModel.downloadUser(currentUser);
                 }
             }
         });
@@ -516,12 +481,8 @@ public class TabFragment extends Fragment{
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putString("token", token);
                     editor.apply();
-                    //HashMap<String, Object> tokenMap = new HashMap<>();
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         String currentUserUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                        // TryToken tryToken = new TryToken(token);
-                       // tokenMap.put(currentUserUID, token);
-                        //userModel.updateFBData("Tokens",tokenMap);
                         userModel.updateToken(currentUserUID,token);
                         Log.d("token", "updated token");
                     }

@@ -81,7 +81,6 @@ import Messages.BaseMessage;
 import Messages.MessageDeserializer;
 import Messages.TextMessage;
 import Model.MessageSender;
-import Model.Server3;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.Group;
@@ -99,7 +98,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private final String GROUP_CONVERSATIONS = "conversations";
     private static ArrayList<NotificationCompat.Builder> builders;
     public static String myName = "";
-    //private CController controller;
     private String currentUser;
     private ChatDao dao;
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
@@ -758,7 +756,8 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 }
             });
             String messageFilePath = message.getFilePath();
-            server.downloadFile(messageFilePath, message.getMessageID(),this);
+            String[] split = messageFilePath.split("/");
+            server.downloadFile(split[split.length-1], message.getMessageID());
 //            StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
 //            try {
 //                File file = File.createTempFile("recording" + message.getMessageID(), ".3gpp");
