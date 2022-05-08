@@ -134,6 +134,8 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         actionBar.setHomeAsUpIndicator(R.drawable.ic_baseline_menu_24);
         // actionBar.setDisplayShowTitleEnabled(false);
         View headerView = navigationView.getHeaderView(0);
+        profileImage = headerView.findViewById(R.id.headerImage);
+        shapeableImageView = findViewById(R.id.toolbarProfileImage);
         floatingActionButton = findViewById(R.id.floatingActionButton);
         navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -263,12 +265,9 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
             }
         });
-
-        profileImage = headerView.findViewById(R.id.headerImage);
-        shapeableImageView = findViewById(R.id.toolbarProfileImage);
         if (getIntent().getBooleanExtra("newUser", false))
             user = (User) getIntent().getSerializableExtra("user");
-        LoadCurrentUserImage();
+        LoadCurrentUserPicture();
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -294,65 +293,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }
         //ConnectedToInternet();
         //DropBox();
-
-        Server server = Server.getInstance();
-        server.setFileDownloadListener(new Server.onFileDownload() {
-            @Override
-            public void onDownloadStarted() {
-
-            }
-
-            @Override
-            public void onProgress(int progress) {
-
-            }
-
-            @Override
-            public void onDownloadFinished(File file) {
-                System.out.println("this is file");
-                Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-                System.out.println("this is bitmap");
-            }
-
-            @Override
-            public void onFileDownloadFinished(String messageID, File file) {
-                System.out.println("this is file");
-            }
-
-            @Override
-            public void onDownloadError(String errorMessage) {
-                System.out.println(errorMessage);
-            }
-        });
-        server.downloadFile("sarcasm sign.png",null);
-
-//        server.setFileDownloadListener(new Server.onFileDownload() {
-//            @Override
-//            public void onDownloadStarted() {
-//
-//            }
-//
-//            @Override
-//            public void onProgress(int progress) {
-//
-//            }
-//
-//            @Override
-//            public void onDownloadFinished(File file) {
-//
-//            }
-//
-//            @Override
-//            public void onFileDownloadFinished(String messageID, File file) {
-//                Log.d("fileDownload","msgID: " + messageID + "fileName: " + file.getName());
-//            }
-//
-//            @Override
-//            public void onDownloadError(String errorMessage) {
-//
-//            }
-//        });
-//        server.downloadFile("audioRecording_1647556275702.3pg","123",this);
     }
 
     private void rotateAndShowOut() {
@@ -558,14 +498,19 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         FileManager fileManager = FileManager.getInstance();
         Bitmap profileBitmap = fileManager.readImage(this, FileManager.user_profile_images, currentUser);
         if (profileBitmap == null)
-            if (user!=null)
-                if (user.getPictureLink()!=null)
-                    onUserUpdate(user);
-        profileImage.setImageBitmap(profileBitmap);
-        shapeableImageView.setImageBitmap(profileBitmap);
-        if (profileBitmap == null)
+        {
+            shapeableImageView.setImageResource(R.drawable.ic_baseline_account_circle_black);
+            profileImage.setImageResource(R.drawable.ic_baseline_account_circle_black);
             Log.e("ProfileBitmap", "profile bitmap is null");
-
+        }
+        else
+        {
+            profileImage.setImageBitmap(profileBitmap);
+            shapeableImageView.setImageBitmap(profileBitmap);
+        }
+        if(user!=null) {
+            downloadUserImage(user.getPictureLink());
+        }
     }
 
     @Override
@@ -574,35 +519,51 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             if (user.getUserUID().equals(currentUser)) {//us
                 this.user = user;
                 FirebaseMessageService.myName = user.getName();
-                Picasso.get().load(user.getPictureLink()).into(new Target() {
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        FileManager fileManager = FileManager.getInstance();
-                        fileManager.saveProfileImage(bitmap, currentUser, MainActivity.this, false);
-                        profileImage.setImageBitmap(bitmap);//loads user image to drawer header
-                        shapeableImageView.setImageBitmap(bitmap);//loads user image to toolbar image
-                    }
-
-                    @Override
-                    public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                        Log.e("failed to load bitmap", "picasso failed to load bitmap mainActivity");
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                    }
-                });
+                downloadUserImage(user.getPictureLink());
                 currentStatus = user.getStatus();
                 onUserUpdate = true;
                 invalidateOptionsMenu();
             }
 
         }
+        else Log.e("ERROR", "mainActivity - onUserUpdate - user is null");
     }
 
-    private void LoadCurrentUserImage() {
-        LoadCurrentUserPicture();
+    private void downloadUserImage(String imagePath)
+    {
+        userVM.setOnUserImageDownloadListener(new Server.onFileDownload() {
+            @Override
+            public void onDownloadStarted() {
+
+            }
+
+            @Override
+            public void onProgress(int progress) {
+
+            }
+
+            @Override
+            public void onDownloadFinished(File file) {
+                String filePath = file.getAbsolutePath();
+                Bitmap image = BitmapFactory.decodeFile(filePath);
+                FileManager fileManager = FileManager.getInstance();
+                fileManager.saveProfileImage(image, currentUser, MainActivity.this, false);
+                userVM.setOnUserImageDownloadListener(null);
+                profileImage.setImageBitmap(image);//loads user image to drawer header
+                shapeableImageView.setImageBitmap(image);//loads user image to toolbar image
+            }
+
+            @Override
+            public void onFileDownloadFinished(String messageID, File file) {
+
+            }
+
+            @Override
+            public void onDownloadError(String errorMessage) {
+                Toast.makeText(MainActivity.this, "an error happened when downloading your profile image", Toast.LENGTH_SHORT).show();
+            }
+        });
+        userVM.downloadImage(imagePath);
     }
 
     @Override
