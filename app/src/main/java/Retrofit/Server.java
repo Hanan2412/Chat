@@ -503,17 +503,19 @@ public class Server {
                                     InputStream in = response.body().byteStream();
                                     File path = Environment.getExternalStorageDirectory();
                                     File file = new File(path, "/" + fileName);
-                                    file.createNewFile();
-                                    FileOutputStream outputStream = new FileOutputStream(file);
-                                    BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
-                                    int byteRead;
-                                    byte[] dataBuffer = new byte[1024];
-                                    while ((byteRead = bufferedInputStream.read(dataBuffer, 0, 1024)) != -1)
-                                        outputStream.write(dataBuffer, 0, byteRead);
-                                    if (messageID == null)
-                                        fileDownload.onDownloadFinished(file);
-                                    else
-                                        fileDownload.onFileDownloadFinished(messageID, file);
+                                    if(file.createNewFile()) {
+                                        FileOutputStream outputStream = new FileOutputStream(file);
+                                        BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
+                                        int byteRead;
+                                        byte[] dataBuffer = new byte[1024];
+                                        while ((byteRead = bufferedInputStream.read(dataBuffer, 0, 1024)) != -1)
+                                            outputStream.write(dataBuffer, 0, byteRead);
+                                        if (fileDownload != null)
+                                            if (messageID == null)
+                                                fileDownload.onDownloadFinished(file);
+                                            else
+                                                fileDownload.onFileDownloadFinished(messageID, file);
+                                    }
                                 } catch(
                                         IOException e)
 
@@ -527,9 +529,9 @@ public class Server {
                         networkThread.setName("download image");
                         networkThread.start();
                     }
-                    fileDownload.onDownloadError("body is null");
+                    else fileDownload.onDownloadError("body is null");
                 }
-                fileDownload.onDownloadError("couldn't reach server");
+                else fileDownload.onDownloadError("couldn't reach server");
             }
 
             @Override
@@ -541,27 +543,9 @@ public class Server {
     }
 
 
-    public void downloadImage(String imagePath)
+    public void downloadImage(String userID)
     {
-        Picasso.get().load("http://192.168.1.11:8081/downloadFile/"+imagePath).into(new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                if (imageDownloaded!=null)
-                    imageDownloaded.downloadedImage(bitmap);
-            }
-
-            @Override
-            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                e.printStackTrace();
-                if (imageDownloaded!=null)
-                    imageDownloaded.downloadFailed("failed to download image");
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-            }
-        });
+        downloadFile(userID,null);
     }
 
     public void uploadFile(String uid,String msgID,Bitmap bitmap, Context context) {
