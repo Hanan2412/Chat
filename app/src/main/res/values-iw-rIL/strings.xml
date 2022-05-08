@@ -28,4 +28,12 @@
     <string name="camera">פתח מצלמה</string>
     <string name="gallery">גלרייה</string>
     <string name="delay">הודעה מושעת</string>
+    <string name="blocked_conversations">שיחות חסומות</string>
+    <string name="blocked_users">משתמשים חסומים</string>
+    <string name="muted_conversations">שיחות מושתקות</string>
+    <string name="muted_users">משתמשים מושתקים</string>
+    <string name="your_name">השם שלך</string>
+    <string name="your_last_name">שם משפחה</string>
+    <string name="next">המשך</string>
+    <string name="you">אתם</string>
 </resources>

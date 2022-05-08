@@ -85,4 +85,8 @@
     <string name="blocked_users">Blocked Users</string>
     <string name="muted_conversations">Muted Conversations</string>
     <string name="muted_users">Muted Users</string>
+    <string name="your_name">Your Name</string>
+    <string name="your_last_name">Your Last Name</string>
+    <string name="next">Next</string>
+    <string name="you">You</string>
 </resources>
