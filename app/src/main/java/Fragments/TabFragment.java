@@ -96,9 +96,26 @@ public class TabFragment extends Fragment{
         return tabFragment;
     }
 
+    /**
+     * an interface to update the main activity class
+     */
     public interface UpdateMain {
+        /**
+         * sends the updated user
+         * @param user the user that is updated
+         */
         void onUserUpdate(User user);
+
+        /**
+         * loads user from memory
+         * @param user the user to load from memory
+         */
         void onLoadUserFromMemory(User user);
+
+        /**
+         * called when conversation is opened
+         * @param conversationID the conversation id of the conversation that was opened
+         */
         void onOpenedConversation(String conversationID);
     }
 
@@ -420,6 +437,11 @@ public class TabFragment extends Fragment{
     }
 
     //if the user exists in the database - load it, if not - download it from firebase database
+
+    /**
+     * loads the current logged in user from the database.
+     * if they doesn't exist, the function will download them from the server
+     */
     private void LoadCurrentUserFromDataBase() {
         userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
             @Override
@@ -429,32 +451,44 @@ public class TabFragment extends Fragment{
                 {
                     callback.onLoadUserFromMemory(user);
                 }
-                else {
+                else
+                {
                     userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
                         @Override
                         public void downloadedUser(User user) {
-                            if (user.getUserUID().equals(currentUser)) {
-                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
-                                userExists.observe(requireActivity(), new Observer<Boolean>() {
-                                    @Override
-                                    public void onChanged(Boolean aBoolean) {
-                                        if (aBoolean)
-                                        {
-                                            callback.onUserUpdate(user);
-                                            userModel.updateUser(user);
-                                        }
-                                        else
-                                        {
-                                            userModel.insertUser(user);
-                                            callback.onUserUpdate(user);
-                                        }
-                                        userExists.removeObserver(this);
-                                    }
-                                });
+                            if (user.getUserUID().equals(currentUser))
+                            {
+                                userModel.insertUser(user);
+                                callback.onUserUpdate(user);
                                 TabFragment.this.user = user;
                             }
                         }
                     });
+//                    userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
+//                        @Override
+//                        public void downloadedUser(User user) {
+//                            if (user.getUserUID().equals(currentUser)) {
+//                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
+//                                userExists.observe(requireActivity(), new Observer<Boolean>() {
+//                                    @Override
+//                                    public void onChanged(Boolean aBoolean) {
+//                                        if (aBoolean)
+//                                        {
+//                                            callback.onUserUpdate(user);
+//                                            userModel.updateUser(user);
+//                                        }
+//                                        else
+//                                        {
+//                                            userModel.insertUser(user);
+//                                            callback.onUserUpdate(user);
+//                                        }
+//                                        userExists.removeObserver(this);
+//                                    }
+//                                });
+//                                TabFragment.this.user = user;
+//                            }
+//                        }
+//                    });
                     userModel.downloadUser(currentUser);
                 }
             }
