@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -35,22 +36,19 @@ import java.util.Date;
 
 
 import Backend.UserVM;
-//import Controller.CController;
-//import DataBase.DBActive;
 import NormalObjects.User;
 
 
 @SuppressWarnings("Convert2Lambda")
 public class UserCreationActivity extends AppCompatActivity{
 
-    private Bitmap imageBitmap;
+    private Bitmap imageBitmap = null;
     private int WRITE_PERMISSION = 2;
     private int CAMERA_REQUEST = 3;
     private int GALLERY_REQUEST = 4;
     private  String photoPath;
     private Uri imageUri;
     private ImageView userImage;
-    //private CController cController;
     private UserVM userVM;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -58,8 +56,7 @@ public class UserCreationActivity extends AppCompatActivity{
         setContentView(R.layout.user_creation_layout);
         final TextInputEditText firstName = findViewById(R.id.userName);
         final TextInputEditText lastName = findViewById(R.id.lastName);
-       // final TextInputEditText nickname = findViewById(R.id.nickname);
-        userImage = findViewById(R.id.userPhoto);
+        userImage = findViewById(R.id.userImage);
         Button cameraBtn = findViewById(R.id.openCameraBtn);
         Button galleryBtn = findViewById(R.id.openGalleryBtn);
         Button continueBtn = findViewById(R.id.nextBtn);
@@ -68,23 +65,25 @@ public class UserCreationActivity extends AppCompatActivity{
         continueBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String name = "",nick="",last="";
+                String name = "",last="";
                 if(firstName.getText()!=null)
                     name = firstName.getText().toString();
                 if(lastName.getText()!=null)
                     last = lastName.getText().toString();
 
                 if(!name.equals("")&&!last.equals("")) {
-                    //createNewUser(name, last, nick,imageBitmap);
                     User user = new User();
-                    user.setUserUID(currentUserUID);;
+                    if (currentUserUID!=null)
+                        user.setUserUID(currentUserUID);
+                    else
+                        Log.e("UID", "user creation - uid is null");
                     user.setName(name);
                     user.setLastName(last);
                     user.setTimeCreated(System.currentTimeMillis() + "");
                     user.setLastTimeLogIn(System.currentTimeMillis() + "");
                     user.setStatus(MainActivity.ONLINE_S);
-                    createNewUser(user);
-                    saveUser(user);
+                    createNewUser(user,imageBitmap);
+                    saveUserUIDLocally(user);
                     Intent intent = new Intent(UserCreationActivity.this,MainActivity.class);
                     intent.putExtra("newUser",true);
                     intent.putExtra("user",user);
@@ -110,11 +109,8 @@ public class UserCreationActivity extends AppCompatActivity{
         });
     }
 
-    private void saveUser(User user)
+    private void saveUserUIDLocally(User user)
     {
-        userVM.insertUser(user);
-        //DBActive dbActive = DBActive.getInstance(this);
-        //dbActive.insertUser(user);
         SharedPreferences sharedPreferences = getSharedPreferences("CurrentUser", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("UID",user.getUserUID());
@@ -126,14 +122,9 @@ public class UserCreationActivity extends AppCompatActivity{
         super.onDestroy();
     }
 
-    private void createNewUser(User user)
+    private void createNewUser(User user, Bitmap userImage)
     {
-        userVM.createNewUser(user);
-    }
-
-    private void createNewUser(String name, String lastName, String nickname, Bitmap userImage)
-    {
-        userVM.createNewUser(name, lastName, nickname, userImage);
+        userVM.createNewUser(user, userImage, UserCreationActivity.this);
     }
 
     private void requestCamera()
@@ -141,6 +132,7 @@ public class UserCreationActivity extends AppCompatActivity{
         if(AskPermission())
             takePicture();
     }
+
     private boolean AskPermission()
     {
         int hasWritePermission = UserCreationActivity.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
