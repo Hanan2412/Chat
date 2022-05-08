@@ -35,8 +35,6 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
     public NewChat() {
         if(FirebaseAuth.getInstance().getCurrentUser()!=null)
             currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        /*controller = CController.getController();
-        controller.setFoundUsers(this);*/
     }
 
 
@@ -97,7 +95,6 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
                     String search = searchUsers.getText().toString();
                     if (search != null) {
                        userVM.searchForUsers(search);
-                        //controller.onFindUsersQuery(search, NewChat.this);
                     }
                 }
             }
@@ -115,20 +112,12 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
                     Log.e("ERROR","error finding users");
             }
         });
-//        userVM.setOnUsersFoundListener(new Server3.onUserFound() {
-//            @Override
-//            public void foundUser(User user) {
-//                if(!user.getUserUID().equals(currentUser))
-//                    adapter.addUser(user);
-//            }
-//        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        /*controller.setFoundUsers(null);
-        controller.removeInterface(6);*/
+        userVM.setOnUserFoundListener(null);
     }
 
     private void startSingleConversation(User user)

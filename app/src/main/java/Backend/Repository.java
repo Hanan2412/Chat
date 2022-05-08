@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
@@ -378,6 +379,10 @@ public class Repository {
         pool.execute(runnable);
     }
 
+    /**
+     * inserts new user to local database
+     * @param user the user to insert
+     */
     public void insertNewUser(User user)
     {
         Runnable runnable = new Runnable() {
@@ -474,38 +479,43 @@ public class Repository {
         return getAllConversations;
     }
 
-//    public void updateFBData(String path, String data)
-//    {
-//        server3.updateData(path, data);
-//    }
-//
-//    public void updateFBData(String path, HashMap<String,Object>map)
-//    {
-//        server3.updateData(path, map);
-//    }
-//
-//    public void updateFBData(String path,boolean data)
-//    {
-//        server3.updateData(path, data);
-//    }
-
-//    public void deleteFBData(String path)
-//    {
-//        server3.deleteData(path);
-//    }
-
-
-
-    public void createNewUser(String name, String lastName, String nick, Bitmap userImage)
+    public void createNewUser(User user, Bitmap userImage,Context context)
     {
-        //server3.createNewUser(name, lastName, nick, userImage);
-        User user = new User();
-        user.setName(name);
-        user.setLastName(lastName);
         String time = System.currentTimeMillis() + "";
         user.setTimeCreated(time);
         user.setLastTimeLogIn(time);
         server.createNewUser(user);
+        server.setFileUploadListener(new Server.onFileUpload() {
+            @Override
+            public void onPathReady(String path) {
+                server.setFileUploadListener(null);
+                String relativePath = path.split("downloadFile/")[1];
+                user.setPictureLink(relativePath);
+                server.updateUser(user);
+                insertNewUser(user);
+            }
+
+            @Override
+            public void onStartedUpload(String msgID) {
+                Log.d("fileUpload", "started uploading user image ");
+            }
+
+            @Override
+            public void onProgress(int progress) {
+
+            }
+
+            @Override
+            public void onUploadFinished(String msgID) {
+                Log.d("fileUpload", "finished uploading user image ");
+            }
+
+            @Override
+            public void onUploadError(String msgID, String errorMessage) {
+                Log.e("fileUpload", errorMessage );
+            }
+        });
+        server.uploadFile(user.getUserUID(),null,userImage,context);
     }
 
     public void createNewUser(User user)
@@ -591,5 +601,8 @@ public class Repository {
         server.setDownloadedTokenListener(listener);
     }
 
-
+    public void setOnFileDownloadListener(Server.onFileDownload listener)
+    {
+        server.setFileDownloadListener(listener);
+    }
 }

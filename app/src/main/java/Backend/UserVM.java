@@ -1,6 +1,7 @@
 package Backend;
 
 import android.app.Application;
+import android.content.Context;
 import android.graphics.Bitmap;
 
 import androidx.annotation.NonNull;
@@ -25,16 +26,29 @@ public class UserVM extends AndroidViewModel {
         currentUser = repository.getUserByID(currentUserUID);
     }
 
+    /**
+     * updates the token of a specific user
+     * @param uid the uid of the user to update
+     * @param token the token to update
+     */
     public void updateToken(String uid,String token)
     {
         repository.updateUserToken(uid,token);
     }
 
+    /**
+     * inserts new user into local database
+     * @param user the user to insert
+     */
     public void insertUser(User user)
     {
         repository.insertNewUser(user);
     }
 
+    /**
+     * updates user in local database and on the server
+     * @param user the user to update
+     */
     public void updateUser(User user)
     {
         repository.updateUser(user);
@@ -46,6 +60,11 @@ public class UserVM extends AndroidViewModel {
         return repository.isUserExists(user);
     }
 
+    /**
+     * blocks user
+     * @param userID the uid of the user to block
+     * @return boolean if the user was blocked
+     */
     public LiveData<Boolean> blockUser(String userID)
     {
         repository.blockUser(userID);
@@ -94,32 +113,14 @@ public class UserVM extends AndroidViewModel {
         return repository.getUserByID(userUID);
     }
 
-//    public void updateFBData(String path,String data)
-//    {
-//        repository.updateFBData(path, data);
-//    }
-//
-//    public void updateFBData(String path, HashMap<String,Object> map)
-//    {
-//        repository.updateFBData(path, map);
-//    }
-//
-//    public void updateFBData(String path,boolean data)
-//    {
-//        repository.updateFBData(path, data);
-//    }
-//    public void deleteFBData(String path)
-//    {
-//        repository.deleteFBData(path);
-//    }
     public void downloadUser(String uid)
     {
         repository.downloadUser(uid);
     }
 
-    public void createNewUser(String name, String lastName, String nick, Bitmap userImage)
+    public void createNewUser(User user, Bitmap userImage, Context context)
     {
-        repository.createNewUser(name, lastName, nick, userImage);
+        repository.createNewUser(user, userImage, context);
     }
 
     public void createNewUser(User user)
@@ -129,22 +130,13 @@ public class UserVM extends AndroidViewModel {
 
     public void searchForUsers(String query)
     {
-        //repository.searchForUsers(query);
         repository.searchUsers(query);
     }
 
-//    public void setOnUserDownloadListener(Server3.onUserDownloaded listener)
-//    {
-//        repository.setOnUserDownloadListener(listener);
-//    }
-
-//    public void setOnUsersFoundListener(Server3.onUserFound listener)
-//    {
-//        repository.setOnUsersFoundListener(listener);
-//    }
-    //////////////////////////////////////////////////////////////////////////////
-
-
+    public void setOnUserImageDownloadListener(Server.onFileDownload listener)
+    {
+        repository.setOnFileDownloadListener(listener);
+    }
 
 
     public void downloadImage(String iid)
