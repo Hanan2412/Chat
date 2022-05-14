@@ -28,6 +28,15 @@ public class MessageSender {
     private final String RETROFIT_INFO = "info";
     private final String RETROFIT_ERROR = "error";
 
+    public interface onMessageSent{
+        void onMessageSentSuccessfully(Message message);
+        void onMessagePartiallySent(Message message, String[] token, String error);
+        void onMessageNotSent(Message message, String error);
+
+    }
+
+    private onMessageSent listener;
+
     public static MessageSender getInstance(){
         if (messageSender == null)
             messageSender = new MessageSender();
@@ -39,6 +48,10 @@ public class MessageSender {
         api = RetrofitClient.getRetrofitClient("https://fcm.googleapis.com/").create(RetrofitApi.class);
     }
 
+    public void setMessageListener(onMessageSent listener)
+    {
+           this.listener = listener;
+    }
     public void sendMessage(Message message, String... recipientsTokens)
     {
         for (String token : recipientsTokens) {
@@ -59,6 +72,21 @@ public class MessageSender {
                             Log.e(RETROFIT_ERROR, "Couldn't send the message");
                             Log.e(RETROFIT_ERROR,"Number of messages that could not be processed: " + response.body().failure);
                             Log.e(RETROFIT_ERROR,"Array of objects representing the status of the messages processed: " + response.body().results.toString());
+                            if(response.body().failure < recipientsTokens.length)
+                            {
+                                if (listener!=null)
+                                    listener.onMessagePartiallySent(message,recipientsTokens,response.message());
+                            }
+                            else {
+                                if (listener!=null)
+                                    listener.onMessageNotSent(message, response.message());
+                            }
+                        }
+                        else
+                        {
+                            message.setSent(true);
+                            if (listener!=null)
+                                listener.onMessageSentSuccessfully(message);
                         }
                     }
                 }

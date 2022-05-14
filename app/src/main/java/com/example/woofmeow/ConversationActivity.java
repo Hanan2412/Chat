@@ -273,7 +273,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private BroadcastReceiver recipientStatus;
     private BroadcastReceiver imageMessage;
     private ConversationType conversationType;
-
+    private MessageSender messageSender;
     private Conversation conversation;
     private Toolbar toolbar;
     private String groupName;
@@ -286,6 +286,24 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EmojiManager.install(new IosEmojiProvider());
+        messageSender = MessageSender.getInstance();
+        messageSender.setMessageListener(new MessageSender.onMessageSent() {
+            @Override
+            public void onMessageSentSuccessfully(Message message) {
+                model.updateMessage(message);
+            }
+
+            @Override
+            public void onMessagePartiallySent(Message message, String[] token, String error) {
+
+            }
+
+            @Override
+            public void onMessageNotSent(Message message, String error) {
+                message.setMessageStatus(MESSAGE_WAITING);
+                model.updateMessage(message);
+            }
+        });
         recipients = new ArrayList<>();
         setContentView(R.layout.converastion_layout2);
         messageSent = findViewById(R.id.MessageToSend);
@@ -806,8 +824,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
     private void smsSendMessage(Message message) {
         Log.d("smsMessageID", message.getMessageID());
-        MessageSender sender = MessageSender.getInstance();
-        sender.sendMessage(message, recipientPhoneNumber, this);
+//        MessageSender sender = MessageSender.getInstance();
+        messageSender.sendMessage(message, recipientPhoneNumber, this);
     }
 
     private void listenToSMSStatus() {
@@ -1603,7 +1621,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             for (int i = 0; i < recipientsTokens.length; i++) {
                 recipientsTokens[i] = recipients.get(i).getToken();
             }
-            MessageSender.getInstance().sendMessage(message,recipientsTokens);
+            messageSender.sendMessage(message,recipientsTokens);
             message.setSent(true);
             chatAdapter.notifyItemChanged(index);
         }
@@ -2502,7 +2520,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             } else {
                 String token = getMyToken();
                 message.setSenderToken(token);
-                MessageSender messageSender = MessageSender.getInstance();
+//                MessageSender messageSender = MessageSender.getInstance();
                 String[] recipientsTokens = new String[recipients.size()];
                 for (int i = 0; i < recipientsTokens.length; i++) {
                     recipientsTokens[i] = recipients.get(i).getToken();
@@ -2720,12 +2738,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     for (Message message : messages) {
                         if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
                             message.setMessageStatus(MESSAGE_SEEN);
-                            MessageSender sender = MessageSender.getInstance();
+//                            MessageSender sender = MessageSender.getInstance();
                             if (recipients != null)
                                 if (!recipients.isEmpty()) {
                                     for (int i = 0; i < recipients.size(); i++)
                                         if (recipients.get(i).getToken() != null)
-                                            sender.sendMessage(message, recipients.get(i).getToken());
+                                            messageSender.sendMessage(message, recipients.get(i).getToken());
                                         else
                                             Log.e(NULL_ERROR, "load messages - recipient token is null. recipient id: " + recipients.get(i).getUserUID());
                                 }
@@ -2833,8 +2851,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 default:
                     Log.e(ERROR_CASE, "interaction message error");
             }
-            MessageSender sender = MessageSender.getInstance();
-            sender.sendMessage(message, getRecipientsTokens());
+//            MessageSender sender = MessageSender.getInstance();
+            messageSender.sendMessage(message, getRecipientsTokens());
         }
     }
 
@@ -2962,8 +2980,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             message.setMessageStatus(MainActivity.STANDBY_S);
         else
             message.setMessageStatus(MainActivity.OFFLINE_S);
-        MessageSender sender = MessageSender.getInstance();
-        sender.sendMessage(message, getRecipientsTokens());
+//        MessageSender sender = MessageSender.getInstance();
+        messageSender.sendMessage(message, getRecipientsTokens());
     }
 
     private void getRecipientStatus() {
