@@ -92,7 +92,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 
 @SuppressWarnings({"Convert2Lambda", "AnonymousHasLambdaAlternative"})
-public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener{
+public class FirebaseMessageService extends com.google.firebase.messaging.FirebaseMessagingService implements ReplyMessageBroadcast.NotificationReplyListener {
 
     private final String CHANNEL_ID = "MessagesChannel";
     private final String GROUP_CONVERSATIONS = "conversations";
@@ -132,7 +132,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             String currentUser = FirebaseAuth.getInstance().getCurrentUser().getUid();
             Server server = Server.getInstance();
-            server.saveToken(s,currentUser);
+            server.saveToken(s, currentUser);
             //Server3.getInstance().updateData("Tokens/" + currentUser, s);
         }
     }
@@ -264,14 +264,12 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         Log.d("statusResponse", "conversation isn't open - no need to display user status");
                     break;
                 }
-                case "leave_group":
-                {
+                case "leave_group": {
                     String sender = data.get("sender");
-                    Thread thread = new Thread()
-                    {
+                    Thread thread = new Thread() {
                         @Override
                         public void run() {
-                            dao.removeMemberFromGroup(sender,conversationID);
+                            dao.removeMemberFromGroup(sender, conversationID);
                         }
                     };
                     thread.setName("remove member from group");
@@ -406,7 +404,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
                 @Override
                 public void downloadFailed(String message) {
-                    Log.e("sender image download",message);
+                    Log.e("sender image download", message);
                 }
             });
             server.downloadImage(sender);
@@ -757,7 +755,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             });
             String messageFilePath = message.getFilePath();
             String[] split = messageFilePath.split("/");
-            server.downloadFile(split[split.length-1], message.getMessageID());
+            server.downloadFile(split[split.length - 1], message.getMessageID());
 //            StorageReference downloadAudioFile = FirebaseStorage.getInstance().getReferenceFromUrl(message.getFilePath());
 //            try {
 //                File file = File.createTempFile("recording" + message.getMessageID(), ".3gpp");
@@ -885,13 +883,12 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         };
         thread.setName("mark as delivered");
         thread.start();
-        LiveData<Conversation>conversationLiveData = dao.getConversation(message.getConversationID());
-        Observer<Conversation>observer = new Observer<Conversation>() {
+        LiveData<Conversation> conversationLiveData = dao.getConversation(message.getConversationID());
+        Observer<Conversation> observer = new Observer<Conversation>() {
             @Override
             public void onChanged(Conversation conversation) {
                 conversation.setUnreadMessages(conversation.getUnreadMessages() + 1);
-                Thread thread1 = new Thread()
-                {
+                Thread thread1 = new Thread() {
                     @Override
                     public void run() {
                         dao.updateConversation(conversation);
@@ -970,7 +967,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         Observer<Boolean> blockedUserObserver = new Observer<Boolean>() {
                             @Override
                             public void onChanged(Boolean aBoolean) {
-                                if (!aBoolean) {
+                                if (aBoolean == null || !aBoolean) {
                                     message.setMessageStatus(MESSAGE_SEEN);
                                     saveMessage(message);
                                     markAsSeen(message);

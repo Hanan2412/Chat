@@ -560,7 +560,8 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
             @Override
             public void onDownloadError(String errorMessage) {
-                Toast.makeText(MainActivity.this, "an error happened when downloading your profile image", Toast.LENGTH_SHORT).show();
+                if (profileImage.getDrawable() == null)
+                    Toast.makeText(MainActivity.this, "an error happened when downloading your profile image", Toast.LENGTH_SHORT).show();
             }
         });
         userVM.downloadImage(imagePath);
