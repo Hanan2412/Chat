@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -37,12 +38,28 @@ public class UserVM extends AndroidViewModel {
     }
 
     /**
-     * inserts new user into local database
+     * inserts new user into local database. if the user exists already,
+     * it will be updated instead
      * @param user the user to insert
      */
     public void insertUser(User user)
     {
-        repository.insertNewUser(user);
+        LiveData<User>users = repository.getUserByID(user.getUserUID());
+        Observer<User> observer = new Observer<User>() {
+            @Override
+            public void onChanged(User user1) {
+                if (user1 == null)
+                {
+                    users.removeObserver(this);
+                    repository.insertNewUser(user);
+                }
+                else
+                {
+                    repository.updateUser(user);
+                }
+            }
+        };
+        users.observeForever(observer);
     }
 
     /**
@@ -167,5 +184,10 @@ public class UserVM extends AndroidViewModel {
     public void setOnFileUploadListener(Server.onFileUpload listener)
     {
         repository.setOnFileUploadListener(listener);
+    }
+
+    public void updateUserImage(User user,Bitmap userImage, Context context)
+    {
+        repository.updateUserImage(user,userImage,context);
     }
 }

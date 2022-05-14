@@ -479,12 +479,8 @@ public class Repository {
         return getAllConversations;
     }
 
-    public void createNewUser(User user, Bitmap userImage,Context context)
+    public void updateUserImage(User user, Bitmap userImage, Context context)
     {
-        String time = System.currentTimeMillis() + "";
-        user.setTimeCreated(time);
-        user.setLastTimeLogIn(time);
-        server.createNewUser(user);
         server.setFileUploadListener(new Server.onFileUpload() {
             @Override
             public void onPathReady(String path) {
@@ -516,6 +512,15 @@ public class Repository {
             }
         });
         server.uploadFile(user.getUserUID(),null,userImage,context);
+    }
+
+    public void createNewUser(User user, Bitmap userImage,Context context)
+    {
+        String time = System.currentTimeMillis() + "";
+        user.setTimeCreated(time);
+        user.setLastTimeLogIn(time);
+        server.createNewUser(user);
+        updateUserImage(user,userImage,context);
     }
 
     public void createNewUser(User user)

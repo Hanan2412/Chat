@@ -1,8 +1,17 @@
 package com.example.woofmeow;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 
@@ -14,10 +23,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -30,6 +44,10 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 
@@ -48,19 +66,39 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
     private UserVM userVM;
     private ConversationVM conversationVM;
     private LinearLayout linearLayout;
+    private int WRITE_PERMISSION = 2;
+    private  String photoPath;
+    private Uri imageUri;
+    private ActivityResultLauncher<Intent> takePicture;
+    private Bitmap imageBitmap;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.profile_activity2);
+        ImageView profilePic = findViewById(R.id.profileImage);
         User user =(User) getIntent().getSerializableExtra("user");
         if (user!=null) {
+            takePicture = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Drawable drawable = Drawable.createFromPath(photoPath);
+                        if (drawable != null) {
+                            profilePic.setImageDrawable(drawable);
+                            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                            imageBitmap = bitmapDrawable.getBitmap();
+                            imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 500, 450, false);
+                            userVM.updateUserImage(user, imageBitmap, CurrentUserProfileActivity.this);
+                        }
+                    }
+                }
+            });
             ListView dits = findViewById(R.id.userDetails);
             ListAdapter adapter = new ListAdapter();
             dits.setAdapter(adapter);
            // DBActive db = DBActive.getInstance(this);
             userVM = new ViewModelProvider(this).get(UserVM.class);
             conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
-            ImageView profilePic = findViewById(R.id.profileImage);
             linearLayout = findViewById(R.id.rootLayout);
             TextView title = findViewById(R.id.title);
             title.setText("");
@@ -77,6 +115,12 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                 profilePic.setImageBitmap(bitmap);
             else
                 Log.e("Bitmap", "currentUser profile bitmap is null");
+            profilePic.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    takePicture();
+                }
+            });
             ImageButtonPlus muteBtn =  findViewById(R.id.mute);
             ImageButtonPlus blockBtn = findViewById(R.id.block);
             muteBtn.setResetOnValue(2);
@@ -223,6 +267,60 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             });
         }
     }
+
+    private void requestCamera()
+    {
+        if(AskPermission())
+            takePicture();
+    }
+
+    private boolean AskPermission()
+    {
+        int hasWritePermission = CurrentUserProfileActivity.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if(hasWritePermission != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},WRITE_PERMISSION);
+            return false;
+        }
+        else return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode == WRITE_PERMISSION)
+        {
+            if(grantResults[0] != PackageManager.PERMISSION_GRANTED)
+                Toast.makeText(CurrentUserProfileActivity.this, "permission is required to use the camera", Toast.LENGTH_SHORT).show();
+            else
+                takePicture();
+        }
+    }
+
+    private void takePicture()
+    {
+        @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = CurrentUserProfileActivity.this.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        try {
+            File image = File.createTempFile(imageFileName,".jpg",storageDir);
+            photoPath = image.getAbsolutePath();
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if(takePictureIntent.resolveActivity(CurrentUserProfileActivity.this.getPackageManager())!=null)
+            {
+                File photoFile;
+                photoFile = image;
+                Uri photoURI = FileProvider.getUriForFile(CurrentUserProfileActivity.this,
+                        "com.example.woofmeow.provider",photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,photoURI);
+
+                imageUri = photoURI;
+                takePicture.launch(takePictureIntent);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void muteConversation(String conversationID)
     {

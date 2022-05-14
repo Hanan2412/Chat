@@ -2434,28 +2434,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                         .show();
             }
         });
-//        Server3 server3 = Server3.getInstance();
-//        server3.setOnResultListener(new Uploads.onResult() {
-//            @Override
-//            public void onPathReady(String path) {
-//
-//            }
-//
-//            @Override
-//            public void onStartedUpload() {
-//                Toast.makeText(ConversationActivity.this, "starting sending file", Toast.LENGTH_SHORT).show();
-//            }
-//
-//            @Override
-//            public void onProgress(int progress) {
-//                Log.e("PROGRESS", progress + "");
-//            }
-//
-//            @Override
-//            public void onError(String errorDescription) {
-//                Toast.makeText(ConversationActivity.this, "an error accrued while sending the file, try again later", Toast.LENGTH_SHORT).show();
-//            }
-//        });
         if (quoteOn) {
             message.setQuoteMessage(quoteText.getText().toString());
             message.setQuotedMessagePosition(quotedMessagePosition);

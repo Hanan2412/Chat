@@ -80,6 +80,7 @@ public class ExampleInstrumentedTest {
         dao.clearGroups();
     }
 
+
     @Test
     public void groupTest()
     {
