@@ -1,6 +1,8 @@
 package com.example.woofmeow;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,16 +17,19 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import Adapters.UsersAdapter;
 import Backend.UserVM;
+import NormalObjects.FileManager;
 import NormalObjects.User;
 import Retrofit.Server;
 
 @SuppressWarnings("Convert2Lambda")
-public class NewChat extends AppCompatActivity implements FoundUsers{
+public class NewChat extends AppCompatActivity{
 
     private UsersAdapter adapter;
     //private final CController controller;
@@ -104,7 +109,41 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
             public void foundUsers(List<User> users) {
                 for (User user :users)
                     if(!user.getUserUID().equals(currentUser))
+                    {
                         adapter.addUser(user);
+                        userVM.setOnUserImageDownloadListener(new Server.onFileDownload() {
+                            @Override
+                            public void onDownloadStarted() {
+
+                            }
+
+                            @Override
+                            public void onProgress(int progress) {
+
+                            }
+
+                            @Override
+                            public void onDownloadFinished(File file) {
+                                String filePath = file.getAbsolutePath();
+                                Bitmap image = BitmapFactory.decodeFile(filePath);
+//                                FileManager fileManager = FileManager.getInstance();
+//                                fileManager.saveProfileImage(image, user.getUserUID(), NewChat.this, false);
+                                userVM.setOnUserImageDownloadListener(null);
+                                adapter.setUserImage(image, user.getUserUID());
+                            }
+
+                            @Override
+                            public void onFileDownloadFinished(String messageID, File file) {
+
+                            }
+
+                            @Override
+                            public void onDownloadError(String errorMessage) {
+
+                            }
+                        });
+                        userVM.downloadImage(user.getUserUID());
+                    }
             }
 
             @Override
@@ -132,11 +171,5 @@ public class NewChat extends AppCompatActivity implements FoundUsers{
     private String createConversationID()
     {
         return "C_" + System.currentTimeMillis();
-    }
-
-    @Override
-    public void onUserFound(User user) {
-        if(!user.getUserUID().equals(currentUser))
-            adapter.addUser(user);
     }
 }

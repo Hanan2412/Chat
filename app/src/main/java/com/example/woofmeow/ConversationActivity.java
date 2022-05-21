@@ -17,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfRenderer;
@@ -287,6 +288,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         super.onCreate(savedInstanceState);
         EmojiManager.install(new IosEmojiProvider());
         messageSender = MessageSender.getInstance();
+        setContentView(R.layout.converastion_layout2);
+        RelativeLayout layout = findViewById(R.id.root_container);
         messageSender.setMessageListener(new MessageSender.onMessageSent() {
             @Override
             public void onMessageSentSuccessfully(Message message) {
@@ -294,18 +297,24 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
 
             @Override
-            public void onMessagePartiallySent(Message message, String[] token, String error) {
-
+            public void onMessagePartiallySent(Message message, String[] tokens, String error) {
             }
 
             @Override
             public void onMessageNotSent(Message message, String error) {
                 message.setMessageStatus(MESSAGE_WAITING);
                 model.updateMessage(message);
+                Snackbar.make(layout,"message wasn't sent",Snackbar.LENGTH_SHORT).setAction("resend", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        messageSender.sendMessage(message,getRecipientsTokens());
+                    }
+                }).setActionTextColor(Color.CYAN)
+                        .setTextColor(Color.MAGENTA)
+                        .show();
             }
         });
         recipients = new ArrayList<>();
-        setContentView(R.layout.converastion_layout2);
         messageSent = findViewById(R.id.MessageToSend);
         conversationName = findViewById(R.id.conversationName);
         newRecipients = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -459,7 +468,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
             }
         });
-        EmojiPopup emojiPopup = EmojiPopup.Builder.fromRootView(findViewById(R.id.root_container)).build(messageSent);
+        EmojiPopup emojiPopup = EmojiPopup.Builder.fromRootView(layout).build(messageSent);
         ImageButton emojiBtn = findViewById(R.id.emojiBtn);
         emojiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1041,27 +1050,61 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         else if (!recipients.isEmpty())
             bitmap = fileManager.readImage(this, FileManager.user_profile_images, recipients.get(0).getUserUID());
         if (bitmap == null && !recipients.isEmpty()) {
-            Picasso.get().load(recipients.get(0).getPictureLink()).into(new Target() {
+            userModel.setOnUserImageDownloadListener(new Server.onFileDownload() {
                 @Override
-                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                    talkingToImage.setImageBitmap(bitmap);
+                public void onDownloadStarted() {
+
+                }
+
+                @Override
+                public void onProgress(int progress) {
+
+                }
+
+                @Override
+                public void onDownloadFinished(File file) {
+                    String filePath = file.getAbsolutePath();
+                    Bitmap bitmap = BitmapFactory.decodeFile(filePath);
                     if (recipients.size() > 1)
                         fileManager.saveProfileImage(bitmap, conversationID, ConversationActivity.this, true);
                     else
                         fileManager.saveProfileImage(bitmap, recipients.get(0).getUserUID(), ConversationActivity.this, false);
-                    Log.d("Picasso", "user image downloaded");
+                    userModel.setOnUserImageDownloadListener(null);
+
                 }
 
                 @Override
-                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                    Log.e("failed loading bitmap", "failed loading bitmap from picasso");
+                public void onFileDownloadFinished(String messageID, File file) {
+
                 }
 
                 @Override
-                public void onPrepareLoad(Drawable placeHolderDrawable) {
+                public void onDownloadError(String errorMessage) {
 
                 }
             });
+            userModel.downloadImage(recipients.get(0).getPictureLink());
+//            Picasso.get().load(recipients.get(0).getPictureLink()).into(new Target() {
+//                @Override
+//                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+//                    talkingToImage.setImageBitmap(bitmap);
+//                    if (recipients.size() > 1)
+//                        fileManager.saveProfileImage(bitmap, conversationID, ConversationActivity.this, true);
+//                    else
+//                        fileManager.saveProfileImage(bitmap, recipients.get(0).getUserUID(), ConversationActivity.this, false);
+//                    Log.d("Picasso", "user image downloaded");
+//                }
+//
+//                @Override
+//                public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+//                    Log.e("failed loading bitmap", "failed loading bitmap from picasso");
+//                }
+//
+//                @Override
+//                public void onPrepareLoad(Drawable placeHolderDrawable) {
+//
+//                }
+//            });
         } else talkingToImage.setImageBitmap(bitmap);
     }
 
@@ -1868,6 +1911,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        finish();
     }
 
 
@@ -2487,24 +2531,19 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 {
                     message.setImagePath(photoPath);
                     model.uploadFile(currentUser,message.getMessageID(),Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false),ConversationActivity.this);
-                    //server.uploadImage(currentUser,Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false));
-                    //server3.uploadImage(photoPath);
                 } else//photo from gallery
                 {
                     message.setImagePath(imageUri.toString());
                     model.uploadFile(currentUser,message.getMessageID(),imageBitmap,ConversationActivity.this);
-                    //server3.uploadImageBitmap(imageBitmap);
                 }
                 break;
             case VoiceMessage:
                 message.setRecordingPath(fileUri.toString());
                 message.setMessage("Voice Message");
                 model.uploadFile(message.getMessageID(),fileUri,ConversationActivity.this);
-                //server3.uploadFile(fileUri.toString());
                 break;
             case videoMessage:
                 model.uploadFile(message.getMessageID(),videoUri,ConversationActivity.this);
-                //server3.uploadFile(videoUri.toString());
                 break;
         }
         if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact)
@@ -2700,21 +2739,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             @Override
             public void onChanged(List<Message> messages) {
                 for (Message message : messages) {
-                    /*if (!smsConversation) {
-                        if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
-                            message.setMessageStatus(MESSAGE_SEEN);
-                            MessageSender sender = MessageSender.getInstance();
-                            if (recipients != null)
-                                if (!recipients.isEmpty()) {
-                                    for (int i = 0; i < recipients.size(); i++)
-                                        if (recipients.get(i).getToken() != null)
-                                            sender.sendMessage(message, recipients.get(i).getToken());
-                                        else
-                                            Log.e(NULL_ERROR, "load messages - recipient token is null. recipient id: " + recipients.get(i).getUserUID());
-                                }
-                            markAsRead(message.getMessageID());
-                        }
-                    }*/
                     if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
                         sendMessage(message);
                     } else

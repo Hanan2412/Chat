@@ -55,6 +55,9 @@ public class ProfileActivity2 extends AppCompatActivity {
         });
        user = (User) getIntent().getSerializableExtra("user");
         if (user != null) {
+            TextView userNameTV = findViewById(R.id.username);
+            String userName = user.getName() + " " + user.getLastName();
+            userNameTV.setText(userName);
             ImageButton muteBtn = findViewById(R.id.mute);
             ImageButton blockBtn = findViewById(R.id.block);
             muteBtn.setOnClickListener(new View.OnClickListener() {

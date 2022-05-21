@@ -515,11 +515,11 @@ public class Server {
                                                 fileDownload.onDownloadFinished(file);
                                             else
                                                 fileDownload.onFileDownloadFinished(messageID, file);
+                                        outputStream.close();
+                                        bufferedInputStream.close();
                                     }
-                                } catch(
-                                        IOException e)
-
-                                {
+                                    in.close();
+                                } catch(IOException e) {
                                     e.printStackTrace();
                                     fileDownload.onDownloadError("couldn't download");
                                 }

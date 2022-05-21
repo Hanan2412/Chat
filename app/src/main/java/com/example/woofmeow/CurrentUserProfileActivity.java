@@ -52,9 +52,11 @@ import java.util.List;
 
 
 import Adapters.ListAdapter;
+import Adapters.UsersAdapter2;
 import Backend.ConversationVM;
 import Backend.UserVM;
 
+import Consts.PermissionType;
 import NormalObjects.ImageButtonPlus;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
@@ -76,6 +78,13 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.profile_activity2);
         ImageView profilePic = findViewById(R.id.profileImage);
+        ImageButton goBack = findViewById(R.id.goBack);
+        goBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         User user =(User) getIntent().getSerializableExtra("user");
         if (user!=null) {
             takePicture = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -93,6 +102,9 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                     }
                 }
             });
+            TextView userName = findViewById(R.id.username);
+            String fullUserName = user.getName() + " " + user.getLastName();
+            userName.setText(fullUserName);
             ListView dits = findViewById(R.id.userDetails);
             ListAdapter adapter = new ListAdapter();
             dits.setAdapter(adapter);
@@ -102,13 +114,8 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             linearLayout = findViewById(R.id.rootLayout);
             TextView title = findViewById(R.id.title);
             title.setText("");
-            ImageButton goBack = findViewById(R.id.goBack);
-            goBack.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    finish();
-                }
-            });
+
+
             FileManager fm = FileManager.getInstance();
             Bitmap bitmap = fm.readImage(this, FileManager.user_profile_images, user.getUserUID());
             if (bitmap!=null)
@@ -118,7 +125,7 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             profilePic.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    takePicture();
+                    requestCamera();
                 }
             });
             ImageButtonPlus muteBtn =  findViewById(R.id.mute);
@@ -270,18 +277,23 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
 
     private void requestCamera()
     {
-        if(AskPermission())
+        if(AskPermission(PermissionType.storage))
             takePicture();
     }
 
-    private boolean AskPermission()
+    private boolean AskPermission(PermissionType type)
     {
-        int hasWritePermission = CurrentUserProfileActivity.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if(hasWritePermission != PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},WRITE_PERMISSION);
-            return false;
+        switch (type)
+        {
+            case storage:
+                int hasWritePermission = CurrentUserProfileActivity.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                if(hasWritePermission != PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},WRITE_PERMISSION);
+                    return false;
+                }
+                else return true;
         }
-        else return true;
+        return false;
     }
 
     @Override
@@ -454,8 +466,6 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
             }
         });
     }
-
-
     @Override
     protected void onDestroy() {
         super.onDestroy();

@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -488,7 +489,29 @@ public class Repository {
                 String relativePath = path.split("downloadFile/")[1];
                 user.setPictureLink(relativePath);
                 server.updateUser(user);
-                insertNewUser(user);
+                isUserExists(user).observeForever(new Observer<Boolean>() {
+                    @Override
+                    public void onChanged(Boolean aBoolean) {
+                        if (aBoolean!=null)
+                        {
+                            if (!aBoolean)
+                            {
+                                insertNewUser(user);
+                            }
+                            else
+                            {
+                                pool.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        chatDao.updateUser(user);
+                                    }
+                                });
+
+                            }
+                        }
+                    }
+                });
+
             }
 
             @Override

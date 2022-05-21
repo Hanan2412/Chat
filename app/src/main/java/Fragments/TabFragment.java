@@ -442,7 +442,7 @@ public class TabFragment extends Fragment{
      * loads the current logged in user from the database.
      * if they doesn't exist, the function will download them from the server
      */
-    private void LoadCurrentUserFromDataBase() {
+    private void LoadCurrentUser() {
         userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
             @Override
             public void onChanged(User user) {
@@ -464,31 +464,6 @@ public class TabFragment extends Fragment{
                             }
                         }
                     });
-//                    userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
-//                        @Override
-//                        public void downloadedUser(User user) {
-//                            if (user.getUserUID().equals(currentUser)) {
-//                                LiveData<Boolean>userExists = userModel.checkIfUserExists(user);
-//                                userExists.observe(requireActivity(), new Observer<Boolean>() {
-//                                    @Override
-//                                    public void onChanged(Boolean aBoolean) {
-//                                        if (aBoolean)
-//                                        {
-//                                            callback.onUserUpdate(user);
-//                                            userModel.updateUser(user);
-//                                        }
-//                                        else
-//                                        {
-//                                            userModel.insertUser(user);
-//                                            callback.onUserUpdate(user);
-//                                        }
-//                                        userExists.removeObserver(this);
-//                                    }
-//                                });
-//                                TabFragment.this.user = user;
-//                            }
-//                        }
-//                    });
                     userModel.downloadUser(currentUser);
                 }
             }
@@ -557,7 +532,7 @@ public class TabFragment extends Fragment{
     private void init() {
         DataBaseSetUp();
         NullifyData();
-        LoadCurrentUserFromDataBase();
+        LoadCurrentUser();
         loadConversations();
         loadNewOrUpdatedConversation();
         TokenUpdate();

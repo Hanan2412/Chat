@@ -1,6 +1,7 @@
 package Adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import NormalObjects.User;
@@ -27,6 +29,7 @@ public class UsersAdapter extends BaseAdapter {
     private ArrayList<User>users;
     private List<Integer> selected;
     private boolean single = true;
+    private HashMap<String,Bitmap>userImages;
 
     public boolean isSingle() {
         return single;
@@ -40,6 +43,7 @@ public class UsersAdapter extends BaseAdapter {
     {
         users = new ArrayList<>();
         selected = new ArrayList<>();
+        userImages = new HashMap<>();
     }
 
     public interface startConversation{
@@ -97,7 +101,8 @@ public class UsersAdapter extends BaseAdapter {
             });
             String name = user.getName() + " " + user.getLastName();
             userName.setText(name);
-            Picasso.get().load(user.getPictureLink()).into(imageView);
+//            Picasso.get().load(user.getPictureLink()).into(imageView);
+            imageView.setImageBitmap(userImages.get(user.getUserUID()));
             if (!single)
                 singleTalk.setVisibility(View.GONE);
             else
@@ -179,5 +184,11 @@ public class UsersAdapter extends BaseAdapter {
     public List<Integer> getSelected()
     {
         return selected;
+    }
+
+    public void setUserImage(Bitmap userImage, String uid)
+    {
+        userImages.put(uid,userImage);
+        notifyDataSetChanged();
     }
 }
