@@ -1,5 +1,9 @@
 package com.example.woofmeow;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -107,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private ExtendedFloatingActionButton smsBtn, chatBtn, groupBtn;
     private final int READ_SMS = 1;
     private UserVM userVM;
+    private ActivityResultLauncher<Intent>settings;
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,10 +158,17 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                     startActivity(intent);
                     finish();
                 } else if (item.getItemId() == R.id.settings) {
-                    startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
+                    settings.launch(new Intent(MainActivity.this, PreferenceActivity.class));
+//                    startActivityForResult(new Intent(MainActivity.this, PreferenceActivity.class), SETTINGS_REQUEST);
                     drawerLayout.closeDrawer(GravityCompat.START);
                 }
                 return false;
+            }
+        });
+        settings = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+
             }
         });
         smsBtn = findViewById(R.id.smsConversation);
