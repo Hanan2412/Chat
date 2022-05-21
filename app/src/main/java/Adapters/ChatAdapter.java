@@ -395,7 +395,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     holder.statusTv.setImageResource(R.drawable.ic_baseline_done_outline_24);
                     break;
                 default:
-                    holder.statusTv.setImageResource(R.drawable.ic_baseline_cast_connected_24);
+                    holder.statusTv.setImageResource(R.drawable.ic_baseline_west_24);
             }
 
         if (message.getQuoteMessage() != null && !message.getQuoteMessage().equals("")) {

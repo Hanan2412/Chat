@@ -11,6 +11,12 @@
             android:summary="system default"
             android:title="Look" />
 
+        <Preference
+            android:icon="@drawable/ic_baseline_format_paint_24"
+            android:key="background"
+            android:title="Conversation Background"
+            android:summary="pick an image to be the conversation background"/>
+
     </PreferenceCategory>
     <PreferenceCategory android:title="Communication">
         <Preference

@@ -39,6 +39,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Patterns;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -120,6 +121,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -582,7 +584,24 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         //sendMessageButton = findViewById(R.id.sendMessageBtn);
 
         recyclerView = findViewById(R.id.recycle_view);
+        SharedPreferences sharedPreferences = getSharedPreferences("background", Context.MODE_PRIVATE);
+        String background = sharedPreferences.getString("backgroundImage","no background image");
+        if (!background.equals("no background image"))
+        {
+            Uri uri = Uri.parse(background);
+            Drawable drawable = null;
+            try {
+                InputStream stream = getContentResolver().openInputStream(uri);
+                drawable = Drawable.createFromStream(stream,background);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                drawable = ResourcesCompat.getDrawable(getResources(),R.drawable.background_gradient2,getTheme());
+            }
+            finally {
+                recyclerView.setBackground(drawable);
+            }
 
+        }
         //removes the set location button if started typing a message
         TextView smsCharCount = findViewById(R.id.smsCharCount);
         messageSent.addTextChangedListener(new TextWatcher() {
