@@ -57,6 +57,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
         FloatingActionButton delayFab = view.findViewById(R.id.delayFab);
         FloatingActionButton contactFab = view.findViewById(R.id.contactFab);
         FloatingActionButton joke = view.findViewById(R.id.chuckBtn);
+        FloatingActionButton gif = view.findViewById(R.id.gifBtn);
         locationFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,6 +92,12 @@ public class BottomSheetFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 callback.onBottomSheetClick(ButtonType.joke);
+            }
+        });
+        gif.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callback.onBottomSheetClick(ButtonType.gif);
             }
         });
         /*TextView attachFile = view.findViewById(R.id.attachFile);

@@ -1,5 +1,7 @@
 package Fragments;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
@@ -59,38 +61,42 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
                 return true;
             }
         });
-        backgroundImage = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
-            @Override
-            public void onActivityResult(Uri result) {
-                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("background", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("backgroundImage",result.toString());
-                editor.apply();
-            }
-        });
-        backgroundImage2 = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-            @Override
-            public void onActivityResult(ActivityResult result) {
-
-                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("background", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("backgroundImage",result.getData().getData().toString());
-                editor.apply();
-            }
-        });
-        Preference backgroundPreference = findPreference("background");
-        backgroundPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                        .setType("image/*")
-                        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//                backgroundImage.launch("image/*");
-                backgroundImage2.launch(intent);
-                return true;
-            }
-        });
+//        backgroundImage = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
+//            @Override
+//            public void onActivityResult(Uri result) {
+//                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("background", Context.MODE_PRIVATE);
+//                SharedPreferences.Editor editor = sharedPreferences.edit();
+//                editor.putString("backgroundImage",result.toString());
+//                editor.apply();
+//            }
+//        });
+//        backgroundImage2 = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+//            @Override
+//            public void onActivityResult(ActivityResult result) {
+//                if (result.getResultCode() == RESULT_OK) {
+//                    Uri uri = result.getData().getData();
+//                    if (uri!=null) {
+//                        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("background", Context.MODE_PRIVATE);
+//                        SharedPreferences.Editor editor = sharedPreferences.edit();
+//                        editor.putString("backgroundImage", result.getData().getData().toString());
+//                        editor.apply();
+//                    }
+//                }
+//            }
+//        });
+//        Preference backgroundPreference = findPreference("background");
+//        backgroundPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+//            @Override
+//            public boolean onPreferenceClick(Preference preference) {
+//                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//                intent.addCategory(Intent.CATEGORY_OPENABLE)
+//                        .setType("image/*")
+//                        .addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+//                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+////                backgroundImage.launch("image/*");
+//                backgroundImage2.launch(intent);
+//                return true;
+//            }
+//        });
     }
 }

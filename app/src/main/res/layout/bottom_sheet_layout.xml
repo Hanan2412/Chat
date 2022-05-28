@@ -91,6 +91,7 @@
             android:layout_weight="1"
             />
 
+
         <!--
         <TextView
             android:id="@+id/attachLocation"
@@ -130,6 +131,23 @@
             android:textColor="@color/black"
             app:drawableTopCompat="@drawable/ic_baseline_access_time_black" />
             -->
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/gifBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:elevation="8dp"
+            android:foregroundGravity="center"
+            android:backgroundTint="@color/blue"
+            android:foreground="@drawable/ic_baseline_gif_24"
+            android:contentDescription="@string/contact"
+            android:layout_weight="1"
+            />
     </LinearLayout>
 <!--
     <LinearLayout

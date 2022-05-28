@@ -15,7 +15,13 @@
             android:icon="@drawable/ic_baseline_format_paint_24"
             android:key="background"
             android:title="Conversation Background"
-            android:summary="pick an image to be the conversation background"/>
+            android:summary="pick an image to be the conversation background"
+            >
+            <intent
+                android:targetPackage="com.example.woofmeow"
+                android:targetClass="com.example.woofmeow.BackgroundImageActivity"/>
+        </Preference>
+
 
     </PreferenceCategory>
     <PreferenceCategory android:title="Communication">
@@ -25,6 +31,7 @@
             android:summary="all the settings for the chat capabilities of the app"
             android:title="Chat"
             app:fragment="Fragments.SecondPagePreferenceFragment" />
+
         <Preference
             android:icon="@drawable/ic_baseline_account_circle_24"
             android:key="AccountPreference"

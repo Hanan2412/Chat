@@ -30,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
 
@@ -331,6 +332,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     }
                 });
             }
+        }else if (message.getMessageType() == MessageType.gif.ordinal())
+        {
+            holder.previewImage.setScaleType(ImageView.ScaleType.FIT_XY);
+            Glide.with(holder.itemView.getContext()).load(message.getMessage()).placeholder(R.drawable.ic_baseline_gif_24).into(holder.previewImage);
+            holder.message.setVisibility(View.GONE);
         }
         // }
         TimeFormat timeFormat = new TimeFormat();

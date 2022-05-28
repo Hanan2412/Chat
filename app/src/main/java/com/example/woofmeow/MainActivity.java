@@ -74,6 +74,8 @@ import Backend.ConversationVM;
 import Backend.UserVM;
 import Consts.MessageType;
 import Consts.Tabs;
+import Fragments.BackdropFragment;
+import Fragments.GifBackdropFragment;
 import Fragments.TabFragment;
 import Messages.BaseMessage;
 import Messages.SendMessage;

@@ -39,7 +39,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Patterns;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -95,8 +94,6 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.EmojiPopup;
 import com.vanniktech.emoji.ios.IosEmojiProvider;
@@ -110,7 +107,9 @@ import Audio.AudioManager;
 import Audio.AudioPlayer;
 import Audio.AudioRecorder;
 import Controller.NotificationsController;
+import Fragments.GifBackdropFragment;
 import NormalObjects.Conversation;
+import NormalObjects.Gif;
 import NormalObjects.Web;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
@@ -158,7 +157,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 @SuppressWarnings("Convert2Lambda")
-public class ConversationActivity extends AppCompatActivity implements ChatAdapter.MessageInfoListener, PickerFragment.onPickerClick, BottomSheetFragment.onSheetClicked, BackdropFragment.onBottomSheetAction, Serializable {
+public class ConversationActivity extends AppCompatActivity implements ChatAdapter.MessageInfoListener, PickerFragment.onPickerClick, BottomSheetFragment.onSheetClicked, BackdropFragment.onBottomSheetAction, Serializable , GifBackdropFragment.onGifView {
 
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private static String fileName;
@@ -282,6 +281,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private String groupName;
     private ConversationVM model;
     private UserVM userModel;
+    private Gif gif;
     private ActivityResultLauncher<Intent> takePicture, addPhoneNumber, openGallery, attachFile, sendContact, sendDoc, video, newRecipients;
 
     @SuppressLint("ClickableViewAccessibility")
@@ -585,22 +585,28 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
         recyclerView = findViewById(R.id.recycle_view);
         SharedPreferences sharedPreferences = getSharedPreferences("background", Context.MODE_PRIVATE);
-        String background = sharedPreferences.getString("backgroundImage","no background image");
-        if (!background.equals("no background image"))
+        int presetBackground = sharedPreferences.getInt("backgroundImage normal",-1);
+        if (presetBackground!=-1)
         {
-            Uri uri = Uri.parse(background);
-            Drawable drawable = null;
-            try {
-                InputStream stream = getContentResolver().openInputStream(uri);
-                drawable = Drawable.createFromStream(stream,background);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                drawable = ResourcesCompat.getDrawable(getResources(),R.drawable.background_gradient2,getTheme());
-            }
-            finally {
-                recyclerView.setBackground(drawable);
-            }
+            Drawable drawable = ResourcesCompat.getDrawable(getResources(),presetBackground,getTheme());
+            recyclerView.setBackground(drawable);
+        }else {
+            String background = sharedPreferences.getString("backgroundImage", "no background image");
+            if (!background.equals("no background image")) {
+                Uri uri = Uri.parse(background);
+                Drawable drawable = null;
+                try {
+                    InputStream stream = getContentResolver().openInputStream(uri);
+                    drawable = Drawable.createFromStream(stream, background);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    drawable = null;//ResourcesCompat.getDrawable(getResources(),R.drawable.kiwi,getTheme());
+                } finally {
+                    if (drawable!=null)
+                        recyclerView.setBackground(drawable);
+                }
 
+            }
         }
         //removes the set location button if started typing a message
         TextView smsCharCount = findViewById(R.id.smsCharCount);
@@ -1404,7 +1410,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private void SendRecording() {
         CreateFileUri(fileName);
         String[] names = getRecipientsNames();
-        CreateMessage("recording", MessageType.VoiceMessage.ordinal(), names, getRecipientsIDs());
+        createMessage("recording", MessageType.VoiceMessage.ordinal(), names, getRecipientsIDs());
     }
 
     private void CreateFileUri(String filePath) {
@@ -1842,7 +1848,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     gpsAddress = address.getAddressLine(0);
                     client.removeLocationUpdates(locationCallback);
                     String[] recipientsNames = getRecipientsNames();
-                    CreateMessage(messageToSend, MessageType.gpsMessage.ordinal(), recipientsNames, getRecipientsIDs());
+                    createMessage(messageToSend, MessageType.gpsMessage.ordinal(), recipientsNames, getRecipientsIDs());
                     //sendMessage(MessageType.gpsMessage.ordinal(), recipientUID);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -1865,7 +1871,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             if (!smsConversation)
                 recipientsID[i] = recipients.get(i).getUserUID();
         }
-        CreateMessage(messageToSend, messageType, recipientsNames, recipientsID);
+        createMessage(messageToSend, messageType, recipientsNames, recipientsID);
         resetToText();
     }
 
@@ -2013,6 +2019,10 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 onJoke();
                 break;
             }
+            case gif:
+                GifBackdropFragment backdropFragment = GifBackdropFragment.newInstance();
+                backdropFragment.show(getSupportFragmentManager(), "BOTTOM_SHEET_GIF_TAG");
+                break;
             default:
                 Log.e(ERROR_CASE, "bottom sheet error " + new Throwable().getStackTrace()[0].getLineNumber());
         }
@@ -2442,7 +2452,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         });
     }
 
-    private void CreateMessage(String content, int messageType, String[] recipientsNames, String... recipients) {
+    private void createMessage(String content, int messageType, String[] recipientsNames, String... recipients) {
         String currentTime = System.currentTimeMillis() + "";
         TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
         Calendar calendar = Calendar.getInstance(timeZone);
@@ -2564,8 +2574,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             case videoMessage:
                 model.uploadFile(message.getMessageID(),videoUri,ConversationActivity.this);
                 break;
+            case gif:
+                message.setMessage(gif.getUrl());
+                break;
+            default:
         }
-        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact)
+        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact || type == MessageType.gif)
             sendMessage(message);
     }
 
@@ -3059,5 +3073,12 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
         };
         LocalBroadcastManager.getInstance(this).registerReceiver(imageMessage, new IntentFilter("DownloadedImage"));
+    }
+
+    @Override
+    public void onGifClick(Gif gif) {
+        this.gif = gif;
+        createMessage("",MessageType.gif.ordinal(),getRecipientsNames(),getRecipientsIDs());
+        this.gif = null;
     }
 }

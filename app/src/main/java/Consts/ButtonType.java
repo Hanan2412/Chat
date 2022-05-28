@@ -14,5 +14,6 @@ public enum ButtonType {
     recording,
     contact,
     document,
-    joke
+    joke,
+    gif
 }

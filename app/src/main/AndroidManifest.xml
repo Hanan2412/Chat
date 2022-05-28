@@ -67,6 +67,7 @@
         <activity android:name=".CurrentUserProfileActivity"/>
         <activity android:name=".NewSMS"/>
         <activity android:name=".ProfileActivity2"/>
+        <activity android:name=".BackgroundImageActivity"/>
         <activity android:name=".ConversationActivity"
             android:launchMode="standard"
 
@@ -74,6 +75,7 @@
 
         </activity>
         <activity android:name=".NewGroupChat2Activity"/>
+        <activity android:name=".GifActivity"/>
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
             android:configChanges="orientation|keyboard"
