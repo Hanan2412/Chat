@@ -1,7 +1,10 @@
 package Adapters;
 
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -184,6 +187,23 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     @Override
     public void onBindViewHolder(@NonNull ConversationsAdapter2.ConversationsViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Conversation conversation = conversations.get(position);
+        SharedPreferences sharedPreferences = holder.itemView.getContext().getSharedPreferences("conversations",MODE_PRIVATE);
+        if (sharedPreferences.contains("pin"))
+        {
+            String conversationID = sharedPreferences.getString("pin","");
+            if (conversation.getConversationID().equals(conversationID))
+            {
+                holder.pinLayout.setVisibility(View.VISIBLE);
+            }
+            else
+            {
+                holder.pinLayout.setVisibility(View.GONE);
+            }
+        }
+        else
+        {
+            holder.pinLayout.setVisibility(View.GONE);
+        }
         if (conversation.getMessageType() == MessageType.VoiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
         else
@@ -281,14 +301,17 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
 
-    public void PinConversation(Conversation conversation) {
+    public void pinConversation(Conversation conversation) {
       int index = findCorrectConversationIndex(conversation.getConversationID());
       Conversation conversation1 = conversations.get(index);
       conversations.add(0,conversation1);
       conversations.remove(index);
       notifyItemMoved(index,0);
     }
-
+    public void unPinConversation()
+    {
+        notifyItemChanged(0);
+    }
     public void BlockConversation(boolean blocked,String conversationID)
     {
         int index =  findCorrectConversationIndex(conversationID);
@@ -323,7 +346,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         EmojiTextView lastMessage;
         TextView lastMessageTime, recipientName,unreadMessages;
         ImageView conversationStatus;
-        RelativeLayout rootLayout;
+        RelativeLayout rootLayout, pinLayout;
 
         public ConversationsViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -334,6 +357,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             conversationStatus = itemView.findViewById(R.id.conversationStatus);
             unreadMessages = itemView.findViewById(R.id.unreadMessages);
             rootLayout = itemView.findViewById(R.id.conversationCell);
+            pinLayout = itemView.findViewById(R.id.pinLayout);
         }
 
     }

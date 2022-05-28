@@ -163,9 +163,14 @@ public class FileManager {
             ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
             File directory = contextWrapper.getDir(dirName, Context.MODE_PRIVATE);
             File imageFile = new File(directory, childPath + "_Image");
-            return BitmapFactory.decodeStream(new FileInputStream(imageFile));
+            FileInputStream inputStream = new FileInputStream(imageFile);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+            inputStream.close();
+            return bitmap;
         }catch (FileNotFoundException e){
-            Log.e("file Manager","bad directory");
+            Log.e("file Manager","no image available at this directory");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return null;
     }

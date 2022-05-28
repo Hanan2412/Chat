@@ -126,6 +126,13 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             if (!uid.equals("ERROR: NO UID"))
                 currentUser = uid;
         }
+        try {
+            Class.forName("dalvik.system.CloseGuard")
+                    .getMethod("setEnabled", boolean.class)
+                    .invoke(null, true);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);

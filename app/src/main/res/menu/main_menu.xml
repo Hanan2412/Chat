@@ -4,15 +4,15 @@
     <group
         android:id="@+id/standBy"
         android:visible="true">
-        <item app:showAsAction="ifRoom"
+        <item
             android:id="@+id/searchConversation"
-            android:title="search"
             android:icon="@drawable/ic_baseline_search_black"
-            />
+            android:title="@string/search"
+            app:showAsAction="ifRoom" />
         <item
             android:id="@+id/status"
             android:icon="@drawable/circle_green"
-            android:title="status"
+            android:title="@string/userStatus"
             app:showAsAction="ifRoom" />
 
     </group>
@@ -21,9 +21,15 @@
         android:visible="true">
         <item
             android:id="@+id/pinConversation"
-            android:icon="@drawable/ic_baseline_bookmark_24"
+            android:icon="@drawable/ic_baseline_push_pin_24"
             android:title="pin"
             app:showAsAction="ifRoom" />
+        <item
+            android:id="@+id/unpin"
+            android:icon="@drawable/ic_unpin2"
+            android:title="unpin"
+            app:showAsAction="ifRoom"
+            android:visible="false"/>
         <item
             android:id="@+id/callBtn"
             android:icon="@drawable/ic_baseline_call_24"
@@ -32,7 +38,7 @@
         <item
             android:id="@+id/block"
             android:icon="@drawable/ic_baseline_block_white"
-            android:title="Block"
+            android:title="@string/block"
             app:showAsAction="never" />
     </group>
 

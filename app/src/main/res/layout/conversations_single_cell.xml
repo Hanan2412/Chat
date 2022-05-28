@@ -8,45 +8,61 @@
     android:layout_marginTop="1dp">
 
     <RelativeLayout
+        android:id="@+id/conversationImages"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/conversationImages"
         android:layout_alignParentStart="true">
 
+        <RelativeLayout
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/triangle"
+            android:id="@+id/pinLayout"
+            android:visibility="gone">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/conversationImage"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_alignParentStart="true"
-        android:layout_centerInParent="true"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
-        android:background="@android:color/holo_blue_light"
-        android:scaleType="fitXY"
-        android:src="@drawable/ic_baseline_account_circle_black"
-        app:shapeAppearanceOverlay="@style/circleImageView" />
+            <ImageView
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:contentDescription="pin"
+                android:layout_marginTop="3dp"
+                android:src="@drawable/ic_baseline_push_pin_24"
+                android:layout_marginStart="2dp"
+                android:rotation="315"
+                android:id="@+id/pin"
+                />
+        </RelativeLayout>
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/conversationImage"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerInParent="true"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:background="@android:color/holo_blue_light"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_baseline_account_circle_black"
+            app:shapeAppearanceOverlay="@style/circleImageView" />
 
 
-    <TextView
-        android:id="@+id/unreadMessages"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@id/conversationImage"
-        android:layout_marginStart="-12dp"
-        android:layout_marginBottom="8dp"
-        android:layout_toEndOf="@id/conversationImage"
-        android:background="@drawable/circle_blue"
-        android:contentDescription="number of unread messages"
-        android:textColor="@android:color/white"
-        android:visibility="gone"
-        android:textStyle="normal"
-        android:gravity="center"
-        android:textSize="14sp"
-        android:paddingStart="3dp"
-        android:paddingEnd="3dp"
-        />
+        <TextView
+            android:id="@+id/unreadMessages"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@id/conversationImage"
+            android:layout_marginStart="-12dp"
+            android:layout_marginBottom="8dp"
+            android:layout_toEndOf="@id/conversationImage"
+            android:background="@drawable/circle_blue"
+            android:contentDescription="number of unread messages"
+            android:gravity="center"
+            android:paddingStart="3dp"
+            android:paddingEnd="3dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="normal"
+            android:visibility="gone" />
 
     </RelativeLayout>
 
