@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -22,6 +23,7 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.vanniktech.emoji.EmojiTextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 import Consts.ConversationType;
@@ -44,7 +46,14 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
         void onImageDownloaded(Conversation conversation,boolean image);
     }
-
+    public interface onLongPress{
+        void onConversationLongPress(Conversation conversation);
+    }
+    private onLongPress longPressListener;
+    public void setLongPressListener(onLongPress listener)
+    {
+        longPressListener = listener;
+    }
     private onPressed callback;
 
     public void setListener(onPressed listener) {
@@ -54,11 +63,12 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     private ArrayList<Conversation> conversations;
     private ArrayList<String> selected = new ArrayList<>();
     private ArrayList<Integer> selectedPosition = new ArrayList<>();
-
+    private List<Conversation>selectedConversations;
     public ConversationsAdapter2()
     {
         conversations = new ArrayList<>();
         fileManager = FileManager.getInstance();
+        selectedConversations = new ArrayList<>();
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -204,15 +214,19 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         {
             holder.pinLayout.setVisibility(View.GONE);
         }
+        if (selectedConversations.contains(conversation))
+            holder.borderLayout.setVisibility(View.VISIBLE);
+        else
+            holder.borderLayout.setVisibility(View.GONE);
         if (conversation.getMessageType() == MessageType.VoiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
         else
             holder.lastMessage.setText(conversation.getLastMessage());
         TimeFormat timeFormat = new TimeFormat();
-        String lastMessageTime;
+        String lastMessageTime="";
         if (conversation.getLastMessageTime() == null)
             conversation.setLastMessageTime(conversation.getLastMessageID());
-        if (conversation.getLastMessageTime().contains("/"))
+        else if (conversation.getLastMessageTime().contains("/"))
             lastMessageTime = conversation.getLastMessageTime();
         else
             lastMessageTime = timeFormat.getFormattedDate(Long.parseLong(conversation.getLastMessageTime()));
@@ -240,40 +254,56 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         holder.rootLayout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                if (selected.contains(conversation.getConversationID())) {
-                    switch (conversation.getConversationType())
-                    {
-                        case single:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_not_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                        case sms:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_not_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                        case group:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_not_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                    }
-                    selected.remove(conversation.getConversationID());
-                    callback.onLongPressed(false, conversation);
-                    selectedPosition.remove((Integer) position);
-                } else {
-                    switch (conversation.getConversationType())
-                    {
-                        case single:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                        case sms:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                        case group:
-                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_selected, holder.itemView.getContext().getTheme()));
-                            break;
-                    }
-
-                    selected.add(conversation.getConversationID());
-                    callback.onLongPressed(true, conversation);
-                    selectedPosition.add(position);
+                if (selectedConversations.contains(conversation))
+                {
+                    selectedConversations.remove(conversation);
                 }
+                else
+                {
+                    selectedConversations.add(conversation);
+                }
+                if (longPressListener!=null)
+                {
+                    longPressListener.onConversationLongPress(conversation);
+                }
+                int index = findCorrectConversationIndex(conversation.getConversationID());
+                if (index!=-1)
+                    notifyItemChanged(index);
+                else Log.e("conversationsAdapter", "index of conversation is -1");
+//                if (selected.contains(conversation.getConversationID())) {
+//                    switch (conversation.getConversationType())
+//                    {
+//                        case single:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_not_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                        case sms:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_not_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                        case group:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_not_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                    }
+//                    selected.remove(conversation.getConversationID());
+//                    callback.onLongPressed(false, conversation);
+//                    selectedPosition.remove((Integer) position);
+//                } else {
+//                    switch (conversation.getConversationType())
+//                    {
+//                        case single:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                        case sms:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                        case group:
+//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_selected, holder.itemView.getContext().getTheme()));
+//                            break;
+//                    }
+//
+//                    selected.add(conversation.getConversationID());
+//                    callback.onLongPressed(true, conversation);
+//                    selectedPosition.add(position);
+//                }
                 return true;
             }
         });
@@ -300,13 +330,35 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         }
     }
 
+    public List<Conversation>getSelectedConversations()
+    {
+        return selectedConversations;
+    }
 
-    public void pinConversation(Conversation conversation) {
+    public void pinConversation(Conversation conversation, String oldPinConversationID) {
+//        if (conversation.getConversationID().equals(oldPinConversationID)) {
+//            int position = findCorrectConversationIndex(oldPinConversationID);
+//            if (position!=0)
+//            return;
+//        }
+//        else
+        {
+            int position = findCorrectConversationIndex(oldPinConversationID);
+            notifyItemChanged(position);
+        }
       int index = findCorrectConversationIndex(conversation.getConversationID());
-      Conversation conversation1 = conversations.get(index);
-      conversations.add(0,conversation1);
-      conversations.remove(index);
-      notifyItemMoved(index,0);
+      if (index!=-1) {
+          if (index == 0)
+              notifyItemChanged(0);
+          else {
+              Conversation conversation1 = conversations.get(index);
+              conversations.remove(index);
+              conversations.add(0, conversation1);
+              notifyItemMoved(index, 0);
+              notifyItemChanged(0);
+          }
+      }
+      else Log.e("index error", "conversationAdapter pinConversation: index out of bound - index is equals -1");
     }
     public void unPinConversation()
     {
@@ -347,7 +399,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         TextView lastMessageTime, recipientName,unreadMessages;
         ImageView conversationStatus;
         RelativeLayout rootLayout, pinLayout;
-
+        LinearLayout borderLayout;
         public ConversationsViewHolder(@NonNull View itemView) {
             super(itemView);
             profileImage = itemView.findViewById(R.id.conversationImage);
@@ -358,6 +410,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             unreadMessages = itemView.findViewById(R.id.unreadMessages);
             rootLayout = itemView.findViewById(R.id.conversationCell);
             pinLayout = itemView.findViewById(R.id.pinLayout);
+            borderLayout = itemView.findViewById(R.id.border);
         }
 
     }

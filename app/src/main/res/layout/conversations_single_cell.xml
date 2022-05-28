@@ -3,10 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/conversationCell"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="60dp"
     android:background="@drawable/conversation_cell_not_selected"
     android:layout_marginTop="1dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@drawable/border"
+        android:id="@+id/border"
+        android:orientation="horizontal"
+        android:visibility="gone">
 
+    </LinearLayout>
     <RelativeLayout
         android:id="@+id/conversationImages"
         android:layout_width="wrap_content"
