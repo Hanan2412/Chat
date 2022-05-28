@@ -97,12 +97,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                         conversations.set(index, conversation);
                         notifyItemChanged(index);
                     }
-//                    conversation.setRecipient(conversations.get(index).getRecipient());
-//                    conversations.remove(index);
-//                    notifyItemRemoved(index);
-//                    conversations.add(0,conversation);
-//                    notifyItemInserted(0);
-//                    notifyItemRangeChanged(0,conversations.size());
                 }
             }
 
@@ -142,7 +136,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         conversations.remove(index);
         notifyItemRemoved(index);
     }
-    private int findCorrectConversationIndex(String conversationID) {
+    public int findCorrectConversationIndex(String conversationID) {
         for (int i = 0; i < conversations.size(); i++) {
             if (conversationID.equals(conversations.get(i).getConversationID()))
                 return i;

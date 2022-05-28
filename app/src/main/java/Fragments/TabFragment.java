@@ -246,12 +246,6 @@ public class TabFragment extends Fragment{
                     }
                 });
                 LinearLayout rootLayout = view.findViewById(R.id.rootLayout);
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
-                boolean darkMode = preferences.getBoolean("darkView", false);
-                if (darkMode)
-                    rootLayout.setBackgroundColor(getResources().getColor(android.R.color.black, requireActivity().getTheme()));
-                else
-                    rootLayout.setBackgroundColor(getResources().getColor(android.R.color.white, requireActivity().getTheme()));
 
                 recyclerView.setOnTouchListener(new View.OnTouchListener() {
                     @Override
@@ -593,6 +587,10 @@ public class TabFragment extends Fragment{
                     dialog = "Conversation was unMuted";
                     conversationVM.unMuteConversation(conversationID);
                 }
+//                int position = conversationsAdapter2.findCorrectConversationIndex(conversationID);
+//                if (position!=-1)
+//                    conversationsAdapter2.notifyItemChanged(position);
+                onConversationStatusUpdate(conversationID);
                 mutedConversation.removeObservers(requireActivity());
                 Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)
                         .setAction("undo", new View.OnClickListener() {
@@ -601,10 +599,23 @@ public class TabFragment extends Fragment{
                                 muteConversation(conversationID);
                             }
                         }).show();
+                mutedConversation.removeObserver(this);
+            }
+        });
+
+    }
+
+    private void onConversationStatusUpdate(String conversationID)
+    {
+        LiveData<Conversation>liveData = conversationVM.loadConversation(conversationID);
+        liveData.observe(requireActivity(), new Observer<Conversation>() {
+            @Override
+            public void onChanged(Conversation conversation) {
+                conversationsAdapter2.updateConversation(conversation);
+                liveData.removeObserver(this);
             }
         });
     }
-
     private void deleteConversation(String conversationID) {
         conversationsAdapter2.DeleteConversation(conversationID);
         conversationVM.deleteConversation(conversationID);
