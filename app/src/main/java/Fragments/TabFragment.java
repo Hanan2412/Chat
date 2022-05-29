@@ -15,10 +15,10 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import android.util.Log;
+import android.util.TimeUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -51,7 +51,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import Adapters.ConversationsAdapter2;
 
@@ -80,15 +80,14 @@ public class TabFragment extends Fragment {
     private String currentStatus = ONLINE_S;
     private boolean openingActivity = false;
     private ConversationsAdapter2 conversationsAdapter2;
-    private int selected = 0;
-    //    private List<Conversation> conversationsAdapter2.getSelectedConversations() = new ArrayList<>();
+    private boolean selected = false;
     private RecyclerView recyclerView;
     private final String FCM_ERROR = "fcm error";
     private LinearLayout searchLayout;
     private UserVM userModel;
     private ConversationVM conversationVM;
     private final String pin = "pin";
-    private boolean unselect = false;
+
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
         Bundle bundle = new Bundle();
@@ -215,64 +214,41 @@ public class TabFragment extends Fragment {
                 conversationsAdapter2.setLongPressListener(new ConversationsAdapter2.onLongPress() {
                     @Override
                     public void onConversationLongPress(Conversation conversation) {
-                        unselect = false;
+                        selected = true;
                         requireActivity().invalidateOptionsMenu();
                     }
                 });
 
                 conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
-                    @Override
-                    public void onLongPressed(boolean selected, Conversation conversation) {
-                        if (selected) {
-                            TabFragment.this.selected++;
-                            conversationsAdapter2.getSelectedConversations().add(conversation);
-                        } else {
-                            conversationsAdapter2.getSelectedConversations().remove(conversation);
-                            TabFragment.this.selected--;
-                        }
-                        requireActivity().invalidateOptionsMenu();
-                    }
 
                     @Override
                     public void onClicked(Conversation conversation) {
-                        Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
-                        startConversationIntent.putExtra("conversationID", conversation.getConversationID());
-                        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
-                        String title = sharedPreferences.getString("title", "noTitle");
-                        String link = sharedPreferences.getString("link", "noLink");
-                        if (!link.equals("noLink")) {
-                            startConversationIntent.putExtra("title", title);
-                            startConversationIntent.putExtra("link", link);
-                            SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.remove("title");
-                            editor.remove("link");
-                            editor.apply();
+                        if (selected)
+                        {
+                            unSelectAll();
+                            selected = false;
+                        }else {
+                            Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
+                            startConversationIntent.putExtra("conversationID", conversation.getConversationID());
+                            SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
+                            String title = sharedPreferences.getString("title", "noTitle");
+                            String link = sharedPreferences.getString("link", "noLink");
+                            if (!link.equals("noLink")) {
+                                startConversationIntent.putExtra("title", title);
+                                startConversationIntent.putExtra("link", link);
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                editor.remove("title");
+                                editor.remove("link");
+                                editor.apply();
+                            }
+                            callback.onOpenedConversation(conversation.getConversationID());
+                            requireActivity().startActivity(startConversationIntent);
                         }
-                        callback.onOpenedConversation(conversation.getConversationID());
-                        requireActivity().startActivity(startConversationIntent);
                     }
 
                     @Override
                     public void onImageDownloaded(Conversation conversation, boolean image) {
                         UpdateConversationsInDataBase(conversation, image);
-                    }
-                });
-                recyclerView.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_UP) {
-                            if (!unselect)
-                            {
-                                unselect = true;
-                                return false;
-                            }
-                            else {
-                                unSelectAll();
-                                return true;
-                            }
-                        }
-                        else
-                            return false;
                     }
                 });
                 break;
@@ -291,8 +267,8 @@ public class TabFragment extends Fragment {
         else if (item.getItemId() == R.id.unpin)
             unPinConversation();
         else if (item.getItemId() == R.id.callBtn) {
-            if (selected == 1)
-                CallPhone();
+            if (conversationsAdapter2.getSelectedConversations().size() == 1)
+                callPhone();
         } else if (item.getItemId() == R.id.block)
             blockConversation();
         else if (item.getItemId() == R.id.searchConversation) {
@@ -354,47 +330,27 @@ public class TabFragment extends Fragment {
         editor.apply();
     }
 
-//    @Override
-//    public void onPrepareOptionsMenu(@NonNull Menu menu) {
-//        super.onPrepareOptionsMenu(menu);
-//        if (selected > 0) {
-//            menu.setGroupVisible(R.id.active, true);
-//            SharedPreferences sharedPreferences = requireContext().getSharedPreferences("conversations",MODE_PRIVATE);
-//            if (sharedPreferences.contains(pin))
-//            {
-//                String conversationID = sharedPreferences.getString(pin,"");
-//                menu.findItem(R.id.unpin).setVisible(conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-//                menu.findItem(R.id.pinConversation).setVisible(!conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-//            }
-//            else menu.findItem(R.id.unpin).setVisible(false);
-//            menu.setGroupVisible(R.id.standBy, false);
-//        } else if (selected == 0) {
-//            menu.setGroupVisible(R.id.active, false);
-//            menu.setGroupVisible(R.id.standBy, true);
-//        } else
-//            throw new IndexOutOfBoundsException("selected can't be lower than 0");
-//    }
-
-
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        if (conversationsAdapter2.getSelectedConversations().isEmpty()) {
-            menu.setGroupVisible(R.id.active, false);
-            menu.setGroupVisible(R.id.standBy, true);
-        } else {
-            menu.setGroupVisible(R.id.active, true);
-            SharedPreferences sharedPreferences = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-            if (sharedPreferences.contains(pin)) {
-                String conversationID = sharedPreferences.getString(pin, "");
-                menu.findItem(R.id.unpin).setVisible(conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-                menu.findItem(R.id.pinConversation).setVisible(!conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-            } else menu.findItem(R.id.unpin).setVisible(false);
-            menu.setGroupVisible(R.id.standBy, false);
+        if(conversationsAdapter2!=null) {
+            if (conversationsAdapter2.getSelectedConversations().isEmpty()) {
+                menu.setGroupVisible(R.id.active, false);
+                menu.setGroupVisible(R.id.standBy, true);
+            } else {
+                menu.setGroupVisible(R.id.active, true);
+                SharedPreferences sharedPreferences = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
+                if (sharedPreferences.contains(pin)) {
+                    String conversationID = sharedPreferences.getString(pin, "");
+                    menu.findItem(R.id.unpin).setVisible(conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
+                    menu.findItem(R.id.pinConversation).setVisible(!conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
+                } else menu.findItem(R.id.unpin).setVisible(false);
+                menu.setGroupVisible(R.id.standBy, false);
+            }
         }
     }
 
-    private void CallPhone() {
+    private void callPhone() {
         //needs to check for recipient phone number, if it doesn't exist - display appropriate message
         if (conversationsAdapter2.getSelectedConversations().size() == 1) {
             String phoneNumber = conversationsAdapter2.getSelectedConversations().get(0).getRecipientPhoneNumber();
@@ -679,9 +635,6 @@ public class TabFragment extends Fragment {
                     dialog = "Conversation was unMuted";
                     conversationVM.unMuteConversation(conversationID);
                 }
-//                int position = conversationsAdapter2.findCorrectConversationIndex(conversationID);
-//                if (position!=-1)
-//                    conversationsAdapter2.notifyItemChanged(position);
                 onConversationStatusUpdate(conversationID);
                 mutedConversation.removeObservers(requireActivity());
                 Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)

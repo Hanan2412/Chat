@@ -40,7 +40,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     private final FileManager fileManager;
 
     public interface onPressed {
-        void onLongPressed(boolean selected, Conversation conversation);
 
         void onClicked(Conversation conversation);
 
@@ -61,7 +60,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     }
 
     private ArrayList<Conversation> conversations;
-    private ArrayList<String> selected = new ArrayList<>();
     private ArrayList<Integer> selectedPosition = new ArrayList<>();
     private List<Conversation>selectedConversations;
     public ConversationsAdapter2()
@@ -105,6 +103,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                         conversations.remove(index);
                         conversations.add(0,conversation);
                         notifyItemMoved(index,0);
+                        notifyItemChanged(0);
                     }
                     else {
                         conversations.set(index, conversation);
@@ -270,40 +269,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 if (index!=-1)
                     notifyItemChanged(index);
                 else Log.e("conversationsAdapter", "index of conversation is -1");
-//                if (selected.contains(conversation.getConversationID())) {
-//                    switch (conversation.getConversationType())
-//                    {
-//                        case single:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_not_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                        case sms:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_not_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                        case group:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_not_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                    }
-//                    selected.remove(conversation.getConversationID());
-//                    callback.onLongPressed(false, conversation);
-//                    selectedPosition.remove((Integer) position);
-//                } else {
-//                    switch (conversation.getConversationType())
-//                    {
-//                        case single:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_cell_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                        case sms:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_sms_cell_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                        case group:
-//                            holder.rootLayout.setBackground(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.conversation_group_cell_selected, holder.itemView.getContext().getTheme()));
-//                            break;
-//                    }
-//
-//                    selected.add(conversation.getConversationID());
-//                    callback.onLongPressed(true, conversation);
-//                    selectedPosition.add(position);
-//                }
                 return true;
             }
         });
@@ -370,11 +335,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         Conversation conversation = conversations.get(index);
         conversation.setBlocked(blocked);
         notifyItemChanged(index);
-    }
-
-
-    public ArrayList<Integer> getSelectedPosition() {
-        return selectedPosition;
     }
 
 
