@@ -133,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+        setUpBySettings();
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
@@ -315,7 +316,23 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         //ConnectedToInternet();
         //DropBox();
     }
+    private void setUpBySettings()
+    {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String darkMode = preferences.getString("darkMode","light");
+        switch (darkMode) {
+            case "light":
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                break;
+            case "dark":
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                break;
+            case "system default":
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                break;
+        }
 
+    }
     private void rotateAndShowOut() {
         rotateFab(floatingActionButton, !isRotate);
         showOut(smsBtn);
