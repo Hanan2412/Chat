@@ -87,6 +87,7 @@ public class TabFragment extends Fragment {
     private UserVM userModel;
     private ConversationVM conversationVM;
     private final String pin = "pin";
+    private SharedPreferences preferences;
 
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
@@ -223,11 +224,10 @@ public class TabFragment extends Fragment {
 
                     @Override
                     public void onClicked(Conversation conversation) {
-                        if (selected)
-                        {
+                        if (selected) {
                             unSelectAll();
                             selected = false;
-                        }else {
+                        } else {
                             Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
                             startConversationIntent.putExtra("conversationID", conversation.getConversationID());
                             SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
@@ -333,7 +333,7 @@ public class TabFragment extends Fragment {
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        if(conversationsAdapter2!=null) {
+        if (conversationsAdapter2 != null) {
             if (conversationsAdapter2.getSelectedConversations().isEmpty()) {
                 menu.setGroupVisible(R.id.active, false);
                 menu.setGroupVisible(R.id.standBy, true);
@@ -369,13 +369,12 @@ public class TabFragment extends Fragment {
 
     private void unSelectAll() {
         List<Conversation> selectedConversations = conversationsAdapter2.getSelectedConversations();
-        for (int i = 0;i<selectedConversations.size();i++) {
+        for (int i = 0; i < selectedConversations.size(); i++) {
             Conversation conversation = selectedConversations.get(i);
             int selectedConversationIndex = conversationsAdapter2.findCorrectConversationIndex(conversation.getConversationID());
             if (recyclerView != null) {
                 RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(selectedConversationIndex);
-                if (holder != null)
-                {
+                if (holder != null) {
                     i--;
                     holder.itemView.performLongClick();
                 }
@@ -568,40 +567,23 @@ public class TabFragment extends Fragment {
 
     //called when the fragment is lunched
     private void loadConversations() {
-        LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
-        conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
-            @Override
-            public void onChanged(List<Conversation> conversations) {
-                conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
-                Thread thread = new Thread() {
-                    @Override
-                    public void run() {
-                        synchronized (this) {
-                            try {
-                                wait(250);
-                                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
-                                if (sharedPreferences.contains(pin)) {
-                                    String conversationID = sharedPreferences.getString(pin, "");
-                                    Handler handler = new Handler(requireContext().getMainLooper());
-                                    handler.post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            conversationsAdapter2.pinConversation(conversationsAdapter2.findConversation(conversationID), conversationID);
-                                        }
-                                    });
-
-                                }
-
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+        preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
+            LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
+            conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
+                @Override
+                public void onChanged(List<Conversation> conversations) {
+                    SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
+                    for (Conversation conversation : conversations) {
+                        if (conversation.getConversationID().equals(sharedPreferences.getString(pin, ""))) {
+                            conversations.remove(conversation);
+                            conversations.add(0, conversation);
+                            break;
                         }
                     }
-                };
-                thread.start();
-                conversationLiveData.removeObserver(this);
-            }
-        });
+                    conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
+                    conversationLiveData.removeObserver(this);
+                }
+            });
     }
 
     private void loadNewOrUpdatedConversation() {

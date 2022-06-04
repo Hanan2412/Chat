@@ -43,31 +43,23 @@
             android:icon="@drawable/ic_baseline_notifications_black"
             android:key="NotificationsPreference"
             android:summary="define how your notifications work"
-            android:title="notifications"
+            android:title="Notifications"
             app:fragment="Fragments.SecondPagePreferenceFragment" />
 
         <Preference
             android:icon="@drawable/ic_baseline_backup_24"
             android:key="backup"
             android:summary="backup your data to the cloud or restore your data"
-            android:title="backup and restore"
+            android:title="Backup and Restore"
             app:fragment="Fragments.SecondPagePreferenceFragment" />
     </PreferenceCategory>
 
 
     <PreferenceCategory android:title="App">
+
         <Preference
             android:key="version"
             android:summary="Version 1.0 \nCompletion date: 11/02/2022 \nDeveloped by Hanan Dorfman"
             android:title="Version" />
-    </PreferenceCategory>
-    <PreferenceCategory android:title="Thanks and Gratitude">
-        <Preference
-            android:summary="Special thanks to Dina Elisha for contributing
-             her time for testing the application"
-            android:title="Thanks" />
-        <!--  android:summary="Thanks to Dina Elisha for user like testing the
-          application and submitting feedback to make this app work"-->
-        />
     </PreferenceCategory>
 </PreferenceScreen>

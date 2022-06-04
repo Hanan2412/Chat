@@ -580,7 +580,6 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         chatAdapter.setMessages(new ArrayList<>());
         chatAdapter.setCurrentUserUID(currentUser);
         chatAdapter.setListener(this);
-
         //sendMessageButton = findViewById(R.id.sendMessageBtn);
 
         recyclerView = findViewById(R.id.recycle_view);

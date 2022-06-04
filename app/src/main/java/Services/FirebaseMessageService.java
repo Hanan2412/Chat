@@ -947,6 +947,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
 
     private boolean isOpenConversation(String conversationID) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean checked = preferences.getBoolean("notificationsInConversation",false);
+        if (checked)
+            return false;
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
         return liveConversation.equals(conversationID);

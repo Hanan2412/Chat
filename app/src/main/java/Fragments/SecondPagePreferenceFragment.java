@@ -49,6 +49,7 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat {
     private final String NOTIFICATIONS_PREFERENCES = "NotificationsPreference";
     private final String BACKUP_PREFERENCE = "backup";
     private final String BACKUP_WORKER = "backup";
+    private final String DEBUG_MODE = "debug";
     private boolean start = true;
     private final int CALL_PHONE = 7;
     //private CController controller;
@@ -158,6 +159,7 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat {
                             return false;
                         }
                     });
+                    break;
                 }
                 case NOTIFICATIONS_PREFERENCES:{
                     setPreferencesFromResource(R.xml.notification_preferences,rootKey);

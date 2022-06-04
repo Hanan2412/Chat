@@ -13,36 +13,46 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@color/purple">
 
             <TextView
                 android:id="@+id/title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Pick the time and date to send a message"
+                android:text="Delayed Message"
                 android:textColor="@android:color/black"
                 android:textSize="30sp" />
 
             <EditText
                 android:id="@+id/delayedMessage"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
                 android:autofillHints=""
                 android:hint="@string/message_hint"
-                android:inputType="textNoSuggestions|text" />
+                android:inputType="textNoSuggestions|text"
+                android:background="@color/lightBlue"
+                android:gravity="center"
+                />
 
             <TimePicker
                 android:id="@+id/timePicker"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:timePickerMode="clock" />
+                android:timePickerMode="clock"
+                style="@style/DatePickerStyle"
+
+                />
 
             <DatePicker
                 android:id="@+id/datePicker"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+                android:layout_gravity="center"
+                style="@style/DatePickerStyle"
+                />
 
         </LinearLayout>
     </ScrollView>
@@ -70,6 +80,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            android:text="Send" />
+            android:text="@string/send" />
     </LinearLayout>
 </RelativeLayout>
