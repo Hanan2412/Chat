@@ -245,7 +245,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 fm.readImageMessage(message.getImagePath(), holder.itemView.getContext());
             }
             holder.playRecordingLayout.setVisibility(View.GONE);
-        } else if (message.getMessageType() == MessageType.VoiceMessage.ordinal()) {
+        } else if (message.getMessageType() == MessageType.voiceMessage.ordinal()) {
 
             holder.messageTextLayout.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.VISIBLE);
@@ -398,7 +398,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     holder.statusTv.setImageResource(R.drawable.ic_baseline_done_24);
                     break;
                 case ConversationActivity.MESSAGE_WAITING:
-                    holder.statusTv.setImageResource(R.drawable.ic_baseline_done_outline_24);
+                    holder.statusTv.setImageResource(R.drawable.ic_baseline_access_time_black);
                     break;
                 default:
                     holder.statusTv.setImageResource(R.drawable.ic_baseline_west_24);
@@ -452,7 +452,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         AudioManager manager = AudioManager.getInstance();
         for (Message message: messages)
         {
-            if (message.getMessageType() == MessageType.VoiceMessage.ordinal())
+            if (message.getMessageType() == MessageType.voiceMessage.ordinal())
                 manager.releasePlayer(message.getRecordingPath());
         }
     }

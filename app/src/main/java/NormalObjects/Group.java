@@ -1,5 +1,6 @@
 package NormalObjects;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -39,5 +40,11 @@ public class Group {
 
     public void setUid(String uid) {
         this.uid = uid;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "Group: conversationID:" + conversationID + ", UID:" + uid;
     }
 }

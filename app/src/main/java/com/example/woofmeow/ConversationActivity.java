@@ -1401,7 +1401,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     }
 
     private void LongPressToRecordVoice() {
-        if (askPermission(MessageType.VoiceMessage)) {
+        if (askPermission(MessageType.voiceMessage)) {
             RecordOrNot();
         }
     }
@@ -1409,7 +1409,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private void SendRecording() {
         CreateFileUri(fileName);
         String[] names = getRecipientsNames();
-        createMessage("recording", MessageType.VoiceMessage.ordinal(), names, getRecipientsIDs());
+        createMessage("recording", MessageType.voiceMessage.ordinal(), names, getRecipientsIDs());
     }
 
     private void CreateFileUri(String filePath) {
@@ -1768,7 +1768,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     return false;
                 } else return true;
             }
-            case VoiceMessage: {
+            case voiceMessage: {
                 int hasRecordingPermission = ConversationActivity.this.checkSelfPermission(Manifest.permission.RECORD_AUDIO);
                 if (hasRecordingPermission != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO_PERMISSION);
@@ -2565,7 +2565,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     model.uploadFile(currentUser,message.getMessageID(),imageBitmap,ConversationActivity.this);
                 }
                 break;
-            case VoiceMessage:
+            case voiceMessage:
                 message.setRecordingPath(fileUri.toString());
                 message.setMessage("Voice Message");
                 model.uploadFile(message.getMessageID(),fileUri,ConversationActivity.this);
@@ -2619,7 +2619,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     showMessageOnScreen(message, message.getMessageAction());
             }
         } else {
-            Log.e(NULL_ERROR, "recipients tokens empty or null");
+            Log.e(NULL_ERROR, "no recipients");
             Toast.makeText(ConversationActivity.this, "error - can't send message, try again later", Toast.LENGTH_SHORT).show();
         }
     }

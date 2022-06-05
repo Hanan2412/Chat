@@ -80,6 +80,36 @@ public class ExampleInstrumentedTest {
         dao.clearGroups();
     }
 
+    @Test
+    public void gTest()
+    {
+        dao.insertNewGroup(new Group("C_1653148911051","1221211221122121"));
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                dao.getGroup("C_1653148911051").observeForever(new Observer<List<Group>>() {
+                    @Override
+                    public void onChanged(List<Group> groups) {
+                        for (Group group: groups)
+                        {
+                            System.out.println(group.toString());
+                            assertEquals(group.getConversationID(),"C_1653148911051");
+                            assertEquals(group.getUid(),"1221211221122121");
+                        }
+                    }
+                });
+                dao.getRecipients("C_1653148911051").observeForever(new Observer<List<User>>() {
+                    @Override
+                    public void onChanged(List<User> users) {
+                        for (User user: users){
+                            assertEquals(user.getUserUID(),"1221211221122121");
+                        }
+                    }
+                });
+            }
+        });
+    }
 
     @Test
     public void groupTest()

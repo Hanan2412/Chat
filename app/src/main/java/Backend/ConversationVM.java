@@ -41,7 +41,10 @@ public class ConversationVM extends AndroidViewModel {
     public LiveData<List<User>> getRecipients(String conversationID) {
         return repository.getRecipients(conversationID);
     }
-
+    public LiveData<List<Group>>getGroups(String conversationID)
+    {
+        return repository.getGroups(conversationID);
+    }
     public LiveData<List<Conversation>>getConversations(){
         return conversations;
     }

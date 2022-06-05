@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import android.util.Log;
-import android.util.TimeUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,7 +50,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import Adapters.ConversationsAdapter2;
 
@@ -295,24 +293,24 @@ public class TabFragment extends Fragment {
                 case ONLINE_S:
                     item.setIcon(R.drawable.circle_red);
                     currentStatus = OFFLINE_S;
-                    ChangeStatus(OFFLINE_S);
+                    changeStatus(OFFLINE_S);
                     break;
                 case OFFLINE_S:
                     item.setIcon(R.drawable.circle_yellow);
                     currentStatus = STANDBY_S;
-                    ChangeStatus(STANDBY_S);
+                    changeStatus(STANDBY_S);
                     break;
                 case STANDBY_S:
                     item.setIcon(R.drawable.circle_green);
                     currentStatus = ONLINE_S;
-                    ChangeStatus(ONLINE_S);
+                    changeStatus(ONLINE_S);
                     break;
             }
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void ChangeStatus(String currentStatus) {
+    private void changeStatus(String currentStatus) {
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
@@ -530,7 +528,7 @@ public class TabFragment extends Fragment {
     public void onPause() {
         super.onPause();
         if (!openingActivity)
-            ChangeStatus(OFFLINE_S);
+            changeStatus(OFFLINE_S);
         openingActivity = false;
 
     }
@@ -538,7 +536,7 @@ public class TabFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        ChangeStatus(ONLINE_S);
+        changeStatus(ONLINE_S);
     }
 
     @Override
@@ -646,5 +644,9 @@ public class TabFragment extends Fragment {
     private void deleteConversation(String conversationID) {
         conversationsAdapter2.DeleteConversation(conversationID);
         conversationVM.deleteConversation(conversationID);
+        SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.remove(pin);
+        editor.apply();
     }
 }

@@ -162,9 +162,11 @@
             android:layout_marginBottom="10dp"
             android:background="@drawable/outgoing_message_look"
             android:contentDescription="the preview of an active message"
+            android:elevation="0dp"
             android:src="@drawable/ic_baseline_location_on_24"
             android:visibility="visible"
-            android:elevation="0dp"/>
+            android:padding="3dp"/>
+
         <ProgressBar
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -296,7 +298,7 @@
                 android:layout_alignParentTop="true"
                 android:contentDescription="message status"
                 android:gravity="center"
-                android:src="@drawable/ic_baseline_cast_connected_24" />
+                android:src="@drawable/ic_baseline_west_24" />
         </RelativeLayout>
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

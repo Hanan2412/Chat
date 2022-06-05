@@ -81,6 +81,11 @@ public class Repository {
         return chatDao.getRecipients(conversationID);
     }
 
+    public LiveData<List<Group>> getGroups(String conversationID)
+    {
+        return chatDao.getGroup(conversationID);
+    }
+
     public LiveData<Conversation>getNewConversation(String conversationID)
     {
         return chatDao.getConversation(conversationID);

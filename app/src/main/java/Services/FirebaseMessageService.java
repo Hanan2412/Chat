@@ -13,7 +13,6 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 
 import android.net.Uri;
 import android.os.Handler;
@@ -46,17 +45,11 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,9 +70,6 @@ import Consts.MessageType;
 //import Controller.CController;
 
 import Controller.NotificationsController;
-import Messages.BaseMessage;
-import Messages.MessageDeserializer;
-import Messages.TextMessage;
 import Model.MessageSender;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
@@ -88,7 +78,6 @@ import NormalObjects.Message;
 import NormalObjects.User;
 
 import Retrofit.Server;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 
 @SuppressWarnings({"Convert2Lambda", "AnonymousHasLambdaAlternative"})
@@ -143,11 +132,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         super.onMessageReceived(remoteMessage);
         DataBaseSetUp();
         Map<String, String> data = remoteMessage.getData();
-//        Type responseType = BaseMessage.class;
-//        Gson gson = new GsonBuilder().registerTypeAdapter(responseType,new MessageDeserializer()).setLenient().create();
-//        String s = gson.toJson(data);
-//        JsonElement jsonElement = gson.toJsonTree(data);
-//        TextMessage textMessage = gson.fromJson(jsonElement, TextMessage.class);
         String action = data.get("messageKind");
         String conversationID = data.get("conversationID");
         if (action != null)
@@ -702,7 +686,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 message.setSenderToken(senderToken);
                 message.setFilePath(filePath);
                 message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-                if (type == MessageType.VoiceMessage.ordinal()) {
+                if (type == MessageType.voiceMessage.ordinal()) {
                     DownloadVoiceMessage(message);
                 } else if (type == MessageType.photoMessage.ordinal()) {
                     DownloadImageMassage(message);
@@ -947,10 +931,6 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
 
     private boolean isOpenConversation(String conversationID) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean checked = preferences.getBoolean("notificationsInConversation",false);
-        if (checked)
-            return false;
         SharedPreferences conversationPreferences = getSharedPreferences("Conversation", MODE_PRIVATE);
         String liveConversation = conversationPreferences.getString("liveConversation", "no conversation");
         return liveConversation.equals(conversationID);
@@ -993,8 +973,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             });
 
         }
-        //is the conversation exist at all
-        else {
+        else { //is the conversation exist at all
             Boolean isExists = dao.isConversationExists(conversationID);
             if (isExists) {
                 Cursor cursor = dao.conversationUserCombo(message.getSender(), message.getConversationID());
@@ -1041,81 +1020,82 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         saveMessage(message);
         List<String> recipients = getRecipients(message.getRecipients(), message.getSender());
         createNewGroup(message.getConversationID(), recipients);
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        for (String uid : recipients) {
-            DatabaseReference reference = database.getReference("users/" + uid);
-            reference.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    @SuppressWarnings("unchecked")
-                    HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
-                    if (userMap != null) {
-                        String name = (String) userMap.get("name");
-                        User user = new User();
-                        user.setPictureLink((String) userMap.get("pictureLink"));
-                        user.setName(name);
-                        user.setLastName((String) userMap.get("lastName"));
-                        user.setUserUID(snapshot.getKey());
-                        reference.removeEventListener(this);
-                        LiveData<Boolean> userExists = dao.isUserExists(user.getUserUID());
-                        Observer<Boolean> userExistsObserver = new Observer<Boolean>() {
-                            @Override
-                            public void onChanged(Boolean aBoolean) {
-                                userExists.removeObserver(this);
-                                Thread thread1 = new Thread() {
-                                    @Override
-                                    public void run() {
-                                        if (aBoolean) {
-                                            dao.updateUser(user);
-                                        } else {
-                                            dao.insertNewUser(user);
-                                        }
-                                        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
-                                        ValueEventListener tokenListener = new ValueEventListener() {
-                                            @Override
-                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                                tokenReference.removeEventListener(this);
-                                                String token = (String) snapshot.getValue();
-                                                String uid = user.getUserUID();
-                                                if (token != null) {
-                                                    Thread thread1 = new Thread() {
-                                                        @Override
-                                                        public void run() {
-                                                            dao.updateUserToken(uid, token);
-                                                        }
-                                                    };
-                                                    thread1.setName("token update");
-                                                    thread1.start();
-
-                                                } else
-                                                    Log.e("NULL", "Recipient Token from fb is null");
-                                            }
-
-                                            @Override
-                                            public void onCancelled(@NonNull DatabaseError error) {
-                                                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
-                                            }
-                                        };
-                                        tokenReference.addValueEventListener(tokenListener);
-                                    }
-                                };
-                                thread1.setName("update_insert user");
-                                thread1.start();
-
-                            }
-                        };
-                        userExists.observeForever(userExistsObserver);
-                        Log.d("fcm user save", "saved new user from new conversation to database");
-                    }
-
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    error.toException().printStackTrace();
-                }
-            });
-        }
+        downloadRecipients(recipients);
+//        FirebaseDatabase database = FirebaseDatabase.getInstance();
+//        for (String uid : recipients) {
+//            DatabaseReference reference = database.getReference("users/" + uid);
+//            reference.addValueEventListener(new ValueEventListener() {
+//                @Override
+//                public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                    @SuppressWarnings("unchecked")
+//                    HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
+//                    if (userMap != null) {
+//                        String name = (String) userMap.get("name");
+//                        User user = new User();
+//                        user.setPictureLink((String) userMap.get("pictureLink"));
+//                        user.setName(name);
+//                        user.setLastName((String) userMap.get("lastName"));
+//                        user.setUserUID(snapshot.getKey());
+//                        reference.removeEventListener(this);
+//                        LiveData<Boolean> userExists = dao.isUserExists(user.getUserUID());
+//                        Observer<Boolean> userExistsObserver = new Observer<Boolean>() {
+//                            @Override
+//                            public void onChanged(Boolean aBoolean) {
+//                                userExists.removeObserver(this);
+//                                Thread thread1 = new Thread() {
+//                                    @Override
+//                                    public void run() {
+//                                        if (aBoolean) {
+//                                            dao.updateUser(user);
+//                                        } else {
+//                                            dao.insertNewUser(user);
+//                                        }
+//                                        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
+//                                        ValueEventListener tokenListener = new ValueEventListener() {
+//                                            @Override
+//                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                                                tokenReference.removeEventListener(this);
+//                                                String token = (String) snapshot.getValue();
+//                                                String uid = user.getUserUID();
+//                                                if (token != null) {
+//                                                    Thread thread1 = new Thread() {
+//                                                        @Override
+//                                                        public void run() {
+//                                                            dao.updateUserToken(uid, token);
+//                                                        }
+//                                                    };
+//                                                    thread1.setName("token update");
+//                                                    thread1.start();
+//
+//                                                } else
+//                                                    Log.e("NULL", "Recipient Token from fb is null");
+//                                            }
+//
+//                                            @Override
+//                                            public void onCancelled(@NonNull DatabaseError error) {
+//                                                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
+//                                            }
+//                                        };
+//                                        tokenReference.addValueEventListener(tokenListener);
+//                                    }
+//                                };
+//                                thread1.setName("update_insert user");
+//                                thread1.start();
+//
+//                            }
+//                        };
+//                        userExists.observeForever(userExistsObserver);
+//                        Log.d("fcm user save", "saved new user from new conversation to database");
+//                    }
+//
+//                }
+//
+//                @Override
+//                public void onCancelled(@NonNull DatabaseError error) {
+//                    error.toException().printStackTrace();
+//                }
+//            });
+//        }
     }
 
     private List<String> getRecipients(List<String> recipients, String sender) {
@@ -1169,5 +1149,43 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 notificationManagerCompat.cancel(100);
             }
         });
+    }
+
+    private void downloadRecipients(List<String>ids)
+    {
+        Server server = Server.getInstance();
+        server.setDownloadedUsers(new Server.onUserDownload() {
+            @Override
+            public void downloadedUser(User user) {
+                LiveData<Boolean> userExists = dao.isUserExists(user.getUserUID());
+                Observer<Boolean> userExistsObserver = new Observer<Boolean>() {
+                    @Override
+                    public void onChanged(Boolean aBoolean) {
+                        userExists.removeObserver(this);
+                        Thread thread1 = new Thread() {
+                            @Override
+                            public void run() {
+                                if (aBoolean!=null)
+                                    if (aBoolean) {
+                                        dao.updateUser(user);
+                                    } else {
+                                        dao.insertNewUser(user);
+                                    }
+                            }
+                        };
+                        thread1.setName("update_insert user");
+                        thread1.start();
+                    }
+                };
+                userExists.observeForever(userExistsObserver);
+                if (user.getUserUID().equals(ids.get(ids.size() - 1)))
+                    server.setDownloadedUsers(null);
+            }
+        });
+        for (String uid: ids)
+        {
+            server.getUserById(uid);
+        }
+
     }
 }

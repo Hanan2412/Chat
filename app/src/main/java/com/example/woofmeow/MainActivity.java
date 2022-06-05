@@ -16,8 +16,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.Observer;
+
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
@@ -34,7 +33,7 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
+
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -58,8 +57,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
+
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.ios.IosEmojiProvider;
 
@@ -67,19 +65,15 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Objects;
 
-import Backend.ConversationVM;
 import Backend.UserVM;
 import Consts.MessageType;
 import Consts.Tabs;
-import Fragments.BackdropFragment;
-import Fragments.GifBackdropFragment;
+
 import Fragments.TabFragment;
-import Messages.BaseMessage;
-import Messages.SendMessage;
-import Messages.TextMessage;
+
 import NormalObjects.*;
 
 import Retrofit.Server;

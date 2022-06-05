@@ -217,7 +217,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.borderLayout.setVisibility(View.VISIBLE);
         else
             holder.borderLayout.setVisibility(View.GONE);
-        if (conversation.getMessageType() == MessageType.VoiceMessage.ordinal())
+        if (conversation.getMessageType() == MessageType.voiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
         else
             holder.lastMessage.setText(conversation.getLastMessage());

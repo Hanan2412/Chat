@@ -264,7 +264,8 @@ public class Server {
                     User user = response.body();
                     if (user!=null) {
                         Log.i(info + "get user by id", user.getName() + " " + user.getLastName());
-                        downloadedUsers.downloadedUser(user);
+                        if (downloadedUsers!=null)
+                            downloadedUsers.downloadedUser(user);
                     }
                     else Log.e("Server Error", "no user with this uid: " + uid);
                 }
@@ -487,6 +488,7 @@ public class Server {
 
     public void downloadFile(String fileName,String messageID)
     {
+        if (fileDownload!=null)
         fileDownload.onDownloadStarted();
         api.downloadFile(fileName).enqueue(new Callback<ResponseBody>() {
             @Override
@@ -521,6 +523,7 @@ public class Server {
                                     in.close();
                                 } catch(IOException e) {
                                     e.printStackTrace();
+                                    if (fileDownload!=null)
                                     fileDownload.onDownloadError("couldn't download");
                                 }
                             }
@@ -529,15 +532,20 @@ public class Server {
                         networkThread.setName("download image");
                         networkThread.start();
                     }
-                    else fileDownload.onDownloadError("body is null");
+                    else
+                    if (fileDownload!=null)
+                        fileDownload.onDownloadError("body is null");
                 }
-                else fileDownload.onDownloadError("couldn't reach server");
+                else
+                if (fileDownload!=null)
+                    fileDownload.onDownloadError("couldn't reach server");
             }
 
             @Override
             public void onFailure(@NonNull Call<ResponseBody> call,@NonNull Throwable t) {
                 t.printStackTrace();
-                fileDownload.onDownloadError("server is offline or response is malformed");
+                if (fileDownload!=null)
+                    fileDownload.onDownloadError("server is offline or response is malformed");
             }
         });
     }
