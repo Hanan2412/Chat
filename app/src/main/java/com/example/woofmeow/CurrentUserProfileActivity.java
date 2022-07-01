@@ -47,11 +47,13 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 
 import Adapters.ListAdapter;
+import Adapters.UserListAdapter;
 import Adapters.UsersAdapter2;
 import Backend.ConversationVM;
 import Backend.UserVM;
@@ -204,7 +206,14 @@ public class CurrentUserProfileActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     //shows the stats of this account
-                    Toast.makeText(CurrentUserProfileActivity.this, "Im not implemented yet...", Toast.LENGTH_SHORT).show();
+                    UserListAdapter userListAdapter = new UserListAdapter();
+                    List<String> details = new ArrayList<>();
+                    details.add("Name: " + user.getName());
+                    details.add("Last Name: " + user.getLastName());
+                    details.add("your id: " + user.getUserUID());
+                    details.add("created at: " + user.getTimeCreated());
+                    details.add("your status: " + user.getStatus());
+                    userListAdapter.setDetails(details);
                 }
             });
             stats.setVisibility(View.VISIBLE);

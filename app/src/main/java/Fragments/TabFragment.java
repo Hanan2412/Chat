@@ -264,6 +264,19 @@ public class TabFragment extends Fragment {
             pinConversation();
         else if (item.getItemId() == R.id.unpin)
             unPinConversation();
+        else if (item.getItemId() == R.id.info)
+        {
+            if (conversationsAdapter2.getSelectedConversations().size() == 1) {
+                ConversationInfo conversationInfo = ConversationInfo.getInstance();
+                Bundle backDropBundle = new Bundle();
+                backDropBundle.putSerializable("conversation", conversationsAdapter2.getSelectedConversations().get(0));
+                conversationInfo.setArguments(backDropBundle);
+                conversationInfo.show(requireActivity().getSupportFragmentManager(), "CONVERSATION_INFO");
+            }
+            else
+                Toast.makeText(requireContext(), "can't show info of more than 1 selected conversation", Toast.LENGTH_SHORT).show();
+            unSelectAll();
+        }
         else if (item.getItemId() == R.id.callBtn) {
             if (conversationsAdapter2.getSelectedConversations().size() == 1)
                 callPhone();
@@ -434,7 +447,12 @@ public class TabFragment extends Fragment {
             editor.apply();
             conversationsAdapter2.pinConversation(conversationsAdapter2.getSelectedConversations().get(0), oldPin);
 
-        } else {
+        }else if (conversationsAdapter2.getSelectedConversations().size() == 0){
+            SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
+            String oldPin = sp.getString(pin, "");
+            if (!oldPin.equals(""))
+                conversationsAdapter2.pinConversation(conversationsAdapter2.findConversation(oldPin),oldPin);
+        }else {
             Toast.makeText(requireContext(), "can't pin more than 1 conversation", Toast.LENGTH_SHORT).show();
         }
 
@@ -589,11 +607,19 @@ public class TabFragment extends Fragment {
             @Override
             public void onChanged(Conversation conversation) {
                 if (conversation != null) {
+                    SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
                     Conversation existingConversation = conversationsAdapter2.findConversation(conversation.getConversationID());
                     if (existingConversation != null) {
                         conversationsAdapter2.updateConversation(conversation);
+                        if (sharedPreferences.contains(pin))
+                            if (conversationsAdapter2.getItemCount() > 1)
+                                pinConversation();
                     } else {
-                        conversationsAdapter2.setConversation(conversation, 0);
+                        if (sharedPreferences.contains(pin))
+                            if (conversationsAdapter2.getItemCount() > 1)
+                                conversationsAdapter2.setConversation(conversation, 1);
+                        else
+                            conversationsAdapter2.setConversation(conversation, 0);
                     }
                 }
             }

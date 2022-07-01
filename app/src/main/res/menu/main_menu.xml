@@ -31,6 +31,12 @@
             app:showAsAction="ifRoom"
             android:visible="false"/>
         <item
+            android:id="@+id/info"
+            android:icon="@drawable/ic_baseline_info_24"
+            android:title="info"
+            android:visible="true"
+            app:showAsAction="ifRoom"/>
+        <item
             android:id="@+id/callBtn"
             android:icon="@drawable/ic_baseline_call_24"
             android:title="Call"
