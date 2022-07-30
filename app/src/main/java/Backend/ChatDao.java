@@ -15,6 +15,7 @@ import Consts.ConversationType;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
+import NormalObjects.MessageHistory;
 import NormalObjects.User;
 
 @Dao
@@ -220,4 +221,12 @@ public interface ChatDao {
 
     @Query("SELECT count(conversations.unreadMessages) from conversations where unreadMessages != 0")
     LiveData<String>getUnreadConversationsCount();
+
+    @Query("SELECT * FROM messageHistory WHERE messageID = :messageID")
+    LiveData<List<MessageHistory>>getMessageHistory(String messageID);
+
+    @Query("SELECT * FROM messages WHERE messageID = :messageID")
+    LiveData<Message>getMessage(String messageID);
+    @Insert
+    void saveMessageHistory(MessageHistory messageHistory);
 }

@@ -89,6 +89,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -110,6 +111,7 @@ import Controller.NotificationsController;
 import Fragments.GifBackdropFragment;
 import NormalObjects.Conversation;
 import NormalObjects.Gif;
+import NormalObjects.MessageHistory;
 import NormalObjects.Web;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
@@ -283,7 +285,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
     private UserVM userModel;
     private Gif gif;
     private ActivityResultLauncher<Intent> takePicture, addPhoneNumber, openGallery, attachFile, sendContact, sendDoc, video, newRecipients;
-
+    private FloatingActionButton scrollToBot;
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -292,6 +294,14 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         messageSender = MessageSender.getInstance();
         setContentView(R.layout.converastion_layout2);
         RelativeLayout layout = findViewById(R.id.root_container);
+        scrollToBot = findViewById(R.id.scrollToBot);
+        scrollToBot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scrollToBot.setVisibility(View.GONE);
+                recyclerView.scrollToPosition(chatAdapter.getItemCount()-1);
+            }
+        });
         messageSender.setMessageListener(new MessageSender.onMessageSent() {
             @Override
             public void onMessageSentSuccessfully(Message message) {
@@ -679,6 +689,9 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
 
             @Override
             public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                if(linearLayoutManager.findLastCompletelyVisibleItemPosition() == chatAdapter.getItemCount()-1)
+                    scrollToBot.setVisibility(View.GONE);
+                else scrollToBot.setVisibility(View.VISIBLE);
                 //finds the top of the recycle view
                 //if (linearLayoutManager.findFirstCompletelyVisibleItemPosition() == 0) {
                 // Server.DownloadMessages2(ConversationActivity.this,conversationID,20);
@@ -2891,9 +2904,17 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                     message.setEditTime(System.currentTimeMillis() + "");
                     message.setMessageAction(MessageAction.edit_message);
                     message.setMessageKind("edit");
+                    model.getMessage(messageID).observe(ConversationActivity.this, new Observer<Message>() {
+                        @Override
+                        public void onChanged(Message message) {
+                            model.getMessage(messageID).removeObservers(ConversationActivity.this);
+                            model.addMessageHistory(new MessageHistory(message));
+                            model.updateConversationLastMessage(conversationID, messageToSend);
+                            model.updateMessage(messageID, messageToSend, message.getEditTime());
+                        }
+                    });
                     chatAdapter.UpdateMessageEdit(messageID, messageToSend, message.getMessageTime());
-                    model.updateConversationLastMessage(conversationID, messageToSend);
-                    model.updateMessage(messageID, messageToSend, message.getEditTime());
+
                     //dbActive.updateConversationLastMessage(conversationID, messageToSend);
                     break;
                 }

@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
+import NormalObjects.MessageHistory;
 import NormalObjects.User;
 import Retrofit.Server;
 
@@ -46,10 +47,25 @@ public class Repository {
         server = Server.getInstance();
     }
 
+    public void addMessageHistory(MessageHistory messageHistory)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.saveMessageHistory(messageHistory);
+            }
+        };
+        pool.execute(runnable);
+    }
 
     public LiveData<String>getConversationByUserPhone(String phone)
     {
         return chatDao.getConversationIDByPhone(phone);
+    }
+
+    public LiveData<Message> getMessage(String msgID)
+    {
+        return chatDao.getMessage(msgID);
     }
 
     public void unMuteUser(String uid)
@@ -326,6 +342,11 @@ public class Repository {
     public LiveData<List<Message>> getAllMessageForConversation(String conversationID)
     {
         return chatDao.getAllMessages(conversationID);
+    }
+
+    public LiveData<List<MessageHistory>>getMessageHistory(String messageID)
+    {
+        return chatDao.getMessageHistory(messageID);
     }
 
     public LiveData<User> getUserByID(String uid)

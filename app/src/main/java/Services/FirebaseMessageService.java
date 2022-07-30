@@ -75,6 +75,7 @@ import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.Group;
 import NormalObjects.Message;
+import NormalObjects.MessageHistory;
 import NormalObjects.User;
 
 import Retrofit.Server;
@@ -225,8 +226,28 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                             message.setMessage(content);
                             message.setMessageID(messageID);
                             message.setEditTime(e_t);
-                            dao.updateMessage(messageID, content, e_t);
-                            dao.updateConversationLastMessage(conversationID, content);
+                            Observer<Message>observer = null;
+                            Observer<Message> finalObserver = null;
+                            observer = new Observer<Message>() {
+                                @Override
+                                public void onChanged(Message message) {
+                                    MessageHistory history = new MessageHistory(message);
+                                    dao.saveMessageHistory(history);
+                                    dao.updateMessage(messageID, content, e_t);
+                                    dao.updateConversationLastMessage(conversationID, content);
+                                    assert finalObserver != null;
+                                    dao.getMessage(messageID).removeObserver(finalObserver);
+                                }
+                            };
+
+                            Handler handler = new Handler(Looper.getMainLooper());
+                            Observer<Message> finalObserver1 = observer;
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    dao.getMessage(messageID).observeForever(finalObserver1);
+                                }
+                            });
                         }
                     };
                     thread.setName("edit thread");

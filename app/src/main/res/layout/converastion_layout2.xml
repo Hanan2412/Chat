@@ -156,6 +156,22 @@
             android:layout_alignParentTop="true"
             android:layout_marginBottom="10dp" />
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="mini"
+            android:contentDescription="scroll to bottom"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_above="@+id/extraMessageLayout"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="50dp"
+            tools:ignore="RelativeOverlap"
+            android:src="@drawable/ic_baseline_arrow_drop_down_24"
+            android:id="@+id/scrollToBot"
+            android:visibility="gone"
+            />
+
         <RelativeLayout
             android:id="@+id/extraMessageLayout"
             android:layout_width="match_parent"

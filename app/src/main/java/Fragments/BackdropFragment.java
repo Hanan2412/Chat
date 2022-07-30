@@ -3,35 +3,32 @@ package Fragments;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.core.content.res.ResourcesCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.woofmeow.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
 
-import Consts.ConversationType;
+import java.util.List;
+
+
+import Backend.ConversationVM;
 import NormalObjects.Message;
-import Time.TimeFormat;
+import NormalObjects.MessageHistory;
+
 
 @SuppressWarnings("Convert2Lambda")
 public class BackdropFragment extends BottomSheetDialogFragment {
@@ -67,43 +64,42 @@ public class BackdropFragment extends BottomSheetDialogFragment {
         Bundle bundle = getArguments();
         if(bundle!=null) {
             Message message = (Message) bundle.getSerializable("message");
-            ListView listView = coordinatorLayout.findViewById(R.id.list);
-            TimeFormat timeFormat = new TimeFormat();
-            String time = timeFormat.getFormattedTime(Long.parseLong(message.getSendingTime()));
-            String[] messageArray = {message.getMessage(),message.getSenderName(),time,message.getArrivingTime(),message.getReadAt() + ""};
-            List<String> list = new ArrayList<>(Arrays.asList(messageArray));
-            list.removeIf(Objects::isNull);
-            ArrayAdapter<String>adapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1,list);
-            listView.setAdapter(adapter);
-            int conversationType = bundle.getInt("conversationType",-1);
-            LinearLayout picking = coordinatorLayout.findViewById(R.id.picking);
-            SwipeRefreshLayout refreshLayout = coordinatorLayout.findViewById(R.id.swipeRefresh);
-            if (conversationType!=-1) {
-                ConversationType type = ConversationType.values()[conversationType];
-                switch (type) {
-                    case single:
-                        picking.setBackground(ResourcesCompat.getDrawable(requireContext().getResources(), R.drawable.conversation_cell_not_selected, requireContext().getTheme()));
-                        refreshLayout.setBackgroundColor(ResourcesCompat.getColor(requireContext().getResources(), android.R.color.holo_blue_light,requireContext().getTheme()));
-                        break;
-                    case group:
-                        picking.setBackground(ResourcesCompat.getDrawable(requireContext().getResources(), R.drawable.conversation_group_cell_not_selected, requireContext().getTheme()));
-                        refreshLayout.setBackground(ResourcesCompat.getDrawable(requireContext().getResources(), R.drawable.conversation_group_cell_selected, requireContext().getTheme()));
-                        break;
-                    case sms:
-                        picking.setBackground(ResourcesCompat.getDrawable(requireContext().getResources(), R.drawable.conversation_sms_cell_not_selected, requireContext().getTheme()));
-                        refreshLayout.setBackground(ResourcesCompat.getDrawable(requireContext().getResources(), R.drawable.conversation_sms_cell_selected, requireContext().getTheme()));
-                        break;
-                    default:
-                        Log.e("backdrop", "setting background doesn't work");
+            BottomNavigationView bottomNavigationView = coordinatorLayout.findViewById(R.id.bottomNavigationView);
+            bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+                @Override
+                public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                    if (item.getItemId() == R.id.messageHistory) {
+                        ConversationVM model = new ViewModelProvider(requireActivity()).get(ConversationVM.class);
+                        model.getMessageHistory(message.getMessageID()).observe(requireActivity(), new Observer<List<MessageHistory>>() {
+                            @Override
+                            public void onChanged(List<MessageHistory> messageHistories) {
+                                model.getMessageHistory(message.getMessageID()).removeObserver(this);
+                                MessageHistoryFragment messageHistoryFragment = new MessageHistoryFragment(messageHistories);
+                                requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, messageHistoryFragment).commit();
+                            }
+                        });
+
+
+                    }
+                    else if (item.getItemId() == R.id.messageInfo)
+                    {
+                        MessageInfoFragment infoFragment = new MessageInfoFragment(message);
+                        requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, infoFragment).commit();
+
+                    }
+                    return false;
                 }
-            }
-            ImageView imageView = coordinatorLayout.findViewById(R.id.reportMessageButton);
+            });
+            bottomNavigationView.setSelectedItemId(R.id.messageHistory);
+
+
             LinearLayout contentLayout = coordinatorLayout.findViewById(R.id.contentLayout);
             BottomSheetBehavior<View> sheetBehavior = BottomSheetBehavior.from(contentLayout);
             sheetBehavior.setFitToContents(false);
             sheetBehavior.setHideable(true);
             sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-            sheetBehavior.setDraggable(true);
+            sheetBehavior.setDraggable(false);
+            ImageView imageView = coordinatorLayout.findViewById(R.id.reportMessageButton);
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

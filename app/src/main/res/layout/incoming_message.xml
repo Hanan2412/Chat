@@ -15,7 +15,6 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent=".25" />
 
-
     <RelativeLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -90,10 +89,11 @@
             android:layout_height="300dp"
             android:layout_below="@id/linkMessage"
             android:layout_marginBottom="10dp"
+            android:background="@drawable/incoming_message_look"
             android:contentDescription="the preview of an active message"
             android:src="@drawable/ic_baseline_location_on_24"
             android:visibility="visible"
-            android:background="@drawable/incoming_message_look"/>
+            android:elevation="0dp"/>
 
         <ProgressBar
             android:layout_width="wrap_content"

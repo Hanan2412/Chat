@@ -17,6 +17,7 @@ import Consts.ConversationType;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
+import NormalObjects.MessageHistory;
 import NormalObjects.User;
 import Retrofit.Server;
 
@@ -31,11 +32,26 @@ public class ConversationVM extends AndroidViewModel {
         conversations = repository.getGetAllConversations();
     }
 
+    public LiveData<Message>getMessage(String msgID)
+    {
+        return repository.getMessage(msgID);
+    }
+
+    public void addMessageHistory(MessageHistory messageHistory)
+    {
+        repository.addMessageHistory(messageHistory);
+    }
+
     public void deleteConversation(String conversationID)
     {
         repository.deleteConversation(conversationID);
         repository.deleteMessages(conversationID);
         repository.deleteGroup(conversationID);
+    }
+
+    public LiveData<List<MessageHistory>>getMessageHistory(String messageID)
+    {
+        return repository.getMessageHistory(messageID);
     }
 
     public LiveData<List<User>> getRecipients(String conversationID) {
