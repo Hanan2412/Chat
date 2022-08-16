@@ -102,7 +102,7 @@ public interface ChatDao {
     @Query("SELECT * FROM conversations where conversations.conversationID = :conversationID")
     LiveData<Conversation>isConversationExist(String conversationID);
 
-    @Query("UPDATE messages SET  messageStatus = :status WHERE messageID = :id")
+    @Query("UPDATE messages SET messageStatus = :status WHERE messageID = :id")
     void updateMessageStatus(String id,String status);
 
     @Query("UPDATE messages SET message = :content, editTime = :time WHERE messageID = :messageID")

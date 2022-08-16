@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/messageLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_marginTop="5dp"
-    android:id="@+id/messageLayout">
+    android:layout_marginTop="5dp">
 
 
     <androidx.constraintlayout.widget.Guideline
@@ -41,8 +41,8 @@
             android:id="@+id/linkMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:layout_below="@+id/messageTime"
+            android:orientation="horizontal"
             android:visibility="gone">
 
             <ImageView
@@ -60,29 +60,29 @@
                 android:layout_height="110dp"
                 android:layout_alignParentTop="true"
                 android:layout_alignParentEnd="true"
-                android:layout_toEndOf="@+id/linkImage"
-                android:orientation="vertical"
-                android:weightSum="2"
                 android:layout_marginStart="10dp"
+                android:layout_toEndOf="@+id/linkImage"
                 android:background="@drawable/incoming_message_look"
+                android:orientation="vertical"
                 android:padding="10dp"
-                >
+                android:weightSum="2">
 
                 <TextView
                     android:id="@+id/linkTitle"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:textColor="@android:color/black"/>
+                    android:textColor="@android:color/black" />
 
                 <TextView
                     android:id="@+id/linkContent"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:textColor="@android:color/black"/>
+                    android:textColor="@android:color/black" />
             </LinearLayout>
         </RelativeLayout>
+
         <ImageView
             android:id="@+id/previewImage"
             android:layout_width="match_parent"
@@ -91,20 +91,19 @@
             android:layout_marginBottom="10dp"
             android:background="@drawable/incoming_message_look"
             android:contentDescription="the preview of an active message"
+            android:elevation="0dp"
             android:src="@drawable/ic_baseline_location_on_24"
-            android:visibility="visible"
-            android:elevation="0dp"/>
+            android:visibility="gone" />
 
         <ProgressBar
+            android:id="@+id/imageProgressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:id="@+id/imageProgressBar"
             android:indeterminate="true"
             android:indeterminateBehavior="cycle"
             android:indeterminateTint="@color/lightestBlue"
-            android:visibility="gone"
-            />
+            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/reFile"
@@ -115,6 +114,7 @@
             android:contentDescription="upload failed upload"
             android:src="@drawable/ic_baseline_download_24"
             android:visibility="gone" />
+
         <TextView
             android:id="@+id/quoteText"
             android:layout_width="wrap_content"
@@ -155,34 +155,60 @@
                 android:layout_gravity="center"
                 android:layout_marginStart="10dp"
                 android:layout_weight="6"
-                android:progress="0"
-                android:visibility="visible"
                 android:elevation="15dp"
-                />
+                android:progress="0"
+                android:visibility="visible" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/videoLayout"
             android:layout_width="match_parent"
             android:layout_height="150dp"
-            android:id="@+id/videoLayout"
-            android:orientation="vertical"
             android:layout_below="@id/playRecordingLayout"
-            android:visibility="gone"
-            >
+            android:orientation="vertical"
+            android:visibility="gone">
+
             <ImageButton
+                android:id="@+id/playVideoBtn"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="play video"
-                android:src="@drawable/ic_baseline_play_arrow_24"
-                android:id="@+id/playVideoBtn"
-                />
+                android:src="@drawable/ic_baseline_play_arrow_24" />
         </LinearLayout>
+
         <RelativeLayout
+            android:id="@+id/contactLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/messageTextLayout"
+            android:layout_below="@+id/messageTime"
+            android:visibility="visible">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/contactImage"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_alignParentBottom="true"
+                android:contentDescription="contact image"
+                android:src="@drawable/ic_baseline_person_24"
+                app:shapeAppearanceOverlay="@style/circleImageView" />
+
+            <TextView
+                android:layout_width="105dp"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@+id/contactImage"
+                android:layout_alignParentBottom="true"
+                android:layout_toEndOf="@+id/contactImage"
+                android:gravity="center"
+                android:text="contact name" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/messageTextLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/videoLayout"
-            android:id="@+id/messageTextLayout"
-            >
+            android:layout_below="@id/videoLayout">
+
             <com.vanniktech.emoji.EmojiTextView
                 android:id="@+id/message"
                 android:layout_width="match_parent"
@@ -193,8 +219,7 @@
                 android:paddingEnd="5dp"
                 android:text="incoming message"
                 android:textColor="@android:color/black"
-                android:textSize="30sp"
-                />
+                android:textSize="30sp" />
         </RelativeLayout>
 
     </RelativeLayout>

@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setUpBySettings();
         super.onCreate(savedInstanceState);
         EmojiManager.install(new IosEmojiProvider());
         setContentView(R.layout.activity_main);
@@ -127,7 +128,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
-        setUpBySettings();
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);

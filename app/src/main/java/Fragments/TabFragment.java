@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.woofmeow.ConversationActivity;
+import com.example.woofmeow.ConversationActivity2;
 import com.example.woofmeow.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -226,7 +227,7 @@ public class TabFragment extends Fragment {
                             unSelectAll();
                             selected = false;
                         } else {
-                            Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity.class);
+                            Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity2.class);
                             startConversationIntent.putExtra("conversationID", conversation.getConversationID());
                             SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
                             String title = sharedPreferences.getString("title", "noTitle");
@@ -584,22 +585,22 @@ public class TabFragment extends Fragment {
     //called when the fragment is lunched
     private void loadConversations() {
         preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
-            LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
-            conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
-                @Override
-                public void onChanged(List<Conversation> conversations) {
-                    SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
-                    for (Conversation conversation : conversations) {
-                        if (conversation.getConversationID().equals(sharedPreferences.getString(pin, ""))) {
-                            conversations.remove(conversation);
-                            conversations.add(0, conversation);
-                            break;
-                        }
+        LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
+        conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
+            @Override
+            public void onChanged(List<Conversation> conversations) {
+                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
+                for (Conversation conversation : conversations) {
+                    if (conversation.getConversationID().equals(sharedPreferences.getString(pin, ""))) {
+                        conversations.remove(conversation);
+                        conversations.add(0, conversation);
+                        break;
                     }
-                    conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
-                    conversationLiveData.removeObserver(this);
                 }
-            });
+                conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
+                conversationLiveData.removeObserver(this);
+            }
+        });
     }
 
     private void loadNewOrUpdatedConversation() {
