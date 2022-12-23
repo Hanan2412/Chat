@@ -2471,7 +2471,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         message.setMessageType(messageType);
         model.setOnFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String path) {
+            public void onPathReady(String msgID, String path) {
                 message.setFilePath(path);
                 sendMessage(message);
             }
@@ -2489,7 +2489,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
             }
 
             @Override
-            public void onProgress(int progress) {
+            public void onProgress(String msgID, int progress) {
 
             }
 

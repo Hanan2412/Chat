@@ -213,10 +213,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         {
             holder.pinLayout.setVisibility(View.GONE);
         }
-        if (selectedConversations.contains(conversation))
-            holder.borderLayout.setVisibility(View.VISIBLE);
-        else
-            holder.borderLayout.setVisibility(View.GONE);
         if (conversation.getMessageType() == MessageType.voiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
         else
@@ -265,10 +261,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 {
                     longPressListener.onConversationLongPress(conversation);
                 }
-                int index = findCorrectConversationIndex(conversation.getConversationID());
-                if (index!=-1)
-                    notifyItemChanged(index);
-                else Log.e("conversationsAdapter", "index of conversation is -1");
+                v.setSelected(!v.isSelected());
                 return true;
             }
         });
@@ -359,7 +352,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         TextView lastMessageTime, recipientName,unreadMessages;
         ImageView conversationStatus;
         RelativeLayout rootLayout, pinLayout;
-        LinearLayout borderLayout;
         public ConversationsViewHolder(@NonNull View itemView) {
             super(itemView);
             profileImage = itemView.findViewById(R.id.conversationImage);
@@ -370,7 +362,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             unreadMessages = itemView.findViewById(R.id.unreadMessages);
             rootLayout = itemView.findViewById(R.id.conversationCell);
             pinLayout = itemView.findViewById(R.id.pinLayout);
-            borderLayout = itemView.findViewById(R.id.border);
         }
 
     }

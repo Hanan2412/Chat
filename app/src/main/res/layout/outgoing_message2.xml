@@ -5,7 +5,8 @@
     android:id="@+id/messageLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="5dp">
+    android:layout_marginTop="5dp"
+    android:background="@drawable/mark">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/right_guideline"
@@ -193,7 +194,7 @@
                         android:contentDescription="the preview of an active message"
                         android:elevation="0dp"
                         android:padding="3dp"
-                        android:src="@drawable/ic_baseline_location_on_24"
+                        android:src="@drawable/ic_baseline_photo_24"
                         android:visibility="visible" />
 
                     <LinearLayout
@@ -385,7 +386,7 @@
                     android:id="@+id/messageTextLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/blue"
+                    android:background="@drawable/rounded_rectangle"
                     android:gravity="start"
                     android:orientation="vertical"
                     android:visibility="visible">
@@ -395,7 +396,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_margin="8dp"
-                        android:background="@drawable/rounded_rectangle"
+                        android:background="@color/blue"
                         android:elevation="-8dp"
                         android:orientation="vertical"
                         android:padding="8dp"
@@ -425,7 +426,6 @@
                         android:id="@+id/textMessageLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/outgoing_message_look"
                         android:gravity="center_vertical"
                         android:orientation="vertical"
                         android:visibility="visible">

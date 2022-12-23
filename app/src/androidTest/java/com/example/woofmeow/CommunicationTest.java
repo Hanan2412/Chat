@@ -152,7 +152,7 @@ public class CommunicationTest {
     {
         server.setFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String path) {
+            public void onPathReady(String msgID, String path) {
 
             }
 
@@ -162,7 +162,7 @@ public class CommunicationTest {
             }
 
             @Override
-            public void onProgress(int progress) {
+            public void onProgress(String msgID, int progress) {
 
             }
 

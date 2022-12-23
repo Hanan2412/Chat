@@ -107,7 +107,7 @@ public class FileManager {
                                 ImageDecoder.Source source = ImageDecoder.createSource(context.getContentResolver(), Uri.parse(path));
                                 bitmap = ImageDecoder.decodeBitmap(source);
                             } else {
-                                bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), Uri.parse(path));
+                                bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), Uri.fromFile(new File(path)));
                             }
                         } catch (IOException e) {
                             e.printStackTrace();

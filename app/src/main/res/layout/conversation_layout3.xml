@@ -191,8 +191,8 @@
 
                     <ImageView
                         android:id="@+id/imagePreview"
-                        android:layout_width="256dp"
-                        android:layout_height="128dp"
+                        android:layout_width="300dp"
+                        android:layout_height="300dp"
                         android:contentDescription="@string/previewImage"
                         android:scaleType="fitXY"
                         android:src="@drawable/ic_launcher_foreground"
@@ -361,7 +361,7 @@
                     android:id="@+id/voiceLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:visibility="visible">
+                    android:visibility="gone">
 
                     <androidx.constraintlayout.widget.Guideline
                         android:id="@+id/voiceGuideline"

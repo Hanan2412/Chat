@@ -1,5 +1,6 @@
 package Audio;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 public class AudioManager2 {
@@ -21,6 +22,17 @@ public class AudioManager2 {
 
     public AudioPlayer2 getAudioPlayer(String dataSource)
     {
+
+        if (audioPlayer != null)
+        {
+            if (audioPlayer.getCurrentDataSource().equals(dataSource))
+                return audioPlayer;
+            if (audioPlayer.isPlaying())
+            {
+                audioPlayer.pause();
+            }
+            releasePlayer(dataSource);
+        }
         audioPlayer = new AudioPlayer2(dataSource);
         return audioPlayer;
     }
@@ -32,6 +44,12 @@ public class AudioManager2 {
             audioPlayer.stop();
             audioPlayer.release();
         }
+        audioPlayer = null;
+    }
+
+    public String getCurrentDataSource()
+    {
+        return progress.keySet().iterator().next();
     }
 
     public int getProgress(String dataSource)

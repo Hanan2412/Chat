@@ -13,9 +13,11 @@ public class AudioPlayer2 extends MediaPlayer implements Runnable,MediaPlayer.On
     private AudioHelper callback;
     private TimeFormat timeFormat;
     private int playingTime = 0;
+    private String currentDataSource;
 
     public AudioPlayer2(String dataSource)
     {
+        this.currentDataSource = dataSource;
         timeFormat = new TimeFormat();
         try {
             setDataSource(dataSource);
@@ -24,6 +26,7 @@ public class AudioPlayer2 extends MediaPlayer implements Runnable,MediaPlayer.On
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .build());
             prepare();
+            setVolume(1.0f,1.0f);
             setOnCompletionListener(this);
             setOnSeekCompleteListener(this);
         } catch (IOException e) {
@@ -31,7 +34,10 @@ public class AudioPlayer2 extends MediaPlayer implements Runnable,MediaPlayer.On
         }
     }
 
-
+    public String getCurrentDataSource()
+    {
+        return currentDataSource;
+    }
     //this constructor is to play sounds without any control from the user - like background music or feedback sound
     @SuppressWarnings("Convert2Lambda")
     public AudioPlayer2(Context context, int id) {

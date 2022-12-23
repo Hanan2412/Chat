@@ -2,7 +2,8 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <EditText
         android:id="@+id/editTextDialog"
@@ -14,4 +15,37 @@
         android:inputType="textMultiLine"
         android:visibility="visible" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:gravity="center"
+        style="?android:attr/buttonBarStyle"
+        >
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="cancel"
+            style="?android:attr/buttonBarButtonStyle"
+            android:textColor="@color/lightBlue"
+            android:id="@+id/cancelBtn"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="add from contacts"
+            style="?android:attr/buttonBarButtonStyle"
+            android:textColor="@color/lightBlue"
+            android:id="@+id/add"
+            />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="save"
+            style="?android:attr/buttonBarButtonStyle"
+            android:textColor="@color/lightBlue"
+            android:id="@+id/saveBtn"/>
+    </LinearLayout>
 </LinearLayout>

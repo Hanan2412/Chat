@@ -1,76 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    >
-    <item android:id="@+id/copy"
-        android:title="Copy message"
-        android:icon="@drawable/ic_baseline_file_copy_black"
-        />
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <group
+        android:id="@+id/allConversationsOptions"
+        android:visible="true">
+        <item
+            android:id="@+id/searchMessage"
+            android:icon="@drawable/ic_baseline_search_black"
+            android:title="@string/search"
+            app:showAsAction="always"
+            android:visible="true"/>
 
-    <group android:visible="false" android:id="@+id/groupConversation">
-        <item android:id="@+id/addNewMember"
+        <item
+            android:id="@+id/blockConversation"
+            android:icon="@drawable/ic_baseline_block_black"
+            android:title="@string/block"
+            app:showAsAction="never"
+            android:visible="true"/>
+    </group>
+    <group
+        android:id="@+id/selectedMessageOptions"
+        android:visible="false">
+        <item
+            android:id="@+id/copy"
+            android:icon="@drawable/ic_baseline_file_copy_black"
+            android:title="Copy message"
+            app:showAsAction="never"
+            android:visible="true"/>
+        <item
+            android:id="@+id/messageInfo"
+            android:enabled="true"
+            android:icon="@drawable/ic_baseline_info_white"
+            android:title="message Information"
+            android:visible="true"
+            app:showAsAction="ifRoom" />
+        <item
+            android:id="@+id/share"
+            android:enabled="true"
+            android:icon="@drawable/ic_baseline_share_white"
+            android:title="Share"
+            android:visible="true"
+            app:showAsAction="never" />
+    </group>
+    <group
+        android:id="@+id/groupConversationOptions"
+        android:visible="false">
+        <item
+            android:id="@+id/addNewMember"
+            android:icon="@drawable/ic_baseline_group_add_24"
             android:title="add new members"
             app:showAsAction="ifRoom"
-            android:icon="@drawable/ic_baseline_group_add_24"
-            />
-        <item android:id="@+id/leaveGroup"
+            android:visible="true"/>
+
+        <item
+            android:id="@+id/leaveGroup"
+            android:icon="@drawable/ic_baseline_exit_to_app_24"
             android:title="leave group"
             app:showAsAction="never"
-            android:icon="@drawable/ic_baseline_exit_to_app_24"
-            />
+            android:visible="true"/>
     </group>
-    <item
-        android:id="@+id/addPhoneNumber"
-        android:enabled="true"
-        android:icon="@drawable/common_full_open_on_phone"
-        android:title="add phone number"
-        android:visible="true"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/addAsContact"
-        android:enabled="true"
-        android:icon="@drawable/ic_baseline_contacts_24"
-        android:title="add as contact"
-        android:visible="true"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/callBtn"
-        android:enabled="true"
-        android:icon="@drawable/ic_baseline_call_24"
-        android:title="Call"
-        android:visible="true"
-        app:showAsAction="never" />
-
-    <item android:id="@+id/searchMessage"
-        android:title="Search"
-        android:icon="@drawable/ic_baseline_search_black"
-        app:showAsAction="ifRoom"
-        />
-    <item android:id="@+id/messageInfo"
-        android:title="message Information"
-        android:icon="@drawable/ic_baseline_info_white"
-        app:showAsAction="ifRoom"
-        android:enabled="true"
-        android:visible="true"
-        />
-
-    <item android:id="@+id/share"
-        android:enabled="true"
-        android:visible="true"
-        android:title="Share"
-        app:showAsAction="ifRoom"
-        android:icon="@drawable/ic_baseline_share_white"
-        />
-
-    <item android:id="@+id/blockConversation"
-        android:icon="@drawable/ic_baseline_block_black"
-        android:title="block this conversation"
-        app:showAsAction="never"/>
-
-    <item android:title="meetUp!"
-        android:visible="false"
-        app:showAsAction="never"
-        android:id="@+id/meetUp"
-        />
-
+    <group
+        android:id="@+id/singlePersonConversation"
+        android:visible="true">
+        <item
+            android:id="@+id/addPhoneNumber"
+            android:enabled="true"
+            android:icon="@drawable/common_full_open_on_phone"
+            android:title="Add phone number"
+            android:visible="true"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/addAsContact"
+            android:enabled="true"
+            android:icon="@drawable/ic_baseline_contacts_24"
+            android:title="Add as contact"
+            android:visible="true"
+            app:showAsAction="never" />
+        <item
+            android:id="@+id/callBtn"
+            android:enabled="true"
+            android:icon="@drawable/ic_baseline_call_24"
+            android:title="Call"
+            android:visible="true"
+            app:showAsAction="never" />
+    </group>
 </menu>

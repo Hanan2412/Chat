@@ -125,6 +125,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -162,7 +163,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 @SuppressWarnings("Convert2Lambda")
-public class ConversationActivity2 extends AppCompatActivity implements ChatAdapter.MessageInfoListener, PickerFragment.onPickerClick, BottomSheetFragment.onSheetClicked, BackdropFragment.onBottomSheetAction, Serializable , GifBackdropFragment.onGifView {
+public class ConversationActivity2 extends AppCompatActivity implements ChatAdapter.MessageInfoListener, PickerFragment.onPickerClick, BottomSheetFragment.onSheetClicked, BackdropFragment.onBottomSheetAction, Serializable, GifBackdropFragment.onGifView {
 
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private String filePath;
@@ -207,7 +208,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     private final String PICKER_FRAGMENT_TAG = "Picker_fragment";
     private final String BOTTOM_SHEET_TAG = "BottomSheet_fragment";
-    private boolean camera;
     private int actionState = 0;
     private boolean editMode = false;
     private Message editMessage;
@@ -228,8 +228,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private final int RECORD_VOICE = 1;
     private final int SEND_MESSAGE = 0;
     //private final int SEND_VIDEO = 2;
-    private boolean startRecording = true;
-    private boolean startPlaying1 = true;
     private TextView recordingTimeText;
 
     private PlayAudioButton playAudioRecordingBtn;
@@ -238,7 +236,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private Uri fileUri;
 
     private String link;//,title;
-//    private RelativeLayout linkedMessagePreview;
     private ImageView linkedImage;
     private TextView linkTitle, linkContent;
 
@@ -290,6 +287,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private ProgressBar linkProgressBar;
     private MessageType messageType;
     private ImageButtonSwitcher sendMessageBtn;
+    private AudioManager2 audioManager;
+    private AudioPlayer2 audioPlayer;
+    private TimeFormat format = new TimeFormat();
+    private String[] recipientsTokens;
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -349,6 +351,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             actionBar.setDisplayShowTitleEnabled(false);
 
         recipients = new ArrayList<>();
+        audioManager = AudioManager2.getInstance();
         conversationID = getIntent().getStringExtra("conversationID");
         NotificationsController notificationsController = NotificationsController.getInstance();
         notificationsController.removeNotification(conversationID);
@@ -356,7 +359,79 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         userModel = new ViewModelProvider(this).get(UserVM.class);
         geocoder = new Geocoder(this);
         chatAdapter = new ChatAdapter();
+        model.setOnFileUploadListener(new Server.onFileUpload() {
+            @Override
+            public void onPathReady(String msgID, String path) {
+                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                Message message = chatAdapter.getMessage(index);
+                message.setFilePath(path);
+                sendMessage(message);
+            }
 
+            @Override
+            public void onStartedUpload(String msgID) {
+                //shows progress bar
+                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                if (index != -1) {
+                    chatAdapter.getMessage(index).setUploading(true);
+                    chatAdapter.notifyItemChanged(index);
+                    chatAdapter.getMessage(index).setError(false);
+                }
+            }
+
+            @Override
+            public void onProgress(String msgID, int progress) {
+
+            }
+
+            @Override
+            public void onUploadFinished(String msgID) {
+                //disables progress bar
+                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                if (index != -1) {
+                    chatAdapter.getMessage(index).setUploading(false);
+                    chatAdapter.getMessage(index).setError(false);
+                    chatAdapter.notifyItemChanged(index);
+                }
+            }
+
+            @Override
+            public void onUploadError(String msgID, String errorMessage) {
+                //displays error message and gives option to resend the message file
+                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                Message message = chatAdapter.getMessage(index);
+                if (index != -1) {
+                    message.setSent(false);
+                    chatAdapter.notifyItemChanged(index);
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity2.this);
+                builder.setTitle("Error")
+                        .setMessage("an error occurred while sending the file")
+                        .setIcon(R.drawable.ic_baseline_error_24)
+                        .setCancelable(true)
+                        .setNeutralButton("ok", null)
+                        .create()
+                        .show();
+                sendMessage(message);
+            }
+        });
+        recyclerView.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        //keyboard doesn't hide recycleView
+        linearLayoutManager.setStackFromEnd(true);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.setItemViewCacheSize(20);
+        recyclerView.setDrawingCacheEnabled(true);
+        recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        recyclerView.setAdapter(chatAdapter);
+        recyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                if (linearLayoutManager.findLastCompletelyVisibleItemPosition() == chatAdapter.getItemCount() - 1)
+                    scrollToBot.setVisibility(View.GONE);
+                else scrollToBot.setVisibility(View.VISIBLE);
+            }
+        });
         messageType = MessageType.textMessage;
         Animation in = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left);
         Animation out = AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right);
@@ -380,9 +455,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     if (messageText.getText() != null)
                         message = messageText.getText().toString();
                     playMessageSound();
+                    if (filePath != null)
+                        audioManager.releasePlayer(filePath);
                     prepareMessage(message);
-                } else if (buttonState == ImageButtonSwitcher.RECORD_VOICE)
-                {
+                } else if (buttonState == ImageButtonSwitcher.RECORD_VOICE) {
                     if (askPermission(MessageType.voiceMessage)) {
                         recordingSoundStart();
                         recordOrNot();
@@ -392,16 +468,38 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void onRelease(int buttonState) {
-                if (buttonState == ImageButtonSwitcher.RECORD_VOICE)
-                {
+                if (buttonState == ImageButtonSwitcher.RECORD_VOICE) {
                     recordingSoundStopped();
-                    voiceLayout.setVisibility(View.VISIBLE);
                     recordOrNot();
+                    voiceLayout.setVisibility(View.VISIBLE);
+                    audioPlayer = audioManager.getAudioPlayer(filePath);
+                    voiceSeek.setMin(0);
+                    voiceSeek.setMax(audioPlayer.getDuration() / 1000);
+                    voiceSeek.setProgress(0);
+                    audioPlayer.setAudioListener(new AudioHelper() {
+                        @Override
+                        public void onProgressChange(String formattedProgress, int progress) {
+                            String time = formattedProgress + "/" + format.getFormattedTime(audioPlayer.getDuration());
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    recordingTimeText.setText(time);
+                                    voiceSeek.setProgress(progress, true);
+                                    if (progress == audioPlayer.getDuration() / 1000)
+                                        playAudioRecordingBtn.resetClicks();
+                                }
+                            });
+                            audioManager.updateProgress(filePath, progress);
+                        }
+
+                        @Override
+                        public void onPlayingStatusChange(boolean isPlaying) {
+                        }
+                    });
+
                     setCorrectBtn(ButtonType.sendMessage);
                     sendMessageBtn.setButtonState(ImageButtonSwitcher.SEND_MESSAGE);
-                }
-                else if (buttonState == ImageButtonSwitcher.SEND_MESSAGE)
-                {
+                } else if (buttonState == ImageButtonSwitcher.SEND_MESSAGE) {
                     changeMessageType(MessageType.voiceMessage);
                     resetToText();
                 }
@@ -419,16 +517,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (chatAdapter.getItemCount() > 0)
-                {//no need to send typing info before first message is sent and a conversation is created
-                    if (!typing)
-                    {//don't send typing info if its identical to previous info - less messages sent
+                if (chatAdapter.getItemCount() > 0) {//no need to send typing info before first message is sent and a conversation is created
+                    if (!typing) {//don't send typing info if its identical to previous info - less messages sent
                         InteractionMessage(conversationID, null, TYPING);
                         typing = true;
                     }
                 }
-                if (smsConversation && count >= 140)
-                {
+                if (smsConversation && count >= 140) {
                     smsCharCount.setVisibility(View.VISIBLE);
                     int msgAmount = count % 160;
                     String charCount = "(" + msgAmount + ") " + count + "";
@@ -438,28 +533,23 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (smsConversation)
-                {
+                if (smsConversation) {
                     if (s.toString().isEmpty() || s.toString().length() < 140)
                         smsCharCount.setVisibility(View.GONE);
                 }
                 if (chatAdapter.getItemCount() > 0)//prevents updating and creating new incomplete conversation object in server before first message sent
-                    if (s.toString().isEmpty())
-                    {
+                    if (s.toString().isEmpty()) {
                         InteractionMessage(conversationID, null, NOT_TYPING);
                         typing = false;
                     }
                 AudioManager manager = AudioManager.getInstance();
                 AudioRecorder audioRecorder = manager.getAudioRecorder(conversationID, ConversationActivity2.this);
                 //button state starts at RECORD_VOICE, when typing starts, button state changes to SEND_MESSAGE. if text field is cleared, the button state returns to RECORD_VOICE
-                if(s.toString().isEmpty())
-                {
+                if (s.toString().isEmpty()) {
                     if (messageType == MessageType.textMessage)
                         changeMessageType(MessageType.voiceMessage);
                     clearTextBtn.setVisibility(View.GONE);
-                }
-                else
-                {
+                } else {
                     if (!audioRecorder.isRecording()) {
                         clearTextBtn.setVisibility(View.VISIBLE);
                         if (messageType != MessageType.editMessage)
@@ -477,6 +567,23 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     changeMessageType(MessageType.voiceMessage);
             }
         });
+
+        playAudioRecordingBtn.setListener(new PlayAudioButton.onPlayAudio() {
+            @Override
+            public void playAudio() {
+                int progress = audioManager.getProgress(filePath);
+                audioPlayer.seekTo(progress * 1000);
+                voiceSeek.setProgress(progress);
+                audioPlayer.playPauseAudio();
+
+            }
+
+            @Override
+            public void pauseAudio() {
+                audioPlayer.playPauseAudio();
+            }
+        });
+
         typingIndicator.setFactory(new ViewSwitcher.ViewFactory() {
             @Override
             public View makeView() {
@@ -501,12 +608,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         chatAdapter.setListener(this);
 
 
-
         scrollToBot.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 scrollToBot.setVisibility(View.GONE);
-                recyclerView.scrollToPosition(chatAdapter.getItemCount()-1);
+                recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
             }
         });
         messageSender.setMessageListener(new MessageSender.onMessageSent() {
@@ -514,7 +620,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onMessageSentSuccessfully(Message message) {
                 message.setMessageStatus(MESSAGE_SENT);
                 updateMessage(message);
-//                model.updateMessage(message);
             }
 
             @Override
@@ -564,7 +669,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         imagePreviewLayout.setVisibility(View.VISIBLE);
                         imageView.setImageDrawable(drawable);
                         changeMessageType(MessageType.imageMessage);
-                        camera = true;
                     }
                 }
             }
@@ -578,13 +682,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         Uri uri = resultIntent.getData();
                         if (uri != null) {
                             imagePreviewLayout.setVisibility(View.VISIBLE);
-                            messageType = MessageType.imageMessage;
                             imageUri = uri;
                             imageView.setImageURI(uri);
                             imageBitmap = getImageBitmap(uri);
                             imageView.setImageBitmap(imageBitmap);
                             imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 500, 450, false);
-                            camera = false;
+                            changeMessageType(MessageType.photoMessage);
                         }
                     }
                 }
@@ -729,7 +832,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                             if (manager != null) {
                                 View view = manager.findViewByPosition(indices.get(indicesIndex));
-                                MarkMessage(view, true);
+                                markMessage(view);
                             }
                             recyclerView.removeOnScrollListener(this);
                         }
@@ -745,12 +848,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         closeRecordingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AudioManager manager = AudioManager.getInstance();
+                AudioManager2 manager = AudioManager2.getInstance();
                 manager.releasePlayer(filePath);
                 sendMessageBtn.setButtonState(ImageButtonSwitcher.RECORD_VOICE);
                 messageType = MessageType.textMessage;
                 filePath = null;
-                startPlaying1 = true;
                 recordingTimeText.setText(R.string.zero_time);
                 resetToText();
                 buttonState = RECORD_VOICE;
@@ -758,30 +860,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
         });
 
-        SharedPreferences sharedPreferences = getSharedPreferences("background", Context.MODE_PRIVATE);
-        int presetBackground = sharedPreferences.getInt("backgroundImage normal",-1);
-        if (presetBackground!=-1)
-        {
-            Drawable drawable = ResourcesCompat.getDrawable(getResources(),presetBackground,getTheme());
-            recyclerView.setBackground(drawable);
-        }
-        recyclerView.setHasFixedSize(true);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        //keyboard doesn't hide recycleView
-        linearLayoutManager.setStackFromEnd(true);
-        recyclerView.setLayoutManager(linearLayoutManager);
-        recyclerView.setItemViewCacheSize(20);
-        recyclerView.setDrawingCacheEnabled(true);
-        recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
-        recyclerView.setAdapter(chatAdapter);
-        recyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
-            @Override
-            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                if(linearLayoutManager.findLastCompletelyVisibleItemPosition() == chatAdapter.getItemCount()-1)
-                    scrollToBot.setVisibility(View.GONE);
-                else scrollToBot.setVisibility(View.VISIBLE);
-            }
-        });
         MessageTouch touch = new MessageTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END);
         touch.setListener(new TouchListener() {
             @Override
@@ -822,27 +900,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
             }
         });
-
-        playAudioRecordingBtn.setListener(new PlayAudioButton.onPlayAudio() {
-            @Override
-            public void playAudio() {
-                playRecording(true);
-
-            }
-
-            @Override
-            public void pauseAudio() {
-                playRecording(false);
-
-            }
-        });
-//        playAudioRecordingBtn.setOnClickListener(new View.OnClickListener() {
-//
-//            @Override
-//            public void onClick(View v) {
-//                playRecording();
-//            }
-//        });
 
         actionBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -938,10 +995,17 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
         });
 
-        registerForContextMenu(recyclerView);
+//        registerForContextMenu(recyclerView);
         init(conversationID);
         if (smsConversation) {
-            buttonState = SEND_MESSAGE;
+            changeMessageType(MessageType.textMessage);
+//            buttonState = SEND_MESSAGE;
+        }
+        SharedPreferences sharedPreferences = getSharedPreferences("background", Context.MODE_PRIVATE);
+        int presetBackground = sharedPreferences.getInt("backgroundImage normal", -1);
+        if (presetBackground != -1) {
+            Drawable drawable = ResourcesCompat.getDrawable(getResources(), presetBackground, getTheme());
+            recyclerView.setBackground(drawable);
         }
     }
 
@@ -1338,8 +1402,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         new AudioPlayer2(getApplicationContext(), R.raw.send_message_sound);
     }
 
-    private void prepareMessage(String message)
-    {
+    private void prepareMessage(String message) {
         String[] recipientsNames = new String[recipients.size()];
         String[] recipientsID = new String[recipients.size()];
         for (int i = 0; i < recipientsNames.length; i++) {
@@ -1347,19 +1410,21 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             if (!smsConversation)
                 recipientsID[i] = recipients.get(i).getUserUID();
         }
-        switch (messageType)
-        {
+        switch (messageType) {
             case editMessage:
                 InteractionMessage(editMessage.getConversationID(), editMessage.getMessageID(), EDIT);
                 break;
-            case sms: case textMessage: case gpsMessage:
+            case sms:
+            case textMessage:
+            case gpsMessage:
                 if (!message.isEmpty())
-                     createMessage(message, messageType.ordinal(), recipientsNames, recipientsID);
+                    createMessage(message, messageType.ordinal(), recipientsNames, recipientsID);
                 break;
             case voiceMessage:
                 sendRecording();
                 break;
-            case photoMessage:case imageMessage:
+            case photoMessage:
+            case imageMessage:
                 createMessage(message, messageType.ordinal(), recipientsNames, recipientsID);
                 break;
         }
@@ -1389,13 +1454,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         setCorrectBtn(ButtonType.microphone);
         recorded = false;
         buttonState = RECORD_VOICE;
-        startRecording = true;
         if (filePath != null) {
             AudioManager manager = AudioManager.getInstance();
             manager.releasePlayer(filePath);
-            startPlaying1 = true;
             // RecordOrNot();
         }
+        linkMessageLayout.setVisibility(View.GONE);
         if (smsConversation)
             actionBtn.setVisibility(View.GONE);
     }
@@ -1431,8 +1495,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         AudioManager manager = AudioManager.getInstance();
         AudioRecorder audioRecorder = manager.getAudioRecorder(conversationID, this);
         changeMessageType(MessageType.voiceMessage);
-        if (audioRecorder.getListener() == null)
-        {
+        if (audioRecorder.getListener() == null) {
             audioRecorder.setListener(new AudioHelper() {
                 @Override
                 public void onProgressChange(String formattedProgress, int progress) {
@@ -1464,8 +1527,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         recorded = true;
     }
 
-    private void playRecording(boolean play)
-    {
+    private void playRecording(boolean play) {
         TimeFormat format = new TimeFormat();
         AudioManager2 manager = AudioManager2.getInstance();
         AudioPlayer2 audioPlayer = manager.getAudioPlayer(filePath);
@@ -1478,7 +1540,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     public void run() {
                         recordingTimeText.setText(time);
                         voiceSeek.setProgress(progress, true);
-                        if (progress == audioPlayer.getDuration()/1000)
+                        if (progress == audioPlayer.getDuration() / 1000)
                             playAudioRecordingBtn.resetClicks();
                     }
                 });
@@ -1558,7 +1620,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                 RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
                                 if (manager != null) {
                                     View view1 = manager.findViewByPosition(index);
-                                    MarkMessage(view1, true);
+                                    markMessage(view1);
                                 }
                                 recyclerView.removeOnScrollListener(this);
                             }
@@ -1575,41 +1637,44 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    private void MarkMessage(View view, boolean scroll) {
+    private void markMessage(View view) {
         if (view != null) {
-            view.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.border, getTheme()));
-            if (scroll) {
-                Handler handler = new Handler(getMainLooper());
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        view.setBackground(null);
-                    }
-                }, 2500);
-            }
+            view.setSelected(true);
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    view.setSelected(false);
+                }
+            },2500);
         }
     }
 
     @Override
     public void onMessageLongClick(Message message, View view, int viewType) {
-        //opens fragment that shows information about the specific message
         messageLongPress = !messageLongPress;
         invalidateOptionsMenu();
         selectedMessage = message;
-        MarkMessage(view, false);
-
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         if (messageLongPress) {
+            menu.findItem(R.id.copy).setVisible(true);
             menu.findItem(R.id.share).setVisible(true);
             menu.findItem(R.id.messageInfo).setVisible(true);
+            menu.setGroupVisible(R.id.singlePersonConversation, false);
+            menu.setGroupVisible(R.id.groupConversationOptions, false);
         } else {
-            menu.findItem(R.id.share).setVisible(false);
-            menu.findItem(R.id.messageInfo).setVisible(false);
+            menu.setGroupVisible(R.id.selectedMessageOptions, false);
+//            menu.findItem(R.id.share).setVisible(false);
+//            menu.findItem(R.id.messageInfo).setVisible(false);
+//            menu.findItem(R.id.copy).setVisible(false);
+            if (recipients != null)
+                if (recipients.size() == 1)
+                    menu.setGroupVisible(R.id.singlePersonConversation, true);
+                else
+                    menu.setGroupVisible(R.id.groupConversationOptions, false);
         }
-
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -1624,14 +1689,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     @Override
     public void onEditMessageClick(Message message) {
-        if(messageType != MessageType.editMessage)
-        {
+        if (messageType != MessageType.editMessage) {
             messageText.setText(message.getMessage());
             changeMessageType(MessageType.editMessage);
             editMessage = message;
-        }
-        else
-        {
+        } else {
             messageText.setText("");
             editMessage = null;
         }
@@ -1731,16 +1793,15 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     @Override
-    public void onRetrySending(String messageID,String imagePath) {
-        int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(messageID));
-        if (index!=-1)
-        {
+    public void onRetrySending(String messageID, String imagePath) {
+        int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(messageID));
+        if (index != -1) {
             Message message = chatAdapter.getMessage(index);
             String[] recipientsTokens = new String[recipients.size()];
             for (int i = 0; i < recipientsTokens.length; i++) {
                 recipientsTokens[i] = recipients.get(i).getToken();
             }
-            messageSender.sendMessage(message,recipientsTokens);
+            messageSender.sendMessage(message, recipientsTokens);
             message.setSent(true);
             chatAdapter.notifyItemChanged(index);
         }
@@ -1870,7 +1931,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
                         Toast.makeText(this, "great! to record press and hold the recording button", Toast.LENGTH_SHORT).show();
                     else
-                        Toast.makeText(this, "permission required to record audi", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "permission required to record audio", Toast.LENGTH_SHORT).show();
                     break;
                 case 999:
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
@@ -2088,15 +2149,18 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    public void changeMessageType(MessageType type)
-    {
+    public void changeMessageType(MessageType type) {
         this.messageType = type;
-        switch (type)
-        {
-            case photoMessage: case imageMessage:case fileMessage:case gpsMessage:case textMessage:
+        switch (type) {
+            case photoMessage:
+            case imageMessage:
+            case fileMessage:
+            case gpsMessage:
+            case textMessage:
                 sendMessageBtn.setButtonState(ImageButtonSwitcher.SEND_MESSAGE);
                 break;
-            case voiceMessage:case contact:
+            case voiceMessage:
+            case contact:
                 sendMessageBtn.setButtonState(ImageButtonSwitcher.RECORD_VOICE);
                 break;
             case editMessage:
@@ -2239,8 +2303,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     private void openGallery() {
+        Intent galleryIntent = new Intent();
+        galleryIntent.setType("image/*");
+//        galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
+        galleryIntent.setAction(Intent.ACTION_OPEN_DOCUMENT);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        openGallery.launch(Intent.createChooser(intent, "Select Picture to Upload"));
+        openGallery.launch(Intent.createChooser(galleryIntent, "Select Picture to Upload"));
         //startActivityForResult(Intent.createChooser(intent, "Select Picture to Upload"), GALLERY_REQUEST);
     }
 
@@ -2292,12 +2360,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.conversation_menu, menu);
-        if (recipients != null && recipients.size() > 1) {
-            menu.findItem(R.id.callBtn).setVisible(false);
-            menu.findItem(R.id.addAsContact).setVisible(false);
-            menu.findItem(R.id.addPhoneNumber).setVisible(false);
-            menu.setGroupVisible(R.id.groupConversation, true);
+        if (recipients != null) {
+            menu.setGroupVisible(R.id.allConversationsOptions, true);
+            menu.setGroupVisible(R.id.selectedMessageOptions, false);
+            if (recipients.size() == 1) {
+                menu.setGroupVisible(R.id.singlePersonConversation, true);
+                menu.setGroupVisible(R.id.groupConversationOptions, false);
+                menu.findItem(R.id.callBtn).setVisible(recipients.get(0).getPhoneNumber() != null);
+            } else if (recipients.size() > 1) {
+                menu.setGroupVisible(R.id.singlePersonConversation, false);
+                menu.setGroupVisible(R.id.groupConversationOptions, true);
+            }
         }
+//        if (recipients != null && recipients.size() > 1) {
+//            menu.findItem(R.id.callBtn).setVisible(false);
+//            menu.findItem(R.id.addAsContact).setVisible(false);
+//            menu.findItem(R.id.addPhoneNumber).setVisible(false);
+//            menu.setGroupVisible(R.id.groupConversation, true);
+//        }
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -2327,36 +2407,43 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             //opens contact and gets selected contact number
             View builderView = getLayoutInflater().inflate(R.layout.edit_text_dialog, null);
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            Button saveBtn = builderView.findViewById(R.id.saveBtn);
+            Button cancelBtn = builderView.findViewById(R.id.cancelBtn);
+            Button fromContacts = builderView.findViewById(R.id.add);
             EditText text = builderView.findViewById(R.id.editTextDialog);
             AlertDialog alert = builder.setTitle("Add a phone number to this contact")
                     .setMessage("choose a phone number from contacts or type one")
                     .setCancelable(true)
-                    .setPositiveButton("from contacts", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Intent addPhoneNumberIntent = new Intent(Intent.ACTION_PICK);
-                            addPhoneNumberIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
-                            if (addPhoneNumberIntent.resolveActivity(getPackageManager()) != null)
-                                addPhoneNumber.launch(addPhoneNumberIntent);
-                            //startActivityForResult(addPhoneNumberIntent, REQUEST_SELECT_PHONE_NUMBER);
-                            dialog.dismiss();
-                        }
-                    }).setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    }).setNeutralButton("add", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            String phoneNumber = text.getText().toString();
-                            recipients.get(0).setPhoneNumber(phoneNumber);
-                            userModel.updateUser(recipients.get(0));
-                            // dbActive.updateUser(recipients.get(0));
-                            dialog.dismiss();
-                        }
-                    }).setView(builderView).create();
+                    .setView(builderView).create();
             alert.show();
+            cancelBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    alert.dismiss();
+                }
+            });
+            saveBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String phoneNumber = text.getText().toString();
+                    if (phoneNumber.isEmpty())
+                        Toast.makeText(ConversationActivity2.this, "phone number is missing", Toast.LENGTH_SHORT).show();
+                    else {
+                        recipients.get(0).setPhoneNumber(phoneNumber);
+                        userModel.updateUser(recipients.get(0));
+                    }
+                }
+            });
+            fromContacts.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent addPhoneNumberIntent = new Intent(Intent.ACTION_PICK);
+                    addPhoneNumberIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
+                    if (addPhoneNumberIntent.resolveActivity(getPackageManager()) != null)
+                        addPhoneNumber.launch(addPhoneNumberIntent);
+                    alert.dismiss();
+                }
+            });
         } else if (item.getItemId() == R.id.blockConversation) {
             model.isConversationBlocked(conversationID).observe(this, new Observer<Boolean>() {
                 @Override
@@ -2497,7 +2584,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     private void init(String conversationID) {
         initDBRoom();
-        ReceiveMessages(conversationID);
+        receiveMessages(conversationID);
         getRecipientStatus();
         getImageMessage();
     }
@@ -2547,62 +2634,62 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         message.setSender(currentUser);
         message.setMessageStatus(MESSAGE_WAITING);
         message.setMessageType(messageType);
-        model.setOnFileUploadListener(new Server.onFileUpload() {
-            @Override
-            public void onPathReady(String path) {
-                message.setFilePath(path);
-                sendMessage(message);
-            }
-
-            @Override
-            public void onStartedUpload(String msgID) {
-                //shows progress bar
-                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
-                if (index != -1)
-                {
-                    chatAdapter.getMessage(index).setUploading(true);
-                    chatAdapter.notifyItemChanged(index);
-                    chatAdapter.getMessage(index).setError(false);
-                }
-            }
-
-            @Override
-            public void onProgress(int progress) {
-
-            }
-
-            @Override
-            public void onUploadFinished(String msgID) {
-                //disables progress bar
-                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
-                if (index != -1)
-                {
-                    chatAdapter.getMessage(index).setUploading(false);
-                    chatAdapter.getMessage(index).setError(false);
-                    chatAdapter.notifyItemChanged(index);
-                }
-            }
-
-            @Override
-            public void onUploadError(String msgID, String errorMessage) {
-                //displays error message and gives option to resend the message file
-                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
-                if (index!=-1)
-                {
-                    chatAdapter.getMessage(index).setSent(false);
-                    chatAdapter.notifyItemChanged(index);
-                }
-                AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity2.this);
-                builder.setTitle("Error")
-                        .setMessage("an error occurred while sending the file")
-                        .setIcon(R.drawable.ic_baseline_error_24)
-                        .setCancelable(true)
-                        .setNeutralButton("ok",null)
-                        .create()
-                        .show();
-                sendMessage(message);
-            }
-        });
+//        model.setOnFileUploadListener(new Server.onFileUpload() {
+//            @Override
+//            public void onPathReady(String msgID, String path) {
+//                message.setFilePath(path);
+//                sendMessage(message);
+//            }
+//
+//            @Override
+//            public void onStartedUpload(String msgID) {
+//                //shows progress bar
+//                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
+//                if (index != -1)
+//                {
+//                    chatAdapter.getMessage(index).setUploading(true);
+//                    chatAdapter.notifyItemChanged(index);
+//                    chatAdapter.getMessage(index).setError(false);
+//                }
+//            }
+//
+//            @Override
+//            public void onProgress(String msgID, int progress) {
+//
+//            }
+//
+//            @Override
+//            public void onUploadFinished(String msgID) {
+//                //disables progress bar
+//                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
+//                if (index != -1)
+//                {
+//                    chatAdapter.getMessage(index).setUploading(false);
+//                    chatAdapter.getMessage(index).setError(false);
+//                    chatAdapter.notifyItemChanged(index);
+//                }
+//            }
+//
+//            @Override
+//            public void onUploadError(String msgID, String errorMessage) {
+//                //displays error message and gives option to resend the message file
+//                int index = chatAdapter.findMessageLocation((ArrayList<Message>) chatAdapter.getMessages(),0,chatAdapter.getMessages().size()-1,Long.parseLong(msgID));
+//                if (index!=-1)
+//                {
+//                    chatAdapter.getMessage(index).setSent(false);
+//                    chatAdapter.notifyItemChanged(index);
+//                }
+//                AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity2.this);
+//                builder.setTitle("Error")
+//                        .setMessage("an error occurred while sending the file")
+//                        .setIcon(R.drawable.ic_baseline_error_24)
+//                        .setCancelable(true)
+//                        .setNeutralButton("ok",null)
+//                        .create()
+//                        .show();
+//                sendMessage(message);
+//            }
+//        });
         if (quoteOn) {
             message.setQuoteMessage(quoteText.getText().toString());
             message.setQuotedMessagePosition(quotedMessagePosition);
@@ -2629,32 +2716,38 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 message.setLocationAddress(gpsAddress);
                 message.setMessage("my location: " + gpsAddress);
                 break;
-            case photoMessage:
-                if (camera)//photo from camera
-                {
-                    message.setImagePath(photoPath);
-                    model.uploadFile(currentUser,message.getMessageID(),Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false),ConversationActivity2.this);
-                } else//photo from gallery
-                {
-                    message.setImagePath(imageUri.toString());
-                    model.uploadFile(currentUser,message.getMessageID(),imageBitmap,ConversationActivity2.this);
-                }
+            case photoMessage://photo from gallery
+//                if (camera)//photo from camera
+//                {
+//                    message.setImagePath(photoPath);
+//                    model.uploadFile(currentUser,message.getMessageID(),Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false),ConversationActivity2.this);
+//                } else//photo from gallery
+            {
+                message.setImagePath(imageUri.toString());
+                model.uploadFile(currentUser, message.getMessageID(), imageBitmap, ConversationActivity2.this);
+            }
+            break;
+            case imageMessage://image from camera
+                message.setImagePath(photoPath);
+                model.uploadFile(currentUser, message.getMessageID(), Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false), ConversationActivity2.this);
                 break;
             case voiceMessage:
                 message.setRecordingPath(fileUri.toString());
                 message.setMessage("Voice Message");
-                model.uploadFile(message.getMessageID(),fileUri,ConversationActivity2.this);
+//                sendMessage(message);
+                model.uploadFile(message.getMessageID(), fileUri, ConversationActivity2.this);
                 break;
             case videoMessage:
-                model.uploadFile(message.getMessageID(),videoUri,ConversationActivity2.this);
+                model.uploadFile(message.getMessageID(), videoUri, ConversationActivity2.this);
                 break;
             case gif:
                 message.setMessage(gif.getUrl());
                 break;
             default:
+                break;
         }
-        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact || type == MessageType.gif)
-            sendMessage(message);
+//        if (type == MessageType.textMessage || type == MessageType.gpsMessage || type == MessageType.webMessage || type == MessageType.status || type == MessageType.sms || type == MessageType.contact || type == MessageType.gif)
+        sendMessage(message);
     }
 
     private void sendMessage(@NonNull Message message) {
@@ -2667,11 +2760,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 String token = getMyToken();
                 message.setSenderToken(token);
 //                MessageSender messageSender = MessageSender.getInstance();
-                String[] recipientsTokens = new String[recipients.size()];
-                for (int i = 0; i < recipientsTokens.length; i++) {
-                    recipientsTokens[i] = recipients.get(i).getToken();
+                if (recipientsTokens == null) {
+                    recipientsTokens = new String[recipients.size()];
+                    for (int i = 0; i < recipientsTokens.length; i++) {
+                        recipientsTokens[i] = recipients.get(i).getToken();
+                    }
                 }
-                Log.d("the amount of all the recipients tokens ", recipientsTokens.length + "");
                 saveMessage(message);
                 if (isNetworkAvailable()) {
 //                    message.setMessageStatus(MESSAGE_SENT);
@@ -2682,7 +2776,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 } else {
                     if (!message.getMessageStatus().equals(MESSAGE_WAITING)) {//no need to constantly update the same data - saves on processing time
                         message.setMessageStatus(MESSAGE_WAITING);
-                        model.updateMessageStatus(message.getMessageID(), MESSAGE_WAITING);
+                        updateMessage(message);
+//                        model.updateMessageStatus(message.getMessageID(), MESSAGE_WAITING);
                         //dbActive.updateMessageStatus(message.getMessageID(), MESSAGE_WAITING);
                     }
                     Toast.makeText(ConversationActivity2.this, "message will be sent during the next session with a valid connection", Toast.LENGTH_LONG).show();
@@ -2690,6 +2785,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
                     if (!chatAdapter.isMessageExists(message.getMessageID()))
                         showMessageOnScreen(message, message.getMessageAction());
+                    else
+                        chatAdapter.updateMessage(message);
                 } else
                     showMessageOnScreen(message, message.getMessageAction());
             }
@@ -2699,7 +2796,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    private void ReceiveMessages(String conversationID) {
+    private void receiveMessages(String conversationID) {
         receiveNewMessages = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -2846,12 +2943,15 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         messagesLD.observe(this, new Observer<List<Message>>() {
             @Override
             public void onChanged(List<Message> messages) {
+//                chatAdapter.setMessages((ArrayList<Message>) messages);
                 for (Message message : messages) {
-                    if (message.getMessage()!=null)
-                    if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
-                        sendMessage(message);
-                    }
-                    else showMessageOnScreen(message, MessageAction.activity_start);//else statement because this function is being called also in sendMessage function
+                    if (message.getMessage() != null)
+                        if (message.getMessageStatus().equals(MESSAGE_WAITING)) {
+                            sendMessage(message);
+                        } else
+                            showMessageOnScreen(message, MessageAction.activity_start);//else statement because this function is being called also in sendMessage function
+                    if (message.getMessageAction() == MessageAction.edit_message)
+                        showMessageOnScreen(message, MessageAction.activity_start);
                 }
                 sendMessageStatus();
                 messagesLD.removeObservers(ConversationActivity2.this);
@@ -2860,13 +2960,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
     }
 
-    private void sendMessageStatus()
-    {
-        if (recipients != null && !recipients.isEmpty())
-        {
-            List<Message>messages = chatAdapter.getMessages();
-            if (messages != null && !messages.isEmpty())
-            {
+    private void sendMessageStatus() {
+        if (recipients != null && !recipients.isEmpty()) {
+            List<Message> messages = chatAdapter.getMessages();
+            if (messages != null && !messages.isEmpty()) {
                 if (!smsConversation) {
                     for (Message message : messages) {
                         if (!message.getMessageStatus().equals(MESSAGE_SEEN) && !message.getSender().equals(currentUser)) {
@@ -2913,9 +3010,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         model.checkIfMessageExists(message).observe(ConversationActivity2.this, new Observer<Boolean>() {
             @Override
             public void onChanged(Boolean aBoolean) {
-                if (aBoolean!=null)
-                {
-                    if(!aBoolean)
+                if (aBoolean != null) {
+                    if (!aBoolean)
                         model.saveMessage(message);
                 }
             }
@@ -3039,15 +3135,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         return null;
     }
 
-    private void getRecipientToken(String uid)
-    {
-        if (uid!=null)
-        {
+    private void getRecipientToken(String uid) {
+        if (uid != null) {
             userModel.setOnTokenDownloadedListener(new Server.onTokenDownloaded() {
                 @Override
                 public void tokenDownloaded(String uid, String token) {
-                    if (token!=null)
-                    {
+                    if (token != null) {
                         User recipient = getRecipientByID(uid);
                         if (recipient != null) {
                             if (!token.equals(recipient.getToken())) {
@@ -3060,12 +3153,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
                 @Override
                 public void error(String message) {
-                    Log.e(NULL_ERROR,message);
+                    Log.e(NULL_ERROR, message);
                 }
             });
             userModel.getUserToken(uid);
-        }
-        else
+        } else
             Log.e(NULL_ERROR, "recipientUID is null");
     }
 
@@ -3173,12 +3265,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     @Override
     public void onGifClick(Gif gif) {
         this.gif = gif;
-        createMessage("",MessageType.gif.ordinal(),getRecipientsNames(),getRecipientsIDs());
+        createMessage("", MessageType.gif.ordinal(), getRecipientsNames(), getRecipientsIDs());
         this.gif = null;
     }
 
-    private void resetQuote()
-    {
+    private void resetQuote() {
         quotedMessageID = null;
         quotedMessagePosition = -1;
         quoteText.setText("");

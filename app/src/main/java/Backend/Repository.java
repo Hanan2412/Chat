@@ -510,7 +510,7 @@ public class Repository {
     {
         server.setFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String path) {
+            public void onPathReady(String msgID, String path) {
                 server.setFileUploadListener(null);
                 String relativePath = path.split("downloadFile/")[1];
                 user.setPictureLink(relativePath);
@@ -546,7 +546,7 @@ public class Repository {
             }
 
             @Override
-            public void onProgress(int progress) {
+            public void onProgress(String msgID, int progress) {
 
             }
 

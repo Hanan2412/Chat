@@ -61,9 +61,9 @@ public class Server {
     }
 
     public interface onFileUpload{
-        void onPathReady(String path);
+        void onPathReady(String msgID, String path);
         void onStartedUpload(String msgID);
-        void onProgress(int progress);
+        void onProgress(String msgID, int progress);
         void onUploadFinished(String msgID);
         void onUploadError(String msgID,String errorMessage);
     }
@@ -579,7 +579,7 @@ public class Server {
                         if (response.isSuccessful()) {
                             fileUpload.onUploadFinished(msgID);
                             if (response.body() != null)
-                                fileUpload.onPathReady(response.body().getFileDownloadUri());
+                                fileUpload.onPathReady(msgID,response.body().getFileDownloadUri());
                             else
                                 fileUpload.onUploadError(msgID,"sending file failed");
                         }
@@ -609,7 +609,7 @@ public class Server {
                 if (response.isSuccessful()) {
                     fileUpload.onUploadFinished(msgID);
                     if (response.body() != null)
-                        fileUpload.onPathReady(response.body().getFileDownloadUri());
+                        fileUpload.onPathReady(msgID,response.body().getFileDownloadUri());
                     else
                         fileUpload.onUploadError(msgID,"sending file failed");
                 }

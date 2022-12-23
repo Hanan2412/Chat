@@ -4,17 +4,9 @@
     android:id="@+id/conversationCell"
     android:layout_width="match_parent"
     android:layout_height="60dp"
-    android:background="@drawable/conversation_cell_not_selected"
+    android:background="@drawable/conversation_single_look"
     android:layout_marginTop="1dp">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:background="@drawable/border"
-        android:id="@+id/border"
-        android:orientation="horizontal"
-        android:visibility="gone">
 
-    </LinearLayout>
     <RelativeLayout
         android:id="@+id/conversationImages"
         android:layout_width="wrap_content"
@@ -22,23 +14,23 @@
         android:layout_alignParentStart="true">
 
         <RelativeLayout
+            android:id="@+id/pinLayout"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:background="@drawable/triangle"
-            android:id="@+id/pinLayout"
             android:visibility="gone">
 
             <ImageView
+                android:id="@+id/pin"
                 android:layout_width="15dp"
                 android:layout_height="15dp"
-                android:contentDescription="pin"
-                android:layout_marginTop="3dp"
-                android:src="@drawable/ic_baseline_push_pin_24"
                 android:layout_marginStart="2dp"
+                android:layout_marginTop="3dp"
+                android:contentDescription="pin"
                 android:rotation="315"
-                android:id="@+id/pin"
-                />
+                android:src="@drawable/ic_baseline_push_pin_24" />
         </RelativeLayout>
+
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/conversationImage"
             android:layout_width="40dp"

@@ -4,18 +4,9 @@
     android:id="@+id/conversationCell"
     android:layout_width="match_parent"
     android:layout_height="60dp"
-    android:background="@drawable/conversation_sms_cell_not_selected"
+    android:background="@drawable/conversation_sms_look"
     android:layout_marginTop="1dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:background="@drawable/border"
-        android:id="@+id/border"
-        android:orientation="horizontal"
-        android:visibility="gone">
-
-    </LinearLayout>
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
