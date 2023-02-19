@@ -2,6 +2,7 @@ package Audio;
 
 import android.content.Context;
 import android.media.MediaRecorder;
+import android.os.Build;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -15,20 +16,22 @@ public class AudioRecorder extends MediaRecorder implements Runnable {
     private int seconds = 0,minutes = 0;
     private final String fileName;
     private TimeFormat format;
+
     public AudioRecorder(Context context)
     {
         format = new TimeFormat();
-        setAudioSource(MediaRecorder.AudioSource.MIC);
-        setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        setAudioSource(AudioSource.MIC);
+        setOutputFormat(OutputFormat.THREE_GPP);
         fileName = context.getExternalCacheDir().getAbsolutePath() + "/audioRecording_" + System.currentTimeMillis() + ".3pg";
         setOutputFile(fileName);
-        setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+        setAudioEncoder(AudioEncoder.AMR_NB);
         try {
             prepare();
         } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
         }
     }
+
     public String getRecordingPath()
     {
         return fileName;

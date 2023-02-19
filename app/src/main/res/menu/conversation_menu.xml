@@ -24,21 +24,21 @@
         <item
             android:id="@+id/copy"
             android:icon="@drawable/ic_baseline_file_copy_black"
-            android:title="Copy message"
+            android:title="@string/copy_message"
             app:showAsAction="never"
             android:visible="true"/>
         <item
             android:id="@+id/messageInfo"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_info_white"
-            android:title="message Information"
+            android:title="@string/info"
             android:visible="true"
             app:showAsAction="ifRoom" />
         <item
             android:id="@+id/share"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_share_white"
-            android:title="Share"
+            android:title="@string/share"
             android:visible="true"
             app:showAsAction="never" />
     </group>
@@ -48,14 +48,14 @@
         <item
             android:id="@+id/addNewMember"
             android:icon="@drawable/ic_baseline_group_add_24"
-            android:title="add new members"
+            android:title="@string/add_new_member"
             app:showAsAction="ifRoom"
             android:visible="true"/>
 
         <item
             android:id="@+id/leaveGroup"
             android:icon="@drawable/ic_baseline_exit_to_app_24"
-            android:title="leave group"
+            android:title="@string/leave"
             app:showAsAction="never"
             android:visible="true"/>
     </group>
@@ -66,21 +66,21 @@
             android:id="@+id/addPhoneNumber"
             android:enabled="true"
             android:icon="@drawable/common_full_open_on_phone"
-            android:title="Add phone number"
+            android:title="@string/add_phone"
             android:visible="true"
             app:showAsAction="never" />
         <item
             android:id="@+id/addAsContact"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_contacts_24"
-            android:title="Add as contact"
+            android:title="@string/add_contact"
             android:visible="true"
             app:showAsAction="never" />
         <item
             android:id="@+id/callBtn"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_call_24"
-            android:title="Call"
+            android:title="@string/call"
             android:visible="true"
             app:showAsAction="never" />
     </group>

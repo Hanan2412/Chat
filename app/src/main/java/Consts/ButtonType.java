@@ -15,5 +15,8 @@ public enum ButtonType {
     contact,
     document,
     joke,
-    gif
+    gif,
+    poll,
+    cancel,
+    undefined
 }

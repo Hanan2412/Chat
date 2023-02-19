@@ -89,4 +89,23 @@
     <string name="your_last_name">Your Last Name</string>
     <string name="next">Next</string>
     <string name="you">You</string>
+    <string name="conversation_name">Conversation Name</string>
+    <string name="radio_button1">Radio Button 1</string>
+    <string name="radio_button2">Radio Button 2</string>
+    <string name="more">add more</string>
+    <string name="open_imaji_keyboard">Opens imoji keyboard</string>
+    <string name="char_count">characters count</string>
+    <string name="scroll_bot">Scroll to Bottom</string>
+    <string name="sender_name">senders name</string>
+    <string name="link_image_preview">Preview Image</string>
+    <string name="cancel">Cancel</string>
+    <string name="call">Call</string>
+    <string name="add_contact">Add as contact</string>
+    <string name="add_phone">Add phone number</string>
+    <string name="share">Share</string>
+    <string name="add_new_member">Add new member</string>
+    <string name="leave">Leave</string>
+    <string name="info">Information</string>
+    <string name="copy_message">Copy</string>
+
 </resources>

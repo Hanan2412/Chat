@@ -24,7 +24,9 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -51,6 +53,7 @@ import android.widget.ImageButton;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextSwitcher;
@@ -111,6 +114,8 @@ import Fragments.GifBackdropFragment;
 import NormalObjects.Conversation;
 import NormalObjects.Gif;
 import NormalObjects.MessageHistory;
+import NormalObjects.Network2;
+import NormalObjects.NetworkChange;
 import NormalObjects.Web;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
@@ -301,6 +306,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 recyclerView.scrollToPosition(chatAdapter.getItemCount()-1);
             }
         });
+        connection();
         messageSender.setMessageListener(new MessageSender.onMessageSent() {
             @Override
             public void onMessageSentSuccessfully(Message message) {
@@ -1585,6 +1591,11 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         }
     }
 
+    @Override
+    public void onRadioBtnClick(RadioGroup group, int radioBtnPosition) {
+
+    }
+
 
     //saves image to local storage
     @Override
@@ -1874,6 +1885,7 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         resetToText();
     }
 
+    @SuppressLint("MissingPermission")
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -1888,7 +1900,8 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
         return false;
     }
 
-    /*private void ConnectedToInternet() {
+    @SuppressLint("MissingPermission")
+    private void connection() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         NetworkRequest.Builder builder = new NetworkRequest.Builder();
         builder.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
@@ -1896,41 +1909,37 @@ public class ConversationActivity extends AppCompatActivity implements ChatAdapt
                 .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
                 .addTransportType(NetworkCapabilities.TRANSPORT_VPN);
         NetworkRequest request = builder.build();
-        network2 = Network2.getInstance();
+        Network2 network2 = Network2.getInstance();
         //Network network = new Network();
         network2.setListener(new NetworkChange() {
             @Override
             public void onNetwork() {
-                if (!networkConnection) {
-                    networkConnection = true;
+                    toolbar.setSelected(false);
                     Toast.makeText(ConversationActivity.this, "network is available, functionality regained", Toast.LENGTH_SHORT).show();
                 }
 
-            }
-
             @Override
             public void onNoNetwork() {
-                networkConnection = false;
+                toolbar.setSelected(true);
                 Toast.makeText(ConversationActivity.this, "network isn't available - messages will not be sent or received. connect to the internet in order to regain functionality", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onNetworkLost() {
                 //networkConnection = false;
+                toolbar.setSelected(true);
                 Toast.makeText(ConversationActivity.this, "network lost - disconnected from the internet", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onChangedNetworkType() {
-                networkConnection = true;
                 //Toast.makeText(ConversationActivity.this, "network changed", Toast.LENGTH_SHORT).show();
             }
         });
         //ConnectivityManager.NetworkCallback networkCallback = network;
         if (connectivityManager != null)
             connectivityManager.registerNetworkCallback(request, network2);
-
-    }*/
+    }
 
     @Override
     public void onBackPressed() {

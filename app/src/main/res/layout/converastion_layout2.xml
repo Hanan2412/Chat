@@ -17,6 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
+            android:background="@drawable/active_conversation"
             app:layout_scrollFlags="noScroll">
 
             <LinearLayout
@@ -70,7 +71,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@android:color/white"
-                        android:text="conversation name"
+                        android:text="@string/conversation_name"
                         android:layout_centerVertical="true"
                         android:textSize="24sp" />
 
@@ -129,7 +130,7 @@
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="next"
+                android:text="@string/next"
                 app:icon="@drawable/ic_baseline_arrow_forward_24"
                 app:iconTint="@android:color/holo_blue_light"
                 android:textColor="@android:color/holo_blue_light"

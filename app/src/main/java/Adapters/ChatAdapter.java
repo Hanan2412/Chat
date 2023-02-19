@@ -25,6 +25,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -84,6 +85,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         void onPreviewMessageClick(Message message);
         void onDeleteMessageClick(Message message);
         void onEditMessageClick(Message message);
+        void onRadioBtnClick(RadioGroup group, int radioBtnPosition);
         String onImageDownloaded(Bitmap bitmap, Message message);
         String onVideoDownloaded(File file, Message message);
         void onVideoClicked(Uri uri);
@@ -478,18 +480,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @SuppressWarnings("Convert2Lambda")
     public class ChatViewHolder extends RecyclerView.ViewHolder {
         com.vanniktech.emoji.EmojiTextView message;
-        TextView timeReceived,messageSender, edit, delete, quote,quoteSenderName, linkTitle, linkContent, contactName, contactPhone, recordingTime;
+        TextView timeReceived,messageSender, edit, delete, quote,quoteSenderName, linkTitle, linkContent, contactName, contactPhone, recordingTime, pollVotes, pollCreator;
         ImageView previewImage, linkImage, gpsImageIndicator;
-        LinearLayout extraOptionsLayout, playRecordingLayout, videoLayout, imageStatusLayout, quoteLayout, messageTextLayout, linkMessageLayout, innerPaneLayout;
+        LinearLayout extraOptionsLayout, playRecordingLayout, videoLayout, imageStatusLayout, quoteLayout, messageTextLayout, linkMessageLayout, innerPaneLayout, pollLayout;
         RelativeLayout imageLayout, contactLayout;
         ImageView statusTv;
         SeekBar voiceSeek;
         ImageButton  playVideoBtn, reUpload, reDownload,refresh;
-        PlayAudioButton playPauseBtn;
+        NormalObjects.PlayAudioButton playPauseBtn;
         ProgressBar showImageProgress, linkProgressBar;
         ShapeableImageView contactImage;
-        Button saveContactBtn;
+        Button saveContactBtn, hidePoll;
         ConstraintLayout rootLayout;
+        RadioGroup pollGroup;
         @SuppressLint("SetJavaScriptEnabled")
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -505,7 +508,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             messageTextLayout = itemView.findViewById(R.id.messageTextLayout);
             playRecordingLayout = itemView.findViewById(R.id.playRecordingLayout);
             voiceSeek = itemView.findViewById(R.id.voiceSeek);
-            playPauseBtn = itemView.findViewById(R.id.play_pause_btn);
+//            playPauseBtn = itemView.findViewById(R.id.play_pause_btn);
             videoLayout = itemView.findViewById(R.id.videoLayout);
             playVideoBtn = itemView.findViewById(R.id.playVideoBtn);
             showImageProgress = itemView.findViewById(R.id.imageProgressBar);
@@ -530,6 +533,26 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             timeReceived = itemView.findViewById(R.id.messageTime);
             innerPaneLayout = itemView.findViewById(R.id.innerPaneLayout);
             rootLayout = itemView.findViewById(R.id.rootLayout);
+            hidePoll = itemView.findViewById(R.id.hidePoll);
+            pollLayout = itemView.findViewById(R.id.pollLayout);
+            pollVotes = itemView.findViewById(R.id.pollVotes);
+            pollCreator = itemView.findViewById(R.id.pollCreatorName);
+            pollGroup = itemView.findViewById(R.id.radioGroup);
+            hidePoll.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (hidePoll.getVisibility() == View.VISIBLE)
+                    {
+                        pollLayout.setVisibility(View.GONE);
+                    }
+                }
+            });
+            pollGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                    callback.onRadioBtnClick(radioGroup, i);
+                }
+            });
             if (edit != null && delete != null) {
 
                 edit.setOnClickListener(new View.OnClickListener() {
@@ -592,56 +615,56 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     return true;
                 }
             });
-            playPauseBtn.setListener(new PlayAudioButton.onPlayAudio() {
-                @Override
-                public void playAudio() {
-                    AudioManager2 manager = AudioManager2.getInstance();
-                    Message audioMessage = messages.get(getAdapterPosition());
-                    if (audioMessage.getRecordingPath() != null) {
-                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
-                        if (voiceSeek.getMax() != player.getDuration() / 1000) {
-                            voiceSeek.setMax(player.getDuration() / 1000);
-                            voiceSeek.setMin(0);
-                        }
-                        TimeFormat format = new TimeFormat();
-                        player.setAudioListener(new AudioHelper() {
-                            @Override
-                            public void onProgressChange(String formattedProgress, int progress) {
-                                String time = formattedProgress + "/" + format.getFormattedTime(player.getDuration());
-                                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        recordingTime.setText(time);
-                                        voiceSeek.setProgress(progress, true);
-                                        if (progress == player.getDuration() / 1000)
-                                            playPauseBtn.resetClicks();
-                                    }
-                                });
-                                manager.updateProgress(audioMessage.getRecordingPath(), progress);
-                            }
-
-                            @Override
-                            public void onPlayingStatusChange(boolean isPlaying) {
-
-                            }
-                        });
-                        int progress = manager.getProgress(audioMessage.getRecordingPath());
-                        player.seekTo(progress * 1000);
-                        voiceSeek.setProgress(progress);
-                        player.playPauseAudio();
-                    }
-                }
-
-                @Override
-                public void pauseAudio() {
-                    AudioManager2 manager = AudioManager2.getInstance();
-                    Message audioMessage = messages.get(getAdapterPosition());
-                    if (audioMessage.getRecordingPath() != null) {
-                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
-                        player.playPauseAudio();
-                    }
-                }
-            });
+//            playPauseBtn.setListener(new PlayAudioButton.onPlayAudio() {
+//                @Override
+//                public void playAudio() {
+//                    AudioManager2 manager = AudioManager2.getInstance();
+//                    Message audioMessage = messages.get(getAdapterPosition());
+//                    if (audioMessage.getRecordingPath() != null) {
+//                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
+//                        if (voiceSeek.getMax() != player.getDuration() / 1000) {
+//                            voiceSeek.setMax(player.getDuration() / 1000);
+//                            voiceSeek.setMin(0);
+//                        }
+//                        TimeFormat format = new TimeFormat();
+//                        player.setAudioListener(new AudioHelper() {
+//                            @Override
+//                            public void onProgressChange(String formattedProgress, int progress) {
+//                                String time = formattedProgress + "/" + format.getFormattedTime(player.getDuration());
+//                                new Handler(Looper.getMainLooper()).post(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        recordingTime.setText(time);
+//                                        voiceSeek.setProgress(progress, true);
+//                                        if (progress == player.getDuration() / 1000)
+//                                            playPauseBtn.resetClicks();
+//                                    }
+//                                });
+//                                manager.updateProgress(audioMessage.getRecordingPath(), progress);
+//                            }
+//
+//                            @Override
+//                            public void onPlayingStatusChange(boolean isPlaying) {
+//
+//                            }
+//                        });
+//                        int progress = manager.getProgress(audioMessage.getRecordingPath());
+//                        player.seekTo(progress * 1000);
+//                        voiceSeek.setProgress(progress);
+//                        player.playPauseAudio();
+//                    }
+//                }
+//
+//                @Override
+//                public void pauseAudio() {
+//                    AudioManager2 manager = AudioManager2.getInstance();
+//                    Message audioMessage = messages.get(getAdapterPosition());
+//                    if (audioMessage.getRecordingPath() != null) {
+//                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
+//                        player.playPauseAudio();
+//                    }
+//                }
+//            });
         }
     }
 

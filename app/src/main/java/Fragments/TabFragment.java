@@ -56,6 +56,7 @@ import Adapters.ConversationsAdapter2;
 
 import Backend.ConversationVM;
 import Backend.UserVM;
+import Consts.ConversationType;
 import Consts.Tabs;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationTouch;
@@ -159,8 +160,7 @@ public class TabFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         String search = searchQuery.getText().toString();
-                        if (search != null)
-                            conversationsAdapter2.Search(search);
+                        conversationsAdapter2.Search(search);
                     }
                 });
                 recyclerView = view.findViewById(R.id.recycle_view);
@@ -564,6 +564,23 @@ public class TabFragment extends Fragment {
         System.out.println("on destroy fragment");
     }
 
+    private void demo()
+    {
+        if(conversationsAdapter2 != null) {
+            Conversation conversation = new Conversation("S_" + System.currentTimeMillis());
+            conversation.setConversationType(ConversationType.single);
+            conversation.setGroupName("Demo");
+            conversation.setRecipient("demo recipient");
+            conversation.setRecipientToken("demo token");
+            conversation.setTokens(new ArrayList<>());
+            conversation.setRecipientName("Demo recipient");
+            conversation.setType(ConversationType.single.ordinal());
+            conversation.setLastMessage("this is a demo conversation");
+            conversation.setLastMessageTime(System.currentTimeMillis()+"");
+            conversationsAdapter2.addConversation(conversation);
+        }
+    }
+
     //calls all the functions needed to start the fragment
     private void init() {
         DataBaseSetUp();
@@ -599,8 +616,10 @@ public class TabFragment extends Fragment {
                 }
                 conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
                 conversationLiveData.removeObserver(this);
+                demo();
             }
         });
+        demo();
     }
 
     private void loadNewOrUpdatedConversation() {
@@ -623,8 +642,10 @@ public class TabFragment extends Fragment {
                             conversationsAdapter2.setConversation(conversation, 0);
                     }
                 }
+                demo();
             }
         });
+        demo();
     }
 
     private void muteConversation(String conversationID) {

@@ -12,7 +12,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:weightSum="5">
@@ -136,6 +135,11 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:gravity="start"
+        android:orientation="horizontal"
+        android:weightSum="5"
         >
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/gifBtn"
@@ -147,6 +151,19 @@
             android:foreground="@drawable/ic_baseline_gif_24"
             android:contentDescription="@string/contact"
             android:layout_weight="1"
+            />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/pollBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:elevation="8dp"
+            android:foregroundGravity="center"
+            android:backgroundTint="@color/blue"
+            android:foreground="@drawable/ic_baseline_poll_24"
+            android:contentDescription="@string/contact"
+            android:layout_weight="1"
+            android:layout_marginStart="20dp"
             />
     </LinearLayout>
 <!--

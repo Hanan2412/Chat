@@ -101,9 +101,7 @@ public class NewChat extends AppCompatActivity {
                 adapter.ClearData();
                 if (searchUsers.getText() != null) {
                     String search = searchUsers.getText().toString();
-                    if (search != null) {
-                        userVM.searchForUsers(search);
-                    }
+                    userVM.searchForUsers(search);
                 }
             }
         });
