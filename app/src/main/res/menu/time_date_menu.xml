@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item
+        android:id="@+id/time"
+        android:title="@string/time"
+        android:icon="@drawable/ic_baseline_access_time_white"/>
+    <item
+        android:id="@+id/date"
+        android:title="@string/date"
+        android:icon="@drawable/ic_baseline_calendar_month_24"/>
+
+    <item android:id="@+id/location"
+        android:title="@string/location"
+        android:icon="@drawable/location_white"/>
+</menu>

@@ -7,7 +7,7 @@ import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.example.woofmeow.ConversationActivity;
+import Consts.MessageStatus;
 
 public class SMSBroadcastSent extends BroadcastReceiver {
 
@@ -20,14 +20,14 @@ public class SMSBroadcastSent extends BroadcastReceiver {
             LocalBroadcastManager.getInstance(context)
                     .sendBroadcast(new Intent(SENT_SMS_STATUS)
                             .putExtra("messageID",intent.getStringExtra("messageID"))
-                            .putExtra("status", ConversationActivity.MESSAGE_SENT));
+                            .putExtra("status", MessageStatus.SENT.ordinal()));
         }
         else if (intent.hasExtra("delivered"))
         {
             LocalBroadcastManager.getInstance(context)
                     .sendBroadcast(new Intent(SENT_SMS_STATUS)
                             .putExtra("messageID",intent.getStringExtra("messageID"))
-                            .putExtra("status",ConversationActivity.MESSAGE_DELIVERED));
+                            .putExtra("status",MessageStatus.DELIVERED.ordinal()));
         }
         Log.e("SMS",SENT_SMS_STATUS);
     }

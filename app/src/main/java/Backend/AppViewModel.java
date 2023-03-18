@@ -8,7 +8,6 @@ import androidx.lifecycle.LiveData;
 
 import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -50,7 +49,7 @@ public class AppViewModel extends AndroidViewModel {
 
     public LiveData<Conversation>getNewConversation(String conversationID)
     {
-        return repository.getNewConversation(conversationID);
+        return repository.getConversation(conversationID);
     }
 
     public void updateConversationLastMessage(String conversationID,String message)
@@ -73,7 +72,7 @@ public class AppViewModel extends AndroidViewModel {
         return repository.getUserByID(userUID);
     }
 
-    public void updateMessageStatus(String messageID,String status)
+    public void updateMessageStatus(String messageID,int status)
     {
         repository.updateMessageStatus(messageID,status);
     }
@@ -103,33 +102,33 @@ public class AppViewModel extends AndroidViewModel {
         repository.insertNewMessage(message);
     }
 
-    public void createNewConversation(Message message, String currentUser, ConversationType type)
-    {
-        Conversation conversation = createConversation(message,type);
-        if (message.getRecipients().size() == 1) {
-            List<String>recipients = new ArrayList<>();
-            if (!message.getRecipients().get(0).equals(currentUser))
-            {
-                conversation.setRecipient(message.getRecipients().get(0));
-                recipients = message.getRecipients();
-            }
-            else
-            {
-                conversation.setRecipient(message.getSender());
-                recipients.add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), recipients);
-        }
-        else
-        {
-            if (message.getRecipients().contains(currentUser)) {
-                message.getRecipients().remove(currentUser);
-                message.getRecipients().add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), message.getRecipients());
-        }
-        repository.insertNewConversation(conversation);
-    }
+//    public void createNewConversation(Message message, String currentUser, ConversationType type)
+//    {
+//        Conversation conversation = createConversation(message,type);
+//        if (message.getRecipients().size() == 1) {
+//            List<String>recipients = new ArrayList<>();
+//            if (!message.getRecipients().get(0).equals(currentUser))
+//            {
+//                conversation.setRecipient(message.getRecipients().get(0));
+//                recipients = message.getRecipients();
+//            }
+//            else
+//            {
+//                conversation.setRecipient(message.getSender());
+//                recipients.add(message.getSender());
+//            }
+//            createNewGroup(message.getConversationID(), recipients);
+//        }
+//        else
+//        {
+//            if (message.getRecipients().contains(currentUser)) {
+//                message.getRecipients().remove(currentUser);
+//                message.getRecipients().add(message.getSender());
+//            }
+//            createNewGroup(message.getConversationID(), message.getRecipients());
+//        }
+//        repository.insertNewConversation(conversation);
+//    }
 
     public LiveData<Integer>loadConversationType(String conversationID)
     {
@@ -248,14 +247,14 @@ public class AppViewModel extends AndroidViewModel {
     private Conversation createConversation(Message message,ConversationType type)
     {
         Conversation conversation = new Conversation(message.getConversationID());
-        conversation.setLastMessageID(message.getMessageID());
-        conversation.setLastMessage(message.getMessage());
-        conversation.setMessageType(message.getMessageType());
-        conversation.setLastMessageTime(message.getSendingTime());
-        conversation.setGroupName(message.getGroupName());
-        conversation.setMuted(false);
-        conversation.setBlocked(false);
-        conversation.setConversationType(type);
+//        conversation.setLastMessageID(message.getMessageID());
+//        conversation.setLastMessage(message.getMessage());
+//        conversation.setMessageType(message.getMessageType());
+//        conversation.setLastMessageTime(message.getSendingTime());
+//        conversation.setGroupName(message.getGroupName());
+//        conversation.setMuted(false);
+//        conversation.setBlocked(false);
+//        conversation.setConversationType(type);
         return conversation;
     }
 

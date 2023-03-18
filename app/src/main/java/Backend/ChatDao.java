@@ -103,9 +103,9 @@ public interface ChatDao {
     LiveData<Conversation>isConversationExist(String conversationID);
 
     @Query("UPDATE messages SET messageStatus = :status WHERE messageID = :id")
-    void updateMessageStatus(String id,String status);
+    void updateMessageStatus(String id,int status);
 
-    @Query("UPDATE messages SET message = :content, editTime = :time WHERE messageID = :messageID")
+    @Query("UPDATE messages SET content = :content, editTime = :time WHERE messageID = :messageID")
     void updateEditMessage(String messageID,String content,String time);
 
     @Query("SELECT * FROM conversations WHERE conversationID = :conversationID")
@@ -138,19 +138,25 @@ public interface ChatDao {
     @Query("SELECT uid FROM groups WHERE conversationID = :conversationID")
     LiveData<List<String>>getUidFromGroup(String conversationID);
 
-    @Query("SELECT * FROM messages WHERE sender != :currentUser and conversationID = :conversationID ORDER BY sendingTime desc limit 1")
+    @Query("SELECT * FROM messages WHERE senderID != :currentUser and conversationID = :conversationID ORDER BY sendingTime desc limit 1")
     LiveData<Message>getNewMessage(String currentUser,String conversationID);
 
     @Query("UPDATE conversations SET lastMessage = :message WHERE conversationID = :conversationID")
     void updateConversationLastMessage(String conversationID,String message);
 
-    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, groupName = :groupName WHERE conversationID = :conversationID")
-    void updateConversation(String message,String id,String type,String time,String groupName,String conversationID);
+    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName WHERE conversationID = :conversationID")
+    void updateConversation(String message,String id,int type,long time,String groupName,String conversationID);
 
     @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
-    Boolean isConversationExists(String conversationID);
+    LiveData<Boolean> isConversationExists(String conversationID);
 
-    @Query("UPDATE messages SET message = :content,arrivingTime = :time WHERE messageID = :id")
+    @Query("SELECT blocked from users where userUID = :id")
+    Boolean isUserBlocked1(String id);
+
+    @Query("SELECT blocked from conversations where conversationID = :conversationID")
+    Boolean isConversationBlocked1(String conversationID);
+
+    @Query("UPDATE messages SET content = :content,arrivingTime = :time WHERE messageID = :id")
     void updateMessage(String id, String content,String time);
 
     @Query("DELETE FROM conversations WHERE conversationID = :conversationID")
@@ -159,7 +165,7 @@ public interface ChatDao {
     @Query("SELECT type From conversations WHERE conversationID = :conversationID")
     LiveData<Integer>getConversationType(String conversationID);
 
-    @Query("SELECT groupName FROM conversations WHERE conversationID = :conversationID")
+    @Query("SELECT conversationName FROM conversations WHERE conversationID = :conversationID")
     LiveData<String> getConversationName(String conversationID);
 
     @Query("UPDATE users SET token = :token WHERE userUID = :uid")
@@ -168,7 +174,7 @@ public interface ChatDao {
     @Query("SELECT EXISTS (SELECT * FROM users WHERE userUID = :uid)")
     LiveData<Boolean> isUserExists(String uid);
 
-    @Query("UPDATE messages SET readAt = :readAt,messageStatus=:status WHERE messageID = :id")
+    @Query("UPDATE messages SET readingTime = :readAt,messageStatus=:status WHERE messageID = :id")
     void updateMessageMetaData(String id,String status, String readAt);
 
     @Query("SELECT EXISTS (SELECT * FROM messages WHERE messageID = :messageID)")

@@ -16,44 +16,6 @@
         app:layout_constraintGuide_percent=".75" />
 
     <LinearLayout
-        android:id="@+id/extraOptions"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
-        android:layout_marginTop="15dp"
-        android:gravity="start"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        android:weightSum="2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/right_guideline"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:id="@+id/deleteBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/on_off_button"
-            android:gravity="center"
-            android:text="delete"
-            android:textColor="@color/colorAccent"
-            app:drawableTopCompat="@drawable/ic_baseline_delete_24" />
-
-        <TextView
-            android:id="@+id/editBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/on_off_button"
-            android:gravity="center"
-            android:text="@string/edit"
-            android:textColor="@color/colorAccent"
-            app:drawableTopCompat="@drawable/ic_baseline_edit_24" />
-    </LinearLayout>
-
-
-    <LinearLayout
         android:id="@+id/layoutUnderConstraint"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -64,7 +26,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <RelativeLayout
+        <LinearLayout
+            android:orientation="vertical"
             android:id="@+id/contentLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -106,484 +69,390 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/innerPaneLayout"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/topPaneLayout"
-                android:orientation="vertical">
+                android:background="@drawable/outgoing_message_look">
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/indicatorGuideline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent=".90" />
 
                 <LinearLayout
-                    android:id="@+id/linkMessage"
-                    android:layout_width="match_parent"
+                    android:id="@+id/innerPaneLayout"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/blue"
                     android:orientation="vertical"
-                    android:visibility="gone">
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/indicatorGuideline"
+                    >
 
-                    <RelativeLayout
+                    <LinearLayout
+                        android:id="@+id/linkMessage"
                         android:layout_width="match_parent"
-                        android:layout_height="150dp"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/rounded_rectangle"
+                        android:layout_height="wrap_content"
+                        android:background="@color/blue"
                         android:orientation="vertical"
-                        android:padding="5dp">
+                        android:visibility="gone">
 
-                        <ImageView
-                            android:id="@+id/linkImage"
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="150dp"
+                            android:layout_margin="3dp"
+                            android:background="@drawable/rounded_rectangle"
+                            android:orientation="vertical"
+                            android:padding="5dp">
+
+                            <ImageView
+                                android:id="@+id/linkImage"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/ic_launcher_background"
+                                android:contentDescription="link image preview"
+                                android:src="@drawable/ic_launcher_foreground" />
+
+                            <ProgressBar
+                                android:id="@+id/linkProgressBar"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_centerInParent="true"
+                                android:indeterminate="true"
+                                android:indeterminateBehavior="cycle"
+                                android:indeterminateTint="@color/lightestBlue"
+                                android:visibility="visible" />
+                        </RelativeLayout>
+
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:background="@drawable/ic_launcher_background"
-                            android:contentDescription="link image preview"
-                            android:src="@drawable/ic_launcher_foreground" />
+                            android:layout_gravity="center"
+                            android:layout_marginStart="1dp"
+                            android:background="@drawable/rounded_rectangle"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="3dp">
 
-                        <ProgressBar
-                            android:id="@+id/linkProgressBar"
+                            <TextView
+                                android:id="@+id/linkTitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="start"
+                                android:padding="3dp"
+                                android:text="@string/link"
+                                android:textColor="@android:color/white" />
+
+                            <TextView
+                                android:id="@+id/linkContent"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_marginTop="2dp"
+                                android:gravity="start"
+                                android:padding="3dp"
+                                android:text="link content"
+                                android:textColor="@android:color/darker_gray" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/imageLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/rounded_rectangle"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/previewImage"
+                            android:layout_width="match_parent"
+                            android:layout_height="300dp"
+                            android:contentDescription="the preview of an active message"
+                            android:elevation="0dp"
+                            android:padding="3dp"
+                            android:src="@drawable/ic_baseline_photo_24"
+                            android:visibility="visible" />
+
+                        <LinearLayout
+                            android:id="@+id/imageStatusLayout"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerInParent="true"
-                            android:indeterminate="true"
-                            android:indeterminateBehavior="cycle"
-                            android:indeterminateTint="@color/lightestBlue"
-                            android:visibility="visible" />
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:visibility="visible">
+
+                            <ImageButton
+                                android:id="@+id/reUpload"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:background="@drawable/circle_green"
+                                android:contentDescription="upload failed upload"
+                                android:elevation="15dp"
+                                android:src="@drawable/ic_baseline_upload_to_all_24"
+                                android:visibility="visible" />
+
+                            <ProgressBar
+                                android:id="@+id/imageProgressBar"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:indeterminate="true"
+                                android:indeterminateBehavior="cycle"
+                                android:indeterminateTint="@color/lightestBlue"
+                                android:visibility="visible" />
+
+                            <ImageButton
+                                android:id="@+id/refresh"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:background="@drawable/circle_green"
+                                android:contentDescription="upload failed upload"
+                                android:elevation="15dp"
+                                android:src="@drawable/ic_baseline_refresh_24"
+                                android:visibility="visible" />
+                        </LinearLayout>
                     </RelativeLayout>
 
                     <LinearLayout
+                        android:id="@+id/playRecordingLayout"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="1dp"
-                        android:background="@drawable/rounded_rectangle"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="3dp">
-
-                        <TextView
-                            android:id="@+id/linkTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="start"
-                            android:padding="3dp"
-                            android:text="@string/link"
-                            android:textColor="@android:color/white" />
-
-                        <TextView
-                            android:id="@+id/linkContent"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_marginTop="2dp"
-                            android:gravity="start"
-                            android:padding="3dp"
-                            android:text="link content"
-                            android:textColor="@android:color/darker_gray" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <RelativeLayout
-                    android:id="@+id/imageLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_rectangle"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:id="@+id/previewImage"
-                        android:layout_width="match_parent"
-                        android:layout_height="300dp"
-                        android:background="@drawable/outgoing_message_look"
-                        android:contentDescription="the preview of an active message"
-                        android:elevation="0dp"
-                        android:padding="3dp"
-                        android:src="@drawable/ic_baseline_photo_24"
-                        android:visibility="visible" />
-
-                    <LinearLayout
-                        android:id="@+id/imageStatusLayout"
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerInParent="true"
-                        android:gravity="center"
                         android:orientation="horizontal"
-                        android:visibility="visible">
-
-                        <ImageButton
-                            android:id="@+id/reUpload"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:background="@drawable/circle_green"
-                            android:contentDescription="upload failed upload"
-                            android:elevation="15dp"
-                            android:src="@drawable/ic_baseline_upload_to_all_24"
-                            android:visibility="visible" />
-
-                        <ProgressBar
-                            android:id="@+id/imageProgressBar"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:indeterminate="true"
-                            android:indeterminateBehavior="cycle"
-                            android:indeterminateTint="@color/lightestBlue"
-                            android:visibility="visible" />
-
-                        <ImageButton
-                            android:id="@+id/refresh"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:background="@drawable/circle_green"
-                            android:contentDescription="upload failed upload"
-                            android:elevation="15dp"
-                            android:src="@drawable/ic_baseline_refresh_24"
-                            android:visibility="visible" />
-                    </LinearLayout>
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:id="@+id/playRecordingLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/outgoing_message_look"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="3dp">
-
-                        <NormalObjects.PlayAudioButton
-                            android:id="@+id/play_pause_btn"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:layout_gravity="center"
-                            android:background="@drawable/circle_blue"
-                            android:contentDescription="play recording"
-                            android:scaleType="fitXY"
-                            android:src="@drawable/ic_baseline_play_circle_outline_white" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_gravity="center_vertical|bottom"
-                        android:gravity="bottom"
-                        android:orientation="vertical">
+                        android:visibility="gone">
 
                         <LinearLayout
-                            android:id="@+id/recordingInfoLayout"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center"
+                            android:padding="3dp">
+
+                            <NormalObjects.PlayAudioButton
+                                android:id="@+id/play_pause_btn"
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:layout_gravity="center"
+                                android:background="@drawable/circle_blue"
+                                android:contentDescription="play recording"
+                                android:scaleType="fitXY"
+                                android:src="@drawable/ic_baseline_play_circle_outline_white" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical|bottom"
+                            android:gravity="bottom"
                             android:orientation="vertical">
 
-                            <SeekBar
-                                android:id="@+id/voiceSeek"
+                            <LinearLayout
+                                android:id="@+id/recordingInfoLayout"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
-                                android:elevation="15dp"
-                                android:progress="0"
+                                android:orientation="vertical">
+
+                                <SeekBar
+                                    android:id="@+id/voiceSeek"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:elevation="15dp"
+                                    android:progress="0"
+                                    android:visibility="visible" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center|bottom"
+                                android:layout_marginEnd="25dp"
+                                android:gravity="end">
+
+                                <TextView
+                                    android:id="@+id/recordingTime"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/zero_time" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/videoLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="150dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <ImageButton
+                            android:id="@+id/playVideoBtn"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="play video"
+                            android:src="@drawable/ic_baseline_play_arrow_24" />
+                    </LinearLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/contactLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:padding="5dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_toStartOf="@+id/contactActionLayout"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.imageview.ShapeableImageView
+                                android:id="@+id/contactImage"
+                                android:layout_width="42dp"
+                                android:layout_height="42dp"
+                                android:contentDescription="contact image"
+                                android:src="@drawable/ic_baseline_account_circle_black"
+                                app:shapeAppearanceOverlay="@style/circleImageView" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="5dp"
+                                android:background="@drawable/rounded_rectangle"
+                                android:backgroundTint="@color/blue"
+                                android:orientation="vertical"
+                                android:padding="5dp">
+
+                                <TextView
+                                    android:id="@+id/contactName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:text="@string/contact_name"
+                                    android:textColor="@color/emoji_white"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:id="@+id/contactPhone"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:text="@string/contact_number"
+                                    android:textColor="@color/emoji_white"
+                                    android:textSize="15sp" />
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/contactActionLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true">
+
+                            <Button
+                                android:id="@+id/saveContactBtn"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="save"
+                                android:visibility="gone" />
+                        </LinearLayout>
+                    </RelativeLayout>
+
+                    <LinearLayout
+                        android:id="@+id/messageTextLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/rounded_rectangle"
+                        android:gravity="start"
+                        android:orientation="vertical"
+                        android:visibility="visible">
+
+                        <LinearLayout
+                            android:id="@+id/quoteLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="8dp"
+                            android:background="@color/blue"
+                            android:elevation="-8dp"
+                            android:orientation="vertical"
+                            android:padding="8dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:id="@+id/quoteSenderName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="sender name"
+                                android:textColor="@android:color/white"
+                                android:textSize="24sp" />
+
+                            <TextView
+                                android:id="@+id/quoteText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@color/lightBlue"
+                                android:gravity="start"
+                                android:text="this is a quote"
+                                android:textColor="@android:color/white"
+                                android:textSize="20sp"
                                 android:visibility="visible" />
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/textMessageLayout"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center|bottom"
-                            android:layout_marginEnd="25dp"
-                            android:gravity="end">
+                            android:gravity="center_vertical"
+                            android:orientation="vertical"
+                            android:visibility="visible">
 
-                            <TextView
-                                android:id="@+id/recordingTime"
-                                android:layout_width="wrap_content"
+                            <com.vanniktech.emoji.EmojiTextView
+                                android:id="@+id/message"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/zero_time" />
+                                android:gravity="start"
+                                android:padding="5dp"
+                                android:text="outgoing message"
+                                android:textColor="@android:color/black"
+                                android:textSize="30sp"
+                                android:visibility="visible" />
                         </LinearLayout>
                     </LinearLayout>
-
-
                 </LinearLayout>
-
                 <LinearLayout
-                    android:id="@+id/videoLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <ImageButton
-                        android:id="@+id/playVideoBtn"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="play video"
-                        android:src="@drawable/ic_baseline_play_arrow_24" />
-                </LinearLayout>
-
-                <RelativeLayout
-                    android:id="@+id/contactLayout"
-                    android:layout_width="match_parent"
+                    android:id="@+id/messageStatusLayout"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/outgoing_message_look"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_toStartOf="@+id/contactActionLayout"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/contactImage"
-                            android:layout_width="42dp"
-                            android:layout_height="42dp"
-                            android:contentDescription="contact image"
-                            android:src="@drawable/ic_baseline_person_24"
-                            app:shapeAppearanceOverlay="@style/circleImageView" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/contactName"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="contact name"
-                                android:textColor="@color/black"
-                                android:textSize="15sp" />
-
-                            <TextView
-                                android:id="@+id/contactPhone"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="contact phone"
-                                android:textColor="@color/black"
-                                android:textSize="15sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/contactActionLayout"
+                    android:orientation="vertical"
+                    app:layout_constraintStart_toEndOf="@+id/indicatorGuideline"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:gravity="center"
+                    >
+                    <ImageView
+                        android:id="@+id/specialMessageIndicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true">
+                        android:contentDescription="msg indicator"
+                        android:src="@drawable/ic_baseline_location_on_24"
+                        android:visibility="gone" />
 
-                        <Button
-                            android:id="@+id/saveContactBtn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="save"
-                            android:visibility="gone" />
-                    </LinearLayout>
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:id="@+id/pollLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_rectangle"
-                    android:orientation="vertical"
-                    android:padding="5dp"
-                    android:visibility="gone">
-
-                    <RadioGroup
-                        android:id="@+id/radioGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <RadioButton
-                            android:id="@+id/option1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="5dp"
-                            android:background="@drawable/checked_element"
-                            android:paddingStart="5dp"
-                            android:paddingEnd="5dp"
-                            android:text="@string/radio_button1"
-                            android:textColor="@color/emoji_white" />
-
-
-                        <RadioButton
-                            android:id="@+id/option2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="5dp"
-                            android:background="@drawable/checked_element"
-                            android:paddingStart="5dp"
-                            android:paddingEnd="5dp"
-                            android:text="@string/radio_button2"
-                            android:textColor="@color/emoji_white" />
-                    </RadioGroup>
-
-                    <RelativeLayout
-                        android:id="@+id/pollBottomLayout"
-                        android:layout_width="match_parent"
+                    <NormalObjects.ImageButtonState
+                        android:id="@+id/messageStatus"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/rounded_rectangle"
-                        android:orientation="horizontal">
+                        android:contentDescription="@string/userStatus"
+                        android:src="@drawable/message_sent"
+                        android:visibility="visible"
+                        android:background="@android:color/transparent"/>
 
-                        <LinearLayout
-                            android:id="@+id/pollVoteCountLayout"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentStart="true"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textPlacer"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Votes: " />
-
-                            <TextView
-                                android:id="@+id/pollVotes"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/pollInfoLayout"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Created by: " />
-
-                            <TextView
-                                android:id="@+id/pollCreatorName"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/your_name" />
-
-                        </LinearLayout>
-                    </RelativeLayout>
-
-                    <LinearLayout
-                        style="?android:attr/buttonBarStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:visibility="gone">
-
-                        <Button
-                            android:id="@+id/hidePoll"
-                            style="?android:attr/buttonBarButtonStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/more"
-                            android:src="@drawable/ic_baseline_add_24"
-                            android:text="hide" />
-
-                    </LinearLayout>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/messageTextLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_rectangle"
-                    android:gravity="start"
-                    android:orientation="vertical"
-                    android:visibility="visible">
-
-                    <LinearLayout
-                        android:id="@+id/quoteLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="8dp"
-                        android:background="@color/blue"
-                        android:elevation="-8dp"
-                        android:orientation="vertical"
-                        android:padding="8dp"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:id="@+id/quoteSenderName"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="sender name"
-                            android:textColor="@android:color/white"
-                            android:textSize="24sp" />
-
-                        <TextView
-                            android:id="@+id/quoteText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@color/lightBlue"
-                            android:gravity="start"
-                            android:text="this is a quote"
-                            android:textColor="@android:color/white"
-                            android:textSize="20sp"
-                            android:visibility="visible" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/textMessageLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:visibility="visible">
-
-                        <com.vanniktech.emoji.EmojiTextView
-                            android:id="@+id/message"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="start"
-                            android:paddingStart="5dp"
-                            android:paddingEnd="5dp"
-                            android:text="outgoing message"
-                            android:textColor="@android:color/black"
-                            android:textSize="30sp"
-                            android:visibility="visible" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|end"
-                            android:layout_marginTop="-15dp"
-                            android:layout_marginEnd="30dp"
-                            android:orientation="horizontal">
-
-                            <ImageView
-                                android:id="@+id/gpsMessageIndicator"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:contentDescription="gps indicator"
-                                android:src="@drawable/ic_baseline_location_on_24"
-                                android:visibility="gone" />
-
-                        </LinearLayout>
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/messageStatusLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignBottom="@id/innerPaneLayout"
-                android:layout_alignParentEnd="true"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/messageStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="message status"
-                    android:src="@drawable/message_sent"
-                    android:visibility="visible" />
-            </LinearLayout>
-        </RelativeLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

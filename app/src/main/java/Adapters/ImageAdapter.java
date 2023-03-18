@@ -2,11 +2,8 @@ package Adapters;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,11 +19,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 @SuppressWarnings({"Convert2Lambda"})
 public class ImageAdapter extends BaseAdapter {
@@ -64,7 +56,7 @@ public class ImageAdapter extends BaseAdapter {
         LayoutInflater layoutInflater = (LayoutInflater) parent.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         if (layoutInflater != null) {
             convertView = layoutInflater.inflate(R.layout.grid_cell, parent, false);
-            ImageView backgroundImage = convertView.findViewById(R.id.backgroundImage);
+            ImageView backgroundImage = convertView.findViewById(R.id.image);
             if (position == bitmapList.size())
             {
                 if (galleryImage!=null)

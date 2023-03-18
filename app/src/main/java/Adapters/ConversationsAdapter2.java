@@ -11,7 +11,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -118,9 +117,9 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     {
         int index = findCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
-        conversation.setLastMessageTime(message.getArrivingTime());
-        conversation.setLastMessage(message.getMessage());
-        conversation.setRecipientName(message.getGroupName());
+        conversation.setLastMessageTime(String.valueOf(message.getArrivingTime()));
+        conversation.setLastMessage(message.getContent());
+        conversation.setRecipientName(message.getConversationName());
         notifyItemChanged(index);
     }
 
@@ -226,7 +225,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         else
             lastMessageTime = timeFormat.getFormattedDate(Long.parseLong(conversation.getLastMessageTime()));
         holder.lastMessageTime.setText(lastMessageTime);
-        holder.recipientName.setText(conversation.getGroupName());
+        holder.recipientName.setText(conversation.getConversationName());
         if (conversation.isMuted())
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else

@@ -1,7 +1,6 @@
 package Fragments;
 
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -12,12 +11,10 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import com.example.woofmeow.R;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -47,14 +44,14 @@ public class ConversationInfo extends BottomSheetDialogFragment {
             Conversation conversation = (Conversation) bundle.getSerializable("conversation");
             List<String>conversations = new ArrayList<>();
             conversations.add("conversationID: " + conversation.getConversationID());
-            conversations.add("conversation name: " + conversation.getGroupName());
+            conversations.add("conversation name: " + conversation.getConversationName());
             conversations.add("conversation last message id: " + conversation.getLastMessageID());
             conversations.add("conversation last message: " + conversation.getLastMessage());
             conversations.add("conversation last message time: " + conversation.getLastMessageTime());
             conversations.add("conversation recipient name: " + conversation.getRecipientName());
             conversations.add("conversation sender name: " + conversation.getSenderName());
             ListView listView = linearLayout.findViewById(android.R.id.list);
-            ArrayAdapter<String>adapter = new ArrayAdapter<>(requireContext(),R.layout.conversation_info_cell,R.id.conversationInfo,conversations);
+            ArrayAdapter<String>adapter = new ArrayAdapter<>(requireContext(),R.layout.text_cell,R.id.infoText,conversations);
             listView.setAdapter(adapter);
         }
         return linearLayout;

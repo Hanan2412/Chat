@@ -20,7 +20,7 @@ import java.util.List;
 import NormalObjects.User;
 
 @SuppressWarnings("Convert2Lambda")
-public class NewGroupChatAdapter extends RecyclerView.Adapter<NewGroupChatAdapter.GroupViewHolder> {
+public class NewConversationAdapter extends RecyclerView.Adapter<NewConversationAdapter.GroupViewHolder> {
 
     public interface onItemTouchListener{
         void onItemClick(int position);
@@ -29,7 +29,7 @@ public class NewGroupChatAdapter extends RecyclerView.Adapter<NewGroupChatAdapte
     public void setListener(onItemTouchListener listener){callback = listener;}
     private List<User>users;
 
-    public NewGroupChatAdapter()
+    public NewConversationAdapter()
     {
         users = new ArrayList<>();
     }
@@ -46,14 +46,15 @@ public class NewGroupChatAdapter extends RecyclerView.Adapter<NewGroupChatAdapte
 
     @NonNull
     @Override
-    public NewGroupChatAdapter.GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public NewConversationAdapter.GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.profile_pic,parent,false);
         return new GroupViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NewGroupChatAdapter.GroupViewHolder holder, int position) {
-        Picasso.get().load(users.get(position).getPictureLink()).into(holder.profileImage);
+    public void onBindViewHolder(@NonNull NewConversationAdapter.GroupViewHolder holder, int position) {
+        if (users.get(position).getPictureLink()!=null)
+            Picasso.get().load(users.get(position).getPictureLink()).into(holder.profileImage);
         holder.profileImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

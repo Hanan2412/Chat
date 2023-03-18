@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ConversationActivity">
+    tools:context=".ConversationActivity2">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbarLayout"
@@ -44,19 +44,9 @@
                         android:layout_width="52dp"
                         android:layout_height="52dp"
                         android:layout_centerInParent="true"
-                        android:background="@drawable/user_status"
+                        android:background="@drawable/outer_ring"
                         android:src="@drawable/ic_baseline_account_circle_black"
                         app:shapeAppearanceOverlay="@style/circleImageView" />
-
-                    <!--                    <ImageView-->
-                    <!--                        android:id="@+id/conversationStatus"-->
-                    <!--                        android:layout_width="15dp"-->
-                    <!--                        android:layout_height="15dp"-->
-                    <!--                        android:layout_alignParentBottom="true"-->
-                    <!--                        android:layout_marginStart="-8dp"-->
-                    <!--                        android:layout_toEndOf="@id/conversationImage"-->
-                    <!--                        android:background="@drawable/circle_green"-->
-                    <!--                        android:contentDescription="@string/userStatus" />-->
 
                 </RelativeLayout>
 
@@ -102,7 +92,6 @@
             android:gravity="center"
             android:hint="@string/search"
             android:inputType="textMultiLine"
-            android:visibility="visible"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <LinearLayout
@@ -111,14 +100,6 @@
             android:layout_marginBottom="20dp"
             android:gravity="center"
             android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/searchBtn"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/search" />
 
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/scrollToNext"
@@ -146,6 +127,15 @@
             android:layout_height="match_parent"
             android:layout_above="@+id/userInteractionLayout"
             android:layout_alignParentTop="true" />
+
+        <ProgressBar
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:id="@+id/mainProgressBar"
+            android:layout_centerInParent="true"
+            android:indeterminateTint="@color/blue"
+            android:visibility="gone"
+            />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -656,6 +646,7 @@
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
+
                     <LinearLayout
                         android:id="@+id/textLayout"
                         android:layout_width="match_parent"
@@ -671,7 +662,7 @@
                             android:orientation="vertical"
                             android:padding="5dp">
 
-                            <NormalObjects.ImageButtonState
+                            <ImageButton
                                 android:id="@+id/emojiBtn"
                                 android:layout_width="48dp"
                                 android:layout_height="48dp"
@@ -686,7 +677,7 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_gravity="bottom|center"
                             android:gravity="center|bottom"
                             android:orientation="vertical"
@@ -710,9 +701,11 @@
                                 android:focusable="true"
                                 android:gravity="center"
                                 android:hint="@string/message_hint"
-                                android:inputType="textMultiLine|textNoSuggestions"
+                                android:inputType="textMultiLine|textShortMessage|textNoSuggestions"
                                 android:textSize="15sp"
-                                android:visibility="visible" />
+                                android:visibility="visible"
+                                android:maxLines="7"
+                                />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -725,7 +718,6 @@
                     android:orientation="horizontal"
                     android:paddingTop="5dp"
                     android:paddingBottom="5dp"
-                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/guideline">
@@ -741,7 +733,7 @@
                         android:foregroundGravity="center"
                         android:src="@drawable/ic_baseline_location_on_24" />
 
-                    <NormalObjects.ImageButtonState
+                    <NormalObjects.ImageButtonType
                         android:id="@+id/sendMessageBtn"
                         android:layout_width="48dp"
                         android:layout_height="48dp"

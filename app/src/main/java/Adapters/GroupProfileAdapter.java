@@ -98,7 +98,7 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
             super(itemView);
             listView = itemView.findViewById(R.id.userDetails);
             profilePic = itemView.findViewById(R.id.profileImage);
-            muteBtn = itemView.findViewById(R.id.mute);
+//            muteBtn = itemView.findViewById(R.id.mute);
             blockBtn = itemView.findViewById(R.id.block);
             appBarLayout = itemView.findViewById(R.id.appbarLayout);
             appBarLayout.setVisibility(View.GONE);

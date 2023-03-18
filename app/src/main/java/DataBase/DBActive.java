@@ -167,7 +167,7 @@ public class DBActive {
                     String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
                     Conversation conversation = new Conversation(conversationIDs);
                     conversation.setLastMessageTimeFormatted(lastMessageTime);
-                    conversation.setGroupName(groupName);
+                    conversation.setConversationName(groupName);
                     conversation.setLastMessage(lastMessage);
                     conversation.setMessageType(lastMessageType);
                     conversation.setLastMessageID(lastMessageID);
@@ -247,7 +247,7 @@ public class DBActive {
                 conversation.setRecipientName(recipientName);
                 conversation.setMuted(muted.equals("1"));
                 conversation.setRecipientToken(recipientToken);
-                conversation.setGroupName(group);
+                conversation.setConversationName(group);
                 if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
                     conversation.setConversationType(ConversationType.single);
                 else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
@@ -274,7 +274,7 @@ public class DBActive {
         values.put(DataBaseContract.Conversations.IMAGE_PATH, conversation.getRecipientImagePath());
         values.put(DataBaseContract.Conversations.RECIPIENT_NAME, conversation.getSenderName());
         values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
-        values.put(DataBaseContract.Conversations.GROUP_NAME,conversation.getGroupName());
+        values.put(DataBaseContract.Conversations.GROUP_NAME,conversation.getConversationName());
         values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversation.getConversationType().name());
         long newRowId = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
         if (newRowId == -1)
@@ -322,10 +322,10 @@ public class DBActive {
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
             values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getContent());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
-            values.put(DataBaseContract.Conversations.GROUP_NAME,message.getGroupName());
+            values.put(DataBaseContract.Conversations.GROUP_NAME,message.getConversationName());
             String selection = DataBaseContract.Conversations.CONVERSATION_ID + " LIKE ?";
             String[] selectionArgs = {message.getConversationID()};
             long updatedRowNum = db.update(DataBaseContract.Conversations.CONVERSATIONS_TABLE, values, selection, selectionArgs);
@@ -450,12 +450,12 @@ public class DBActive {
 
         if (db != null) {
             ContentValues values = new ContentValues();
-            if (message.getMessage() != null)
-                values.put(DataBaseContract.Messages.CONTENT, message.getMessage());
-            if (message.getRecordingPath() != null)
-                values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
-            if (message.getImagePath() != null)
-                values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH, message.getImagePath());
+            if (message.getContent() != null)
+                values.put(DataBaseContract.Messages.CONTENT, message.getContent());
+            if (message.getFilePath() != null)
+            {
+                values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH, message.getFilePath());
+            }
             values.put(DataBaseContract.Messages.MESSAGE_STAR, message.isStar());
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
             String[] selectionArgs = {message.getMessageID()};
@@ -508,25 +508,23 @@ public class DBActive {
             ContentValues values = new ContentValues();
             values.put(DataBaseContract.Messages.MESSAGE_ID, message.getMessageID());
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
-            values.put(DataBaseContract.Messages.CONTENT, message.getMessage());
-            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
-            values.put(DataBaseContract.Messages.SENDER, message.getSender());
+            values.put(DataBaseContract.Messages.CONTENT, message.getContent());
+            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getConversationName());
+            values.put(DataBaseContract.Messages.SENDER, message.getSenderID());
             values.put(DataBaseContract.Messages.TIME_DELIVERED, message.getArrivingTime());
             values.put(DataBaseContract.Messages.TIME_SENT, message.getSendingTime());
             values.put(DataBaseContract.Messages.TYPE, message.getMessageType());
             values.put(DataBaseContract.Messages.STATUS, message.getMessageStatus());
-            values.put(DataBaseContract.Messages.MESSAGE_IMAGE_PATH, message.getImagePath());
             values.put(DataBaseContract.Messages.MESSAGE_LONGITUDE, message.getLongitude());
             values.put(DataBaseContract.Messages.MESSAGE_LATITUDE, message.getLatitude());
-            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getLocationAddress());
-            values.put(DataBaseContract.Messages.MESSAGE_RECORDING_PATH, message.getRecordingPath());
+            values.put(DataBaseContract.Messages.MESSAGE_ADDRESS, message.getAddress());
             values.put(DataBaseContract.Messages.MESSAGE_FILE_PATH, message.getFilePath());
             values.put(DataBaseContract.Messages.QUOTE, message.getQuoteMessage());
-            values.put(DataBaseContract.Messages.QUOTE_ID, message.getQuotedMessageID());
+            values.put(DataBaseContract.Messages.QUOTE_ID, message.getQuoteID());
             values.put(DataBaseContract.Messages.CONTACT,message.getContactName());
-            values.put(DataBaseContract.Messages.CONTACT_PHONE,message.getContactPhone());
+            values.put(DataBaseContract.Messages.CONTACT_PHONE,message.getContactNumber());
             if (message.getMessageType() == MessageType.webMessage.ordinal())
-                values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getMessage());
+                values.put(DataBaseContract.Messages.MESSAGE_LINK, message.getContent());
             long newRowId = db.insert(DataBaseContract.Messages.MESSAGES_TABLE, null, values);
             if (newRowId == -1)
                 Log.e(DataBaseError, "inserted more than 1 row");
@@ -537,36 +535,36 @@ public class DBActive {
     {
         if (db != null) {
             ContentValues values = new ContentValues();
-            if (message.getRecipients().size() == 1)
+//            if (message.getRecipients().size() == 1)
+//            {
+//                List<String>recipient = new ArrayList<>();
+//                if (!message.getRecipients().get(0).equals(currentUserUID))
+//                {
+//                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipients().get(0));
+//                    recipient = message.getRecipients();
+//                }
+//                else
+//                {
+//                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getSender());
+//                    recipient.add(message.getSender());
+//                }
+//                createNewGroup(message.getConversationID(),recipient);
+//            }
+//            else
             {
-                List<String>recipient = new ArrayList<>();
-                if (!message.getRecipients().get(0).equals(currentUserUID))
-                {
-                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getRecipients().get(0));
-                    recipient = message.getRecipients();
-                }
-                else
-                {
-                    values.put(DataBaseContract.Conversations.RECIPIENT,message.getSender());
-                    recipient.add(message.getSender());
-                }
-                createNewGroup(message.getConversationID(),recipient);
-            }
-            else
-            {
-                if (message.getRecipients().contains(currentUserUID)) {
-                    message.getRecipients().remove(currentUserUID);
-                    message.getRecipients().add(message.getSender());
-                }
-                createNewGroup(message.getConversationID(),message.getRecipients());
+//                if (message.getRecipients().contains(currentUserUID)) {
+//                    message.getRecipients().remove(currentUserUID);
+//                    message.getRecipients().add(message.getSender());
+//                }
+//                createNewGroup(message.getConversationID(),message.getRecipients());
             }
             values.put(DataBaseContract.Conversations.USER_UID,currentUserUID);
             values.put(DataBaseContract.Conversations.CONVERSATION_ID, message.getConversationID());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_ID, message.getMessageID());
-            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getMessage());
+            values.put(DataBaseContract.Conversations.LAST_MESSAGE, message.getContent());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TYPE, message.getMessageType());
             values.put(DataBaseContract.Conversations.LAST_MESSAGE_TIME, message.getSendingTime());
-            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getGroupName());
+            values.put(DataBaseContract.Conversations.GROUP_NAME, message.getConversationName());
             values.put(DataBaseContract.Conversations.MUTED, false);
             values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversationType.ordinal());
             values.put(DataBaseContract.Conversations.BLOCKED,"false");
@@ -719,30 +717,30 @@ public class DBActive {
                 String group = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME));
                 Message message = new Message();
                 message.setMessageID(messageID);
-                message.setMessage(content);
-                message.setConversationID(conversationID);
-                message.setMessageTime(timeSent);
-                message.setSender(senderUID);
-                message.setArrivingTime(timeDelivered);
-                message.setSenderName(senderName);
-                message.setGroupName(group);
-                message.setFilePath(filePath);
-                message.setLocationAddress(address);
-                message.setLongitude(longitude);
-                message.setLatitude(latitude);
-                if (link != null)
-                    message.setMessage(link);
-                if (star != null)
-                    message.setStar(star.equals("1"));
-                message.setMessageStatus(status);
-                message.setRecordingPath(recordingPath);
-                message.setImagePath(imagePath);
-                message.setMessageType(type);
-                message.setQuoteMessage(quote);
-                message.setQuotedMessageID(quoteID);
-                message.setContactPhone(contactPhone);
-                message.setContactName(contact);
-                messages.add(message);
+//                message.setMessage(content);
+//                message.setConversationID(conversationID);
+//                message.setMessageTime(timeSent);
+//                message.setSender(senderUID);
+//                message.setArrivingTime(timeDelivered);
+//                message.setSenderName(senderName);
+//                message.setGroupName(group);
+//                message.setFilePath(filePath);
+//                message.setLocationAddress(address);
+//                message.setLongitude(longitude);
+//                message.setLatitude(latitude);
+//                if (link != null)
+//                    message.setMessage(link);
+//                if (star != null)
+//                    message.setStar(star.equals("1"));
+//                message.setMessageStatus(status);
+//                message.setRecordingPath(recordingPath);
+//                message.setImagePath(imagePath);
+//                message.setMessageType(type);
+//                message.setQuoteMessage(quote);
+//                message.setQuotedMessageID(quoteID);
+//                message.setContactPhone(contactPhone);
+//                message.setContactName(contact);
+//                messages.add(message);
             }
             cursor.close();
             return messages;
@@ -1094,7 +1092,7 @@ public class DBActive {
                 conversation.setLastMessage(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE)));
                 conversation.setRecipient(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT)));
                 conversation.setRecipientName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME)));
-                conversation.setGroupName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME)));
+                conversation.setConversationName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME)));
                 String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
                 if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
                     conversation.setConversationType(ConversationType.single);

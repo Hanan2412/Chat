@@ -12,11 +12,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:gravity="center"
-        android:text="Find people to talk To"
+        android:text="Find people"
         android:textColor="@android:color/black"
-        android:textSize="30sp"
-
-        />
+        android:textSize="30sp" />
 
     <LinearLayout
         android:id="@+id/searchLayout"
@@ -24,17 +22,12 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/search_title"
         android:layout_marginTop="20dp"
-        android:orientation="horizontal"
-        android:weightSum="10">
-
+        android:orientation="vertical">
 
         <com.google.android.material.textfield.TextInputLayout
-
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:textColorHint="@color/colorPrimary"
-            >
+            android:textColorHint="@color/colorPrimary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/searchUsers"
@@ -51,14 +44,14 @@
 
         <ImageButton
             android:id="@+id/searchBtn"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="8"
+            android:layout_gravity="center"
+            android:layout_margin="5dp"
+            android:background="@drawable/circle_blue_no_border"
             android:contentDescription="start search button"
-            android:src="@drawable/ic_baseline_search_black"
-
-            />
+            android:padding="12dp"
+            android:src="@drawable/ic_baseline_search_black" />
     </LinearLayout>
 
     <TextView
@@ -112,8 +105,6 @@
                 android:layout_height="match_parent" />
 
         </RelativeLayout>
-
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
@@ -139,7 +130,7 @@
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="cancel"
+            android:text="@string/cancel"
             android:textColor="@android:color/white" />
     </LinearLayout>
 </RelativeLayout>

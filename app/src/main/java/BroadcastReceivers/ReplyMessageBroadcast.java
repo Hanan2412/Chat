@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 
 import Consts.MessageType;
@@ -41,7 +42,7 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
             String recipient = intent.getStringExtra("recipient");
             String conversationID = intent.getStringExtra("conversationID");
             String myName = intent.getStringExtra("MyName");
-            String[] tokens = intent.getStringArrayExtra("tokens");
+            List<String> tokens = intent.getStringArrayListExtra("tokens");
             CreateMessage(context,replyText,sender,myName,recipient,conversationID,tokens);
             callback.onReply(notificationID);
 
@@ -55,22 +56,22 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
             callback.onReply(-1);
         }
     }
-    private void CreateMessage(Context context,String replyText,String sender,String myName,String recipient,String conversationID,String... recipientsTokens)
+    private void CreateMessage(Context context, String replyText, String sender, String myName, String recipient, String conversationID, List<String> recipientsTokens)
     {
         TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
         Calendar calendar = Calendar.getInstance(timeZone);
         String time = calendar.getTimeInMillis() + "";
-        String Current_time = System.currentTimeMillis() + "";
+        long Current_time = System.currentTimeMillis();
         Message message = new Message();
-        message.setSender(sender);
+        message.setSenderID(sender);
         message.setSenderName(myName);
-        message.setMessage(replyText);
+        message.setContent(replyText);
         message.setMessageType(MessageType.textMessage.ordinal());
         //message.setRecipient(recipient);
-        message.setGroupName(recipient);
+        message.setConversationName(recipient);
         message.setConversationID(conversationID);
         message.setMessageID(time);
-        message.setMessageTime(Current_time);
+        message.setSendingTime(Current_time);
         SharedPreferences sharedPreferences = context.getSharedPreferences("Token",MODE_PRIVATE);
         String token = sharedPreferences.getString("token","no token");
         if (!token.equals("no token"))

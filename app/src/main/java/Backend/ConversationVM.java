@@ -4,13 +4,11 @@ import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import Consts.ConversationType;
@@ -67,7 +65,7 @@ public class ConversationVM extends AndroidViewModel {
 
     public LiveData<Conversation>getNewConversation(String conversationID)
     {
-        return repository.getNewConversation(conversationID);
+        return repository.getConversation(conversationID);
     }
 
     public LiveData<Conversation>getNewOrUpdatedConversation()
@@ -85,7 +83,7 @@ public class ConversationVM extends AndroidViewModel {
         repository.updateConversation(message);
     }
 
-    public void updateMessageStatus(String messageID, String status) {
+    public void updateMessageStatus(String messageID, int status) {
         repository.updateMessageStatus(messageID, status);
     }
 
@@ -106,10 +104,20 @@ public class ConversationVM extends AndroidViewModel {
     }
 
     public LiveData<Conversation> loadConversation(String conversationID) {
-        return repository.getNewConversation(conversationID);
+        return repository.getConversation(conversationID);
+    }
+
+    public LiveData<Conversation>getConversation(String conversationID)
+    {
+        return repository.getConversation(conversationID);
     }
 
     public LiveData<List<Message>> loadMessages(String conversationID) {
+        return repository.getAllMessageForConversation(conversationID);
+    }
+
+    public LiveData<List<Message>>getMessages(String conversationID)
+    {
         return repository.getAllMessageForConversation(conversationID);
     }
 
@@ -117,6 +125,7 @@ public class ConversationVM extends AndroidViewModel {
     {
         return repository.getNewMessage(currentUser,conversationID);
     }
+
     public void updateToken(String uid, String token) {
         repository.updateUserToken(uid, token);
     }
@@ -125,7 +134,7 @@ public class ConversationVM extends AndroidViewModel {
         repository.updateMessageMetaData(id, status, readAt);
     }
 
-    public LiveData<Boolean> checkIfMessageExists(Message message) {
+    public LiveData<Boolean> isMessageExists(Message message) {
         return repository.isMessageExists(message.getMessageID());
     }
 
@@ -188,42 +197,18 @@ public class ConversationVM extends AndroidViewModel {
 
     }
 
-    public void createNewConversation(Message message, String currentUser, ConversationType type) {
-        if (message.getRecipients().size() > 1 && type == ConversationType.single)
-            Log.e("DB ERROR","conversation type and recipient amount mismatch");
-        Conversation conversation = createConversation(message, type);
-        if (message.getRecipients().size() == 1) {
-            List<String> recipients = new ArrayList<>();
-            if (!message.getRecipients().get(0).equals(currentUser)) {
-                conversation.setRecipient(message.getRecipients().get(0));
-                recipients = message.getRecipients();
-            } else {
-                conversation.setRecipient(message.getSender());
-            recipients.add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), recipients);
-        } else {
-            if (message.getRecipients().contains(currentUser)) {
-                message.getRecipients().remove(currentUser);
-                message.getRecipients().add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), message.getRecipients());
-        }
-        repository.insertNewConversation(conversation);
-    }
-
-
-    private Conversation createConversation(Message message, ConversationType type) {
+    public void createConversation(Message message, ConversationType type, List<String>ids) {
         Conversation conversation = new Conversation(message.getConversationID());
         conversation.setLastMessageID(message.getMessageID());
-        conversation.setLastMessage(message.getMessage());
+        conversation.setLastMessage(message.getContent());
         conversation.setMessageType(message.getMessageType());
-        conversation.setLastMessageTime(message.getSendingTime());
-        conversation.setGroupName(message.getGroupName());
+        conversation.setLastMessageTime(String.valueOf(message.getSendingTime()));
+        conversation.setConversationName(message.getConversationName());
         conversation.setMuted(false);
         conversation.setBlocked(false);
         conversation.setConversationType(type);
-        return conversation;
+        repository.saveNewConversation(conversation);
+        createNewGroup(conversation.getConversationID(), ids);
     }
 
     public void createNewGroup(String conversationID, List<String> recipients) {
@@ -256,5 +241,10 @@ public class ConversationVM extends AndroidViewModel {
     public void uploadFile(String msgID, Uri uri, Context context)
     {
         repository.uploadFile(msgID, uri, context);
+    }
+
+    public LiveData<Boolean> isConversationExists(String conversationID)
+    {
+        return repository.isConversationExists(conversationID);
     }
 }

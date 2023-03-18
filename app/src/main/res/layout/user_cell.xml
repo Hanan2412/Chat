@@ -22,8 +22,8 @@ third version of this xml to display individual user after search
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:layout_margin="20dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_grinning_face"
+                android:background="@drawable/circle_blue_no_border"
+                android:src="@drawable/ic_baseline_account_circle_black"
                 app:shapeAppearanceOverlay="@style/circleImageView" />
 
             <TextView

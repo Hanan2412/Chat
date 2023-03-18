@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import NormalObjects.User;
@@ -26,9 +28,10 @@ public class NewSMS extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.new_sms_conversation);
-
         Button btn = findViewById(R.id.startConversation);
         TextInputEditText phoneNumber = findViewById(R.id.phoneNumber);
+        Button contact = findViewById(R.id.contact);
+
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -38,7 +41,7 @@ public class NewSMS extends AppCompatActivity {
                 }
             }
         });
-        Button contact = findViewById(R.id.contact);
+
         contact.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -75,7 +78,7 @@ public class NewSMS extends AppCompatActivity {
     }
 
     private Intent prepareIntent(String phoneNumber, String name) {
-        Intent intent = new Intent(NewSMS.this, ConversationActivity.class);
+        Intent intent = new Intent(NewSMS.this, ConversationActivity2.class);
         intent.putExtra("phoneNumber", phoneNumber);
         intent.putExtra("conversationID", createConversationID());
         User user = new User();
@@ -94,7 +97,9 @@ public class NewSMS extends AppCompatActivity {
         }
         user.setPhoneNumber(phoneNumber);
         user.setUserUID(UUID.randomUUID().toString());
-        intent.putExtra("smsUser", user);
+        List<User> recipients = new ArrayList<>();
+        recipients.add(user);
+        intent.putExtra("recipients", (ArrayList<User>) recipients);
         return intent;
     }
 

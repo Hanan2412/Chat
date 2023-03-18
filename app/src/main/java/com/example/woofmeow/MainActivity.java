@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -77,7 +78,7 @@ import Fragments.TabFragment;
 import NormalObjects.*;
 
 import Retrofit.Server;
-import Services.FirebaseMessageService;
+//import Services.FirebaseMessageService;
 
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
 
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private DrawerLayout drawerLayout;
     private CoordinatorLayout coordinatorLayout;
     private User user;
-    private ImageView profileImage;
+    private ShapeableImageView profileImage;
     private ShapeableImageView shapeableImageView;
     private int pagePosition = 0;
     private final int SETTINGS_REQUEST = 4;
@@ -104,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;
-    private ExtendedFloatingActionButton smsBtn, chatBtn, groupBtn;
+    private ExtendedFloatingActionButton smsBtn, chatBtn;
     private final int READ_SMS = 1;
     private UserVM userVM;
     private ActivityResultLauncher<Intent>settings;
@@ -128,7 +129,18 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+//        // demo user
+//        user = new User();
+//        user.setUserUID(currentUser);
+//        user.setName("Hope");
+//        user.setLastName("Yentis");
+//        user.setAbout("A development account");
+//        user.setPhoneNumber("0506968634");
+//        user.setTimeCreated("1645524540000");
+
+
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
+//        userVM.saveUser(user);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
         toolbar.setPopupTheme(R.style.single);
@@ -150,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 if (item.getItemId() == R.id.profile) {
-                    Intent intent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
+                    Intent intent = new Intent(MainActivity.this, ProfileActivity2.class);
                     intent.putExtra("user", user);
                     startActivity(intent);
                     drawerLayout.closeDrawer(GravityCompat.START);
@@ -177,18 +189,16 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         });
         smsBtn = findViewById(R.id.smsConversation);
         chatBtn = findViewById(R.id.chatConversation);
-        groupBtn = findViewById(R.id.groupConversation);
 
         smsBtn.shrink();
         chatBtn.shrink();
-        groupBtn.shrink();
         chatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Tabs tab = Tabs.values()[pagePosition];
                 switch (tab) {
                     case chat:
-                        Intent chat = new Intent(MainActivity.this, NewChat.class);
+                        Intent chat = new Intent(MainActivity.this, NewConversationActivity.class);
                         rotateAndShowOut();
                         startActivity(chat);
                         break;
@@ -211,42 +221,20 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 }
             }
         });
-        groupBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Tabs tab = Tabs.values()[pagePosition];
-                switch (tab) {
-                    case chat:
-                        Intent chat = new Intent(MainActivity.this, NewGroupChat2Activity.class);
-                        rotateAndShowOut();
-                        startActivity(chat);
-                        break;
-                    case somethingElse:
-                        //probably video calls
-                        break;
-                }
-
-            }
-        });
         floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 isRotate = rotateFab(floatingActionButton, !isRotate);
                 if (isRotate) {
                     showIn(smsBtn);
-                    showIn(groupBtn);
                     showIn(chatBtn);
                     int smsWidth = smsBtn.getMinWidth();
                     int chatWidth = chatBtn.getMinWidth();
-                    int groupWidth = groupBtn.getMinWidth();
                     int bigger = Math.max(smsWidth,chatWidth);
-                    bigger = Math.max(bigger,groupWidth);
                     smsBtn.setMinWidth(bigger);
                     chatBtn.setMinWidth(bigger);
-                    groupBtn.setMinWidth(bigger);
                 } else {
                     showOut(smsBtn);
-                    showOut(groupBtn);
                     showOut(chatBtn);
                 }
             }
@@ -287,10 +275,9 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent profileIntent = new Intent(MainActivity.this, CurrentUserProfileActivity.class);
+                Intent profileIntent = new Intent(MainActivity.this, ProfileActivity2.class);
                 profileIntent.putExtra("user", user);
                 startActivity(profileIntent);
-                //startActivity(new Intent(MainActivity.this, CurrentUserProfileActivity.class).putExtra("currentUser",user));
             }
         });
         createNotificationChannel();
@@ -330,7 +317,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private void rotateAndShowOut() {
         rotateFab(floatingActionButton, !isRotate);
         showOut(smsBtn);
-        showOut(groupBtn);
         showOut(chatBtn);
         isRotate = false;
     }
@@ -539,6 +525,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         {
             profileImage.setImageBitmap(profileBitmap);
             shapeableImageView.setImageBitmap(profileBitmap);
+            shapeableImageView.setBackground(ContextCompat.getDrawable(MainActivity.this, android.R.color.darker_gray));
         }
         if(user!=null) {
             downloadUserImage(user.getPictureLink());
@@ -550,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         if (user != null) {
             if (user.getUserUID().equals(currentUser)) {//us
                 this.user = user;
-                FirebaseMessageService.myName = user.getName();
+//                FirebaseMessageService.myName = user.getName();
                 downloadUserImage(user.getPictureLink());
                 currentStatus = user.getStatus();
                 onUserUpdate = true;
@@ -583,6 +570,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
                 userVM.setOnUserImageDownloadListener(null);
                 profileImage.setImageBitmap(image);//loads user image to drawer header
                 shapeableImageView.setImageBitmap(image);//loads user image to toolbar image
+                shapeableImageView.setBackground(ContextCompat.getDrawable(MainActivity.this, android.R.color.transparent));
             }
 
             @Override

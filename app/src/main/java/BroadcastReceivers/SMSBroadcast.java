@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
-import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -19,7 +18,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
-import com.example.woofmeow.ConversationActivity;
+import com.example.woofmeow.ConversationActivity2;
 import com.example.woofmeow.R;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -34,6 +33,7 @@ import Backend.ChatDao;
 import Backend.ChatDataBase;
 
 import Consts.ConversationType;
+import Consts.MessageStatus;
 import Consts.MessageType;
 
 import Controller.NotificationsController;
@@ -75,20 +75,20 @@ public class SMSBroadcast extends BroadcastReceiver {
         };
         blockedUser.observeForever(blockedObserver);
         msg.setMessageType(MessageType.sms.ordinal());
-        msg.setMessage(message);
-        msg.setContactPhone(phone);
-        String currentTime = System.currentTimeMillis() + "";
+        msg.setContent(message);
+        msg.setContactNumber(phone);
+        long currentTime = System.currentTimeMillis();
         TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
         Calendar calendar = Calendar.getInstance(timeZone);
         String time = calendar.getTimeInMillis() + "";
         msg.setMessageID(time);
-        msg.setMessageTime(currentTime);
-        msg.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
         msg.setArrivingTime(currentTime);
-        msg.setSender(phone);
+        msg.setMessageStatus(MessageStatus.DELIVERED.ordinal());
+        msg.setArrivingTime(currentTime);
+        msg.setSenderID(phone);
         msg.setSenderName(phone);
-        msg.setSendingTime(System.currentTimeMillis() + "");
-        msg.setGroupName(phone);
+        msg.setSendingTime(System.currentTimeMillis());
+        msg.setConversationName(phone);
         LiveData<String> conversationLiveData = dao.getConversationIDByPhone(phone);
         Observer<String> observer = new Observer<String>() {
             @Override
@@ -100,12 +100,12 @@ public class SMSBroadcast extends BroadcastReceiver {
                         Observer<Conversation> conversationObserver = new Observer<Conversation>() {
                             @Override
                             public void onChanged(Conversation conversation1) {
-                                if (conversation1.getGroupName() != null)
-                                    msg.setGroupName(conversation1.getGroupName());
+                                if (conversation1.getConversationName() != null)
+                                    msg.setConversationName(conversation1.getConversationName());
                                 Thread thread = new Thread() {
                                     @Override
                                     public void run() {
-                                        dao.updateConversation(msg.getMessage(), msg.getMessageID(), msg.getMessageType() + "", msg.getArrivingTime(), msg.getGroupName(), msg.getConversationID());
+                                        dao.updateConversation(msg.getContent(), msg.getMessageID(), msg.getMessageType(), msg.getArrivingTime(), msg.getConversationName(), msg.getConversationID());
                                     }
                                 };
                                 thread.setName("update conversation");
@@ -118,9 +118,9 @@ public class SMSBroadcast extends BroadcastReceiver {
                     } else {
                         s = createConversationID();
                         msg.setConversationID(s);
-                        msg.setGroupName(phone);
+                        msg.setConversationName(phone);
                         String userID = saveUser(phone);
-                        msg.addRecipient(userID);
+                        msg.setRecipientID(userID);
                         msg.setSenderName("");
                         createNewConversation(msg, currentUser, ConversationType.sms);
                         conversations.add(s);
@@ -228,15 +228,15 @@ public class SMSBroadcast extends BroadcastReceiver {
         if (msg.getSenderName() != null)
             notificationTitle = "New Message From " + msg.getSenderName();
         else
-            notificationTitle = "New Message From " + msg.getContactPhone();
-        Intent tapOnNotification = new Intent(context, ConversationActivity.class);
+            notificationTitle = "New Message From " + msg.getContactNumber();
+        Intent tapOnNotification = new Intent(context, ConversationActivity2.class);
         tapOnNotification.putExtra("conversationID", msg.getConversationID());
         tapOnNotification.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationID, tapOnNotification, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_CANCEL_CURRENT);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "Receive_SMS_Messages_Channel")
                 .setSmallIcon(R.drawable.ic_baseline_sms_24)
                 .setContentTitle(notificationTitle)
-                .setContentText(msg.getMessage())
+                .setContentText(msg.getContent())
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
@@ -261,34 +261,34 @@ public class SMSBroadcast extends BroadcastReceiver {
 
 
     public void createNewConversation(Message message, String currentUser, ConversationType type) {
-        if (message.getRecipients().size() > 1 && type == ConversationType.single)
-            Log.e("DB ERROR", "conversation type and recipient amount mismatch");
-        Conversation conversation = createConversation(message, type);
-        if (message.getRecipients().size() == 1) {
-            List<String> recipients = new ArrayList<>();
-            if (!message.getRecipients().get(0).equals(currentUser)) {
-                conversation.setRecipient(message.getRecipients().get(0));
-                recipients = message.getRecipients();
-            } else {
-                conversation.setRecipient(message.getSender());
-                recipients.add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), recipients);
-        } else {
-            if (message.getRecipients().contains(currentUser)) {
-                message.getRecipients().remove(currentUser);
-                message.getRecipients().add(message.getSender());
-            }
-            createNewGroup(message.getConversationID(), message.getRecipients());
-        }
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                dao.insertNewConversation(conversation);
-            }
-        };
-        thread.setName("insert conversation");
-        thread.start();
+//        if (message.getRecipients().size() > 1 && type == ConversationType.single)
+//            Log.e("DB ERROR", "conversation type and recipient amount mismatch");
+//        Conversation conversation = createConversation(message, type);
+//        if (message.getRecipients().size() == 1) {
+//            List<String> recipients = new ArrayList<>();
+//            if (!message.getRecipients().get(0).equals(currentUser)) {
+//                conversation.setRecipient(message.getRecipients().get(0));
+//                recipients = message.getRecipients();
+//            } else {
+//                conversation.setRecipient(message.getSender());
+//                recipients.add(message.getSender());
+//            }
+//            createNewGroup(message.getConversationID(), recipients);
+//        } else {
+//            if (message.getRecipients().contains(currentUser)) {
+//                message.getRecipients().remove(currentUser);
+//                message.getRecipients().add(message.getSender());
+//            }
+//            createNewGroup(message.getConversationID(), message.getRecipients());
+//        }
+//        Thread thread = new Thread() {
+//            @Override
+//            public void run() {
+//                dao.insertNewConversation(conversation);
+//            }
+//        };
+//        thread.setName("insert conversation");
+//        thread.start();
 
     }
 
@@ -296,10 +296,10 @@ public class SMSBroadcast extends BroadcastReceiver {
     private Conversation createConversation(Message message, ConversationType type) {
         Conversation conversation = new Conversation(message.getConversationID());
         conversation.setLastMessageID(message.getMessageID());
-        conversation.setLastMessage(message.getMessage());
+        conversation.setLastMessage(message.getContent());
         conversation.setMessageType(message.getMessageType());
         conversation.setLastMessageTime(System.currentTimeMillis() + "");
-        conversation.setGroupName(message.getGroupName());
+        conversation.setConversationName(message.getConversationName());
         conversation.setMuted(false);
         conversation.setBlocked(false);
         conversation.setConversationType(type);

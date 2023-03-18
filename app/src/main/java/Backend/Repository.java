@@ -102,7 +102,7 @@ public class Repository {
         return chatDao.getGroup(conversationID);
     }
 
-    public LiveData<Conversation>getNewConversation(String conversationID)
+    public LiveData<Conversation> getConversation(String conversationID)
     {
         return chatDao.getConversation(conversationID);
     }
@@ -138,7 +138,7 @@ public class Repository {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                chatDao.updateConversation(message.getMessage(),message.getMessageID(),message.getMessageType()+"",message.getSendingTime(),message.getGroupName(),message.getConversationID());
+                chatDao.updateConversation(message.getContent(),message.getMessageID(),message.getMessageType(),message.getSendingTime(),message.getConversationName(),message.getConversationID());
             }
         };
         pool.execute(runnable);
@@ -154,7 +154,7 @@ public class Repository {
         return chatDao.getUser(userID);
     }
 
-    public void updateMessageStatus(String id,String status)
+    public void updateMessageStatus(String id,int status)
     {
         Runnable runnable = new Runnable() {
             @Override
@@ -236,9 +236,14 @@ public class Repository {
         pool.execute(runnable);
     }
 
-    public LiveData<Boolean>isMessageExists(String messageID)
+    public LiveData<Boolean> isMessageExists(String messageID)
     {
         return chatDao.isMessageExists(messageID);
+    }
+
+    public LiveData<Boolean> isConversationExists(String conversationID)
+    {
+        return chatDao.isConversationExists(conversationID);
     }
 
     public void blockConversation(String conversationID)
@@ -384,7 +389,7 @@ public class Repository {
         };
         pool.execute(runnable);
     }
-    public void insertNewConversation(Conversation conversation)
+    public void saveNewConversation(Conversation conversation)
     {
         Runnable runnable = new Runnable() {
             @Override

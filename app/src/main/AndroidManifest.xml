@@ -4,8 +4,10 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.CALL_PHONE" />
@@ -16,6 +18,13 @@
     <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="image/jpeg" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="false"
@@ -64,34 +73,30 @@
         <activity android:name=".UserCreationActivity"/>
         <activity android:name=".PreferenceActivity"
           />
-        <activity android:name=".CurrentUserProfileActivity"/>
         <activity android:name=".NewSMS"/>
         <activity android:name=".ProfileActivity2"/>
         <activity android:name=".BackgroundImageActivity"/>
-        <activity android:name=".ConversationActivity"
-            android:launchMode="standard">
-        </activity>
         <activity android:name=".ConversationActivity2"
             android:launchMode="standard">
         </activity>
-        <activity android:name=".NewGroupChat2Activity"/>
+        <activity android:name=".NewConversationActivity"/>
         <activity android:name=".GifActivity"/>
-        <activity
-            android:name="com.dropbox.core.android.AuthActivity"
-            android:configChanges="orientation|keyboard"
-            android:launchMode="singleTask"
-            android:exported="true">
-            <intent-filter>
+<!--        <activity-->
+<!--            android:name="com.dropbox.core.android.AuthActivity"-->
+<!--            android:configChanges="orientation|keyboard"-->
+<!--            android:launchMode="singleTask"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
 
-                <!-- Change this to be db- followed by your app key -->
-                <data android:scheme="db-lc09zc1m7qr0ubu" />
+<!--                &lt;!&ndash; Change this to be db- followed by your app key &ndash;&gt;-->
+<!--                <data android:scheme="db-lc09zc1m7qr0ubu" />-->
 
-                <action android:name="android.intent.action.VIEW" />
+<!--                <action android:name="android.intent.action.VIEW" />-->
 
-                <category android:name="android.intent.category.BROWSABLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+<!--                <category android:name="android.intent.category.BROWSABLE" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
 
 
 

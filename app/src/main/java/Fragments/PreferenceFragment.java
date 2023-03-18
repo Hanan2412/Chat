@@ -1,31 +1,16 @@
 package Fragments;
 
-import static android.app.Activity.RESULT_OK;
-
-import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
-import android.content.PeriodicSync;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.DropDownPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 
-import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.R;
-
-import Consts.PermissionType;
 
 
 @SuppressWarnings({"ConstantConditions", "Convert2Lambda"})

@@ -272,17 +272,17 @@ public class SecondPagePreferenceFragment extends PreferenceFragmentCompat {
 
                                 @Override
                                 public void onConversationsRestored(List<Conversation> conversations) {
-                                    for (Conversation conversation : conversations)
-                                    {
-                                        if (dao.isConversationExists(conversation.getConversationID()))
-                                        {
-                                            dao.updateConversation(conversation);
-                                        }
-                                        else
-                                        {
-                                            dao.insertNewConversation(conversation);
-                                        }
-                                    }
+//                                    for (Conversation conversation : conversations)
+//                                    {
+//                                        if (dao.isConversationExists(conversation.getConversationID()))
+//                                        {
+//                                            dao.updateConversation(conversation);
+//                                        }
+//                                        else
+//                                        {
+//                                            dao.insertNewConversation(conversation);
+//                                        }
+//                                    }
                                 }
                             });
                             server.restoreConversations(currentUser);

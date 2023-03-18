@@ -48,8 +48,8 @@ public class MessageHistoryAdapter extends BaseAdapter {
             TextView text = convertView.findViewById(R.id.message);
             ImageView imageView = convertView.findViewById(R.id.seenBy);
             MessageHistory message = messages.get(position);
-            date.setText(message.getSendingTime());
-            text.setText(message.getMessage());
+            date.setText(String.valueOf(message.getSendingTime()));
+            text.setText(message.getContent());
         }
         return convertView;
     }

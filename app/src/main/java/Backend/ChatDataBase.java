@@ -12,7 +12,7 @@ import NormalObjects.Message;
 import NormalObjects.MessageHistory;
 import NormalObjects.User;
 
-@Database(entities = {Conversation.class, User.class, Message.class, Group.class, MessageHistory.class},version = 7)
+@Database(entities = {Conversation.class, User.class, Message.class, Group.class, MessageHistory.class},version = 11)
 public abstract class ChatDataBase extends RoomDatabase {
 
     private static ChatDataBase instance;

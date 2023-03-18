@@ -3,6 +3,7 @@ package Backend;
 import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -21,6 +22,7 @@ public class UserVM extends AndroidViewModel {
     private final String currentUserUID = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
     private Repository repository;
     private LiveData<User>currentUser;
+    private final String USER_VM = "USER_VN";
     public UserVM(@NonNull Application application) {
         super(application);
         repository = new Repository(application);
@@ -42,7 +44,7 @@ public class UserVM extends AndroidViewModel {
      * it will be updated instead
      * @param user the user to insert
      */
-    public void insertUser(User user)
+    public void saveUser(User user)
     {
         LiveData<User>users = repository.getUserByID(user.getUserUID());
         Observer<User> observer = new Observer<User>() {
@@ -68,11 +70,12 @@ public class UserVM extends AndroidViewModel {
      */
     public void updateUser(User user)
     {
+        Log.d(USER_VM, "update user");
         repository.updateUser(user);
         repository.updateUserInServer(user);
     }
 
-    public LiveData<Boolean> checkIfUserExists(User user)
+    public LiveData<Boolean> isUserExists(User user)
     {
         return repository.isUserExists(user);
     }
@@ -190,4 +193,10 @@ public class UserVM extends AndroidViewModel {
     {
         repository.updateUserImage(user,userImage,context);
     }
+
+    public void deleteUser(User user)
+    {
+        repository.deleteUser(user);
+    }
+
 }

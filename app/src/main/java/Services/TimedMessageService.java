@@ -10,31 +10,33 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-import androidx.lifecycle.ViewModelProvider;
 
-import com.example.woofmeow.ConversationActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.example.woofmeow.ConversationActivity2;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+
 import java.util.Calendar;
+import java.util.List;
 
 import Backend.ChatDao;
 import Backend.ChatDataBase;
-import Backend.ConversationVM;
-import Controller.NotificationsController;
-import DataBase.DBActive;
+
 import Model.MessageSender;
 import NormalObjects.Message;
 
-@SuppressWarnings("Convert2Lambda")
+
+@SuppressWarnings({"Convert2Lambda", "AnonymousHasLambdaAlternative"})
 public class TimedMessageService extends Service{
 
     private int notificationID;
     private final String FOREGROUND_SERVICE = "TimedMessageService";
+    private AlarmManager.OnAlarmListener alarmListener;
 
     @Nullable
     @Override
@@ -47,9 +49,11 @@ public class TimedMessageService extends Service{
         super.onCreate();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
         if (!intent.getBooleanExtra("stop", false)) {
             String ChannelID = CreateChannelID();
             Message message = (Message) intent.getSerializableExtra("message");
@@ -58,17 +62,17 @@ public class TimedMessageService extends Service{
                 long x = Long.parseLong(message.getMessageID());
                 BigInteger bigInteger = BigInteger.valueOf(x);
                 notificationID = bigInteger.intValue();
-                String[] token = intent.getStringArrayExtra("token");
-                String time = intent.getStringExtra("time");
+                List<String> tokens = (List<String>)intent.getSerializableExtra("tokens");
+                long time = intent.getLongExtra("time",-1);
                 Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(Long.parseLong(time));
-                Intent conversationIntent = new Intent(this, ConversationActivity.class);
+                calendar.setTimeInMillis(time);
+                Intent conversationIntent = new Intent(this, ConversationActivity2.class);
                 conversationIntent.putExtra("conversationID", message.getConversationID());
-                conversationIntent.putExtra("recipient", message.getGroupName());
-                conversationIntent.putExtra("recipientToken", token);
+                conversationIntent.putExtra("recipient", message.getConversationName());
+                conversationIntent.putExtra("recipientToken", (ArrayList<String>) tokens);
+
                 PendingIntent alarmPendingIntent = PendingIntent.getActivity(this, 120, conversationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ChannelID);
-
                 Intent cancelIntent = new Intent(this, TimedMessageService.class);
                 cancelIntent.putExtra("stop", true);
                 cancelIntent.putExtra("notificationID", notificationID);
@@ -77,28 +81,41 @@ public class TimedMessageService extends Service{
                         .build();
                 builder.setSmallIcon(android.R.drawable.star_on)
                         .setContentTitle("waiting to send message")
-                        .setContentText("message: " + message.getMessage() + " will be sent to: " + message.getGroupName())
-                        .setSubText("message will be sent at: " + calendar.getTime().toString())
+                        .setContentText("message: " + message.getContent() + " will be sent to: " + message.getConversationName())
+                        .setSubText("message will be sent at: " + calendar.getTime())
                         .setContentIntent(alarmPendingIntent).addAction(action);
-                if (manager != null) {
-                    manager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), "alarm manager - send delay message", new AlarmManager.OnAlarmListener() {
-                        @Override
-                        public void onAlarm() {
-                            if(token!=null) {
-                                MessageSender sender = MessageSender.getInstance();
-                                sender.sendMessage(message, token);
-                                ChatDataBase chatDataBase = ChatDataBase.getInstance(TimedMessageService.this);
-                                ChatDao chatDao = chatDataBase.chatDao();
-                                chatDao.insertNewMessage(message);
-                                //DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
-                                //dbActive.saveMessage(message);
-                                Log.d(FOREGROUND_SERVICE, "stopped foreground service - onAlarm");
-                            }
-                            else
-                                Log.e("NULL-ERROR","token is null in TimedService");
-                            stopForeground(true);
+                alarmListener = new AlarmManager.OnAlarmListener() {
+                    @Override
+                    public void onAlarm() {
+                        if(tokens!=null) {
+                            MessageSender sender = MessageSender.getInstance();
+                            ChatDataBase chatDataBase = ChatDataBase.getInstance(TimedMessageService.this);
+                            ChatDao chatDao = chatDataBase.chatDao();
+                            message.setSendingTime(System.currentTimeMillis());
+                            sender.sendMessage(message, tokens);
+                            Thread thread = new Thread(){
+                                @Override
+                                public void run() {
+                                    chatDao.insertNewMessage(message);
+                                    chatDao.updateConversationLastMessage(message.getConversationID(), message.getContent());
+                                }
+                            };
+                            thread.setName("Timed msg save msg");
+                            thread.start();
+                            Intent forgroundServiceIntent = new Intent("delayedMessage");
+                            forgroundServiceIntent.putExtra("message", message);
+                            LocalBroadcastManager.getInstance(TimedMessageService.this).sendBroadcast(forgroundServiceIntent);
+                            //DBActive dbActive = DBActive.getInstance(TimedMessageService.this);
+                            //dbActive.saveMessage(message);
+                            Log.d(FOREGROUND_SERVICE, "stopped foreground service - onAlarm");
                         }
-                    }, new Handler());
+                        else
+                            Log.e("NULL-ERROR","token is null in TimedService");
+                        stopForeground(true);
+                    }
+                };
+                if (manager != null) {
+                    manager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), "alarm manager - send delay message", alarmListener, new Handler());
                 }
                 startForeground(notificationID, builder.build());
 
@@ -109,13 +126,7 @@ public class TimedMessageService extends Service{
             int notificationID = intent.getIntExtra("notificationID",-1);
             if(notificationID == this.notificationID) {
                 Log.d(FOREGROUND_SERVICE, "service is stopped");
-                manager.cancel(new AlarmManager.OnAlarmListener() {
-                    @Override
-                    public void onAlarm() {
-                        Toast.makeText(TimedMessageService.this, "message will not be sent", Toast.LENGTH_SHORT).show();
-                        Log.d(FOREGROUND_SERVICE,"cancelled alarm");
-                    }
-                });
+                manager.cancel(alarmListener);
                 stopForeground(true);
             }
             else if(notificationID == -1)

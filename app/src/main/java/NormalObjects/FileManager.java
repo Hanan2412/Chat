@@ -10,11 +10,8 @@ import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
-
-import com.example.woofmeow.ConversationActivity;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -30,7 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 //import DataBase.DBActive;
-import Services.FirebaseMessageService;
+
 
 @SuppressWarnings("Convert2Lambda")
 public class FileManager {
@@ -176,6 +173,15 @@ public class FileManager {
     }
 
     @Deprecated
+    public String getSavedImagePath(Context context,String dirName,String childPath)
+    {
+        ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
+        File directory = contextWrapper.getDir(dirName, Context.MODE_PRIVATE);
+        File imageFile = new File(directory,childPath + "_Image");
+        return imageFile.getAbsolutePath();
+    }
+
+    @Deprecated
     public String SaveUserImage(Bitmap bitmap,String userUID,Context context)
     {
         ContextWrapper contextWrapper = new ContextWrapper(context.getApplicationContext());
@@ -256,15 +262,6 @@ public class FileManager {
             e.printStackTrace();
         }
         return null;
-    }
-
-    @Deprecated
-    public String getSavedImagePath(Context context,String childPath)
-    {
-        ContextWrapper contextWrapper = new ContextWrapper(context);
-        File directory = contextWrapper.getDir("user_images", Context.MODE_PRIVATE);
-        File imageFile = new File(directory,childPath);
-        return imageFile.getAbsolutePath();
     }
 
     public String SaveVideo(File file,Context context)

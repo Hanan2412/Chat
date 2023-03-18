@@ -40,18 +40,6 @@
     <string name="radio_button1">כפתור רדיו 1</string>
     <string name="radio_button2">כפתור רדיו 2</string>
     <string name="more">הוסיפו עוד</string>
-    <string name="call">התקשר</string>
-    <string name="call">התקשר</string>
-    <string name="cancel">ביטול</string>
-    <string name="cancel">ב</string>
-    <string name="cancel">בי</string>
-    <string name="cancel">ביט</string>
-    <string name="cancel">ביטו</string>
-    <string name="cancel">ביטול</string>
-    <string name="cancel">ביטול</string>
-    <string name="cancel">ביטול</string>
-    <string name="cancel">ביטול</string>
-    <string name="call">צילצול</string>
     <string name="scroll_bot">גלול למטה</string>
     <string name="sender_name">שם נמען</string>
     <string name="char_count">כמות תווים</string>
@@ -64,4 +52,10 @@
     <string name="leave">עזוב</string>
     <string name="info">מידע</string>
     <string name="copy_message">העתק</string>
+    <string name="delete">מחק</string>
+    <string name="cancel">ביטול</string>
+    <string name="call">התקשר</string>
+    <string name="date">תאריך</string>
+    <string name="contact_name">שם איש קשר</string>
+    <string name="contact_number">מספר איש קשר</string>
 </resources>

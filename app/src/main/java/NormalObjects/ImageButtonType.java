@@ -65,8 +65,11 @@ public class ImageButtonType extends ImageButtonPlus{
 
     public void setCurrentButtonType(ButtonType buttonType)
     {
-        onCurrentButtonTypeChange(buttonType);
-        changeBtnImage(buttonType);
+        if (getCurrentButtonType() != buttonType) {
+            onCurrentButtonTypeChange(buttonType);
+            changeBtnImage(buttonType);
+        }
+        else Log.d(IMAGE_BUTTON_TYPE, "setCurrentBtnType - same type as current one, no need to change");
     }
 
     private void changeBtnImage(ButtonType buttonType)

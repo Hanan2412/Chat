@@ -107,5 +107,9 @@
     <string name="leave">Leave</string>
     <string name="info">Information</string>
     <string name="copy_message">Copy</string>
+    <string name="delete">Delete</string>
+    <string name="contact_name">Contact Name</string>
+    <string name="contact_number">Contact Number</string>
+    <string name="date">Date</string>
 
 </resources>

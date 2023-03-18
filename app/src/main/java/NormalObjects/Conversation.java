@@ -44,7 +44,7 @@ public class Conversation implements Serializable {
     @Ignore
     private List<String>tokens;
     private String lastMessageRecipient;
-    private String groupName;
+    private String conversationName;
     private ConversationType conversationType = ConversationType.single;
     private int type = 0;
 
@@ -90,12 +90,12 @@ public class Conversation implements Serializable {
         this.conversationType = conversationType;
     }
 
-    public String getGroupName() {
-        return groupName;
+    public String getConversationName() {
+        return conversationName;
     }
 
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public void setConversationName(String conversationName) {
+        this.conversationName = conversationName;
     }
 
     public String getConversationID() {
@@ -153,7 +153,7 @@ public class Conversation implements Serializable {
     {
         if(lastMessageTime!=null) {
             if (!lastMessageTime.contains("/"))
-                parseTime(lastMessageTime);
+                parseTime(Long.parseLong(lastMessageTime));
             else this.lastMessageTime = lastMessageTime;
         }
     }
@@ -218,9 +218,9 @@ public class Conversation implements Serializable {
 
     public void setLastMessage(Message lastMessage)
     {
-        lastMessageRecipient = lastMessage.getSender();
-        this.lastMessage = lastMessage.getMessage();
-        lastMessageTime = lastMessage.getMessageTime();
+        lastMessageRecipient = lastMessage.getSenderID();
+        this.lastMessage = lastMessage.getContent();
+        lastMessageTime = String.valueOf(lastMessage.getSendingTime());
     }
 
     public String getSenderName() {
@@ -301,7 +301,7 @@ public class Conversation implements Serializable {
     public void setConversationMetaData(Message message)
     {
         lastMessageID = message.getMessageID();
-        lastMessage = message.getMessage();
+        lastMessage = message.getContent();
         parseTime(message.getArrivingTime());
         //lastMessageTime = message.getArrivingTime();
         messageType = message.getMessageType();
@@ -309,11 +309,10 @@ public class Conversation implements Serializable {
         recipientToken = message.getSenderToken();
     }
 
-    private void parseTime(String time)
+    private void parseTime(long time)
     {
-        if(time!=null) {
             Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(Long.parseLong(time));
+            calendar.setTimeInMillis(time);
             int minute = calendar.get(Calendar.MINUTE);
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
             int day = calendar.get(Calendar.DAY_OF_MONTH);
@@ -325,6 +324,6 @@ public class Conversation implements Serializable {
             else
                 minutes = minute + "";
             this.lastMessageTime = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
-        }
+
     }
 }

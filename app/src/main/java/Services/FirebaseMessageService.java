@@ -1,7 +1,5 @@
 package Services;
 
-import static com.example.woofmeow.ConversationActivity.MESSAGE_SEEN;
-
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -10,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
@@ -30,21 +27,17 @@ import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
-import com.example.woofmeow.ConversationActivity;
-import com.example.woofmeow.MainActivity;
+import com.example.woofmeow.ConversationActivity2;
 import com.example.woofmeow.R;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +45,7 @@ import java.io.InputStream;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -66,6 +60,7 @@ import Backend.ChatDataBase;
 import BroadcastReceivers.ReplyMessageBroadcast;
 import Consts.ConversationType;
 import Consts.MessageAction;
+import Consts.MessageStatus;
 import Consts.MessageType;
 //import Controller.CController;
 
@@ -75,7 +70,6 @@ import NormalObjects.Conversation;
 import NormalObjects.FileManager;
 import NormalObjects.Group;
 import NormalObjects.Message;
-import NormalObjects.MessageHistory;
 import NormalObjects.User;
 
 import Retrofit.Server;
@@ -93,6 +87,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private static HashMap<Integer, NotificationCompat.Builder> buildersHashMap;
     private final String NOTIFICATION_INFO = "notification_info";
     private NotificationsController notificationsController;
+    private String FirebaseMessagingService;
 
     public FirebaseMessageService() {
         super();
@@ -129,161 +124,28 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
 
 
     @Override
-    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
+    public void onMessageReceived(@NonNull RemoteMessage remoteMessage)
+    {
         super.onMessageReceived(remoteMessage);
         DataBaseSetUp();
         Map<String, String> data = remoteMessage.getData();
-        String action = data.get("messageKind");
-        String conversationID = data.get("conversationID");
+        String action = data.get("messageAction");
         if (action != null)
-            Log.d("status message", action);
-        else {
-            Log.e("action is null", "action is NULL");
-        }
-        if (action != null)
-            switch (action) {
-                case "newMessage": {
-                    HandleUserMessage(remoteMessage);
-                    break;
-                }
-                case "typing": {
-                    if (isOpenConversation(conversationID)) {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
-                    }
-                    break;
-                }
-                case "not typing": {
-                    if (isOpenConversation(conversationID)) {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
-                    }
-                    break;
-                }
-                case "recording": {
-                    if (isOpenConversation(conversationID)) {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", false));
-                    }
-                    break;
-                }
-                case "not recording": {
-                    if (isOpenConversation(conversationID)) {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("not recording", false));
-                    }
-                    break;
-                }
-                case "read_time": {
-                    String messageStatus = data.get("messageStatus");
-                    String readAt = data.get("readAt");
-                    String messageID = data.get("messageID");
-                    if (isOpenConversation(conversationID)) {
-                        Intent readIntent = new Intent(conversationID);
-                        readIntent.putExtra("messageStatus", messageStatus);
-                        readIntent.putExtra("readAt", readAt);
-                        readIntent.putExtra("messageID", messageID);
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(readIntent);
-                        //UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
-                    }
-                    UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
-                    break;
-                }
-                case "delete": {
-                    String messageID = data.get("messageID");
-                    if (isOpenConversation(conversationID)) {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
-                                .putExtra("delete", false)
-                                .putExtra("messageID", messageID));
-                    } else {
-                        Thread thread = new Thread() {
-                            @Override
-                            public void run() {
-                                dao.deleteMessage(messageID);
-                            }
-                        };
-                        thread.setName("delete thread");
-                        thread.start();
-                    }
-                    break;
-                }
-                case "edit": {
-                    if (isOpenConversation(conversationID)) {
-                        String e_t = data.get("editTime");
-                        String message = data.get("message");
-                        String messageID = data.get("messageID");
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
-                                .putExtra("edit", false)
-                                .putExtra("messageID", messageID)
-                                .putExtra("conversationID", conversationID)
-                                .putExtra("message", message)
-                                .putExtra("edit_time", e_t));
-                    }
-                    Thread thread = new Thread() {
-                        @Override
-                        public void run() {
-                            Message message = new Message();
-                            String e_t = data.get("editTime");
-                            String content = data.get("message");
-                            String messageID = data.get("messageID");
-                            message.setConversationID(conversationID);
-                            message.setMessage(content);
-                            message.setMessageID(messageID);
-                            message.setEditTime(e_t);
-                            Observer<Message>observer = null;
-                            Observer<Message> finalObserver = null;
-                            observer = new Observer<Message>() {
-                                @Override
-                                public void onChanged(Message message) {
-                                    MessageHistory history = new MessageHistory(message);
-                                    dao.saveMessageHistory(history);
-                                    dao.updateMessage(messageID, content, e_t);
-                                    dao.updateConversationLastMessage(conversationID, content);
-                                    assert finalObserver != null;
-                                    dao.getMessage(messageID).removeObserver(finalObserver);
-                                }
-                            };
-
-                            Handler handler = new Handler(Looper.getMainLooper());
-                            Observer<Message> finalObserver1 = observer;
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    dao.getMessage(messageID).observeForever(finalObserver1);
-                                }
-                            });
-                        }
-                    };
-                    thread.setName("edit thread");
-                    thread.start();
-
-                }
-                case "status": {
-                    SharedPreferences sharedPreferences = getSharedPreferences("Status", MODE_PRIVATE);
-                    String currentStatus = sharedPreferences.getString("status", MainActivity.OFFLINE_S);
-                    String token = data.get("senderToken");
-                    SendStatusMessage(currentStatus, token, conversationID);
-                    break;
-                }
-                case "statusResponse": {
-                    if (isOpenConversation(conversationID)) {
-                        String status = data.get("messageStatus");
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("userStatus").putExtra("status", status));
-                    } else
-                        Log.d("statusResponse", "conversation isn't open - no need to display user status");
-                    break;
-                }
-                case "leave_group": {
-                    String sender = data.get("sender");
-                    Thread thread = new Thread() {
-                        @Override
-                        public void run() {
-                            dao.removeMemberFromGroup(sender, conversationID);
-                        }
-                    };
-                    thread.setName("remove member from group");
-                    thread.start();
-                    break;
-                }
-                default:
-                    Log.e("received message error", "default case in on message received");
+        {
+            MessageAction messageAction = MessageAction.values()[Integer.parseInt(action)];
+            if (messageAction == MessageAction.new_message)
+            {
+                HandleUserMessage(data);
             }
+            else
+            {
+                HandleInteractionMessage(messageAction, data);
+            }
+        }
+        else {
+            Log.e(FirebaseMessagingService, "action is NULL");
+        }
+
     }
 
     private void DataBaseSetUp() {
@@ -479,7 +341,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
 
         //opens activity from notification tap
-        Intent tapOnNotificationIntent = new Intent(this, ConversationActivity.class);
+        Intent tapOnNotificationIntent = new Intent(this, ConversationActivity2.class);
         tapOnNotificationIntent.putExtra("senderName", senderName);
         tapOnNotificationIntent.putExtra("senderUID", senderUID);
 
@@ -619,104 +481,211 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         thread.start();
     }
 
-    private void HandleUserMessage(RemoteMessage remoteMessage) {
-        Message message = new Message();
-        String conversationID = remoteMessage.getData().get("conversationID");
-        String messageID = remoteMessage.getData().get("messageID");
-        if (messageID != null) {
-            String status = remoteMessage.getData().get("messageStatus");
-            if (!status.equals(ConversationActivity.MESSAGE_SENT)) {//message status update
+    private void HandleInteractionMessage(MessageAction action, Map<String, String> data)
+    {
+        String conversationID = data.get("conversationID");
+        switch (action)
+        {
+            case typing: {
+                if (isOpenConversation(conversationID)) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", true));
+                }
+                break;
+            }
+            case not_typing: {
+                if (isOpenConversation(conversationID)) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("typing", false));
+                }
+                break;
+            }
+            case recording: {
+                if (isOpenConversation(conversationID)) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", true));
+                }
+                break;
+            }
+            case not_recording: {
+                if (isOpenConversation(conversationID)) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID).putExtra("recording", false));
+                }
+                break;
+            }
+            case read: {
+                String messageStatus = data.get("messageStatus");
+                String readAt = data.get("readAt");
+                String messageID = data.get("messageID");
+                if (isOpenConversation(conversationID)) {
+                    Intent readIntent = new Intent(conversationID);
+                    readIntent.putExtra("messageStatus", messageStatus);
+                    readIntent.putExtra("readAt", readAt);
+                    readIntent.putExtra("messageID", messageID);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(readIntent);
+                    //UpdateMessageLive(conversationID, messageID, messageStatus, readAt);
+                }
+                UpdateMessageMetaDataInDataBase(messageID, messageStatus, readAt);
+                break;
+            }
+            case delete_message: {
+                String messageID = data.get("messageID");
+                if (isOpenConversation(conversationID)) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                            .putExtra("delete", false)
+                            .putExtra("messageID", messageID));
+                } else {
+                    Thread thread = new Thread() {
+                        @Override
+                        public void run() {
+                            dao.deleteMessage(messageID);
+                        }
+                    };
+                    thread.setName("delete thread");
+                    thread.start();
+                }
+                break;
+            }
+            case edit_message: {
+                if (isOpenConversation(conversationID)) {
+                    String e_t = data.get("editTime");
+                    String message = data.get("message");
+                    String messageID = data.get("messageID");
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                            .putExtra("edit", false)
+                            .putExtra("messageID", messageID)
+                            .putExtra("conversationID", conversationID)
+                            .putExtra("message", message)
+                            .putExtra("edit_time", e_t));
+                }
                 Thread thread = new Thread() {
                     @Override
                     public void run() {
-                        dao.updateMessageStatus(messageID, status);
+                        Message message = new Message();
+                        String e_t = data.get("editTime");
+                        String content = data.get("message");
+                        String messageID = data.get("messageID");
+                        message.setConversationID(conversationID);
+                        message.setContent(content);
+                        message.setMessageID(messageID);
+                        if (e_t !=null)
+                            message.setEditTime(Long.parseLong(e_t));
+                        Observer<Message> observer;
+                        Observer<Message> finalObserver = null;
+                        observer = new Observer<Message>() {
+                            @Override
+                            public void onChanged(Message message) {
+//                                MessageHistory history = new MessageHistory(message);
+//                                dao.saveMessageHistory(history);
+                                dao.updateMessage(messageID, content, e_t);
+                                dao.updateConversationLastMessage(conversationID, content);
+                                if (finalObserver!=null)
+                                    dao.getMessage(messageID).removeObserver(finalObserver);
+                            }
+                        };
+
+                        Handler handler = new Handler(Looper.getMainLooper());
+                        Observer<Message> finalObserver1 = observer;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                dao.getMessage(messageID).observeForever(finalObserver1);
+                            }
+                        });
                     }
                 };
-                thread.setName("message status update");
+                thread.setName("edit thread");
                 thread.start();
-                if (isOpenConversation(conversationID)) {
-                    Intent intent = new Intent("messageStatus");
-                    intent.putExtra("status", status);
-                    intent.putExtra("messageID", messageID);
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-                }
-            } else {//new message
-                List<String> list = new ArrayList<>();
-                Set<String> set = remoteMessage.getData().keySet();
-                for (String s : set) {
-                    if (s.equals("recipients")) {
-                        String q = remoteMessage.getData().get(s);
-                        String q1 = q.replaceAll("\"", "");
-                        String q2 = q1.replace("[", "");
-                        q2 = q2.replace("]", "");
-                        StringBuilder builder = new StringBuilder();
-                        for (int k = 0; k < q2.length(); k++) {
-                            if (q2.charAt(k) != ',')
-                                builder.append(q2.charAt(k));
-                            else {
-                                list.add(builder.toString());
-                                builder.delete(0, builder.length());
-                            }
-                            if (k == q2.length() - 1)
-                                list.add(builder.toString());
-                        }
+
+            }
+            case status: {
+                SharedPreferences sharedPreferences = getSharedPreferences("Status", MODE_PRIVATE);
+                int currentStatus = sharedPreferences.getInt("status", 0);
+                String token = data.get("senderToken");
+                sendStatusMessage(currentStatus, token, conversationID);
+                break;
+            }
+            case leave_group: {
+                String sender = data.get("sender");
+                Thread thread = new Thread() {
+                    @Override
+                    public void run() {
+                        dao.removeMemberFromGroup(sender, conversationID);
                     }
-                }
-                String content = remoteMessage.getData().get("message");
-                String senderUID = remoteMessage.getData().get("sender");
-                downloadConversationImage(senderUID, conversationID);
-                String senderName = remoteMessage.getData().get("senderName");
-                String sendingTime = remoteMessage.getData().get("sendingTime");
-                String quote = remoteMessage.getData().get("quoteMessage");
-                String quoteMessageID = remoteMessage.getData().get("quotedMessageID");
-                String latitude = remoteMessage.getData().get("latitude");
-                String longitude = remoteMessage.getData().get("longitude");
-                String address = remoteMessage.getData().get("locationAddress");
-                String imagePath = remoteMessage.getData().get("imagePath");
-                //String recordingPath = remoteMessage.getData().get("recordingPath");
-                String editMessageTime = remoteMessage.getData().get("editTime");
-                int type = Integer.parseInt(remoteMessage.getData().get("messageType"));
-                String action = remoteMessage.getData().get("messageAction");
-                if (action.equals("new_message"))
-                    message.setMessageAction(MessageAction.new_message);
-                String senderToken = remoteMessage.getData().get("senderToken");
-                String contactName = remoteMessage.getData().get("contactName");
-                String contactPhone = remoteMessage.getData().get("contactPhone");
-                String filePath = remoteMessage.getData().get("filePath");
-                String group = remoteMessage.getData().get("groupName");
-                message.setGroupName(group);
-                message.setContactPhone(contactPhone);
-                message.setContactName(contactName);
-                message.setConversationID(conversationID);
-                message.setMessageID(messageID);
-                message.setMessage(content);
-                message.setSender(senderUID);
-                message.setSenderName(senderName);
-                message.setSendingTime(sendingTime);
-                message.setArrivingTime(System.currentTimeMillis() + "");
-                message.setQuotedMessageID(quoteMessageID);
-                message.setQuoteMessage(quote);
-                message.setMessageType(type);
-                message.setRecipients(list);
-                message.setLatitude(latitude);
-                message.setLongitude(longitude);
-                message.setLocationAddress(address);
-                message.setImagePath(imagePath);
-                //message.setRecordingPath(recordingPath);
-                message.setEditTime(editMessageTime);
-                message.setSenderToken(senderToken);
-                message.setFilePath(filePath);
-                message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
-                if (type == MessageType.voiceMessage.ordinal()) {
-                    DownloadVoiceMessage(message);
-                } else if (type == MessageType.photoMessage.ordinal()) {
-                    DownloadImageMassage(message);
-                } else if (type == MessageType.videoMessage.ordinal()) {
-                    DownloadVideoMessage(message);
-                }
-                prepareMessage(conversationID, message);
+                };
+                thread.setName("remove member from group");
+                thread.start();
+                break;
             }
         }
+    }
+
+    private void HandleConversationMessage(Map<String, String> data)
+    {
+        List<String>recipientsIds = Collections.singletonList(data.get("recipientIds"));
+        String conversationName = data.get("conversationName");
+        String removedRecipient = data.get("removedRecipientID");
+        String conversationID = data.get("conversationID");
+
+    }
+
+    private void HandleNewConversation(Map<String, String> data)
+    {
+        String conversationID = data.get("conversationID");
+        int conversationType;
+        List<String> list = new ArrayList<>();
+        Set<String> set = data.keySet();
+        for (String s : set) {
+            if (s.equals("recipients")) {
+                String q = data.get(s);
+                String q1 = q.replaceAll("\"", "");
+                String q2 = q1.replace("[", "");
+                q2 = q2.replace("]", "");
+                StringBuilder builder = new StringBuilder();
+                for (int k = 0; k < q2.length(); k++) {
+                    if (q2.charAt(k) != ',')
+                        builder.append(q2.charAt(k));
+                    else {
+                        list.add(builder.toString());
+                        builder.delete(0, builder.length());
+                    }
+                    if (k == q2.length() - 1)
+                        list.add(builder.toString());
+                }
+            }
+        }
+        if (list.size() == 0)
+            conversationType = ConversationType.single.ordinal();
+        else
+            conversationType = ConversationType.group.ordinal();
+        assert conversationID != null;
+        Conversation conversation = new Conversation(conversationID);
+        conversation.setRecipients(list);
+        conversation.setConversationType(ConversationType.values()[conversationType]);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                dao.insertNewConversation(conversation);
+            }
+        };
+        thread.setName("create conversation");
+        thread.start();
+        createNewGroup(conversationID, list);
+        downloadRecipients(list);
+    }
+
+    private void HandleUserMessage(Map<String, String> data) {
+        Log.d(FirebaseMessagingService, "HandleUserMessage");
+        Gson gson = new Gson();
+        JsonElement jsonElement = gson.toJsonTree(data);
+        Message message = gson.fromJson(jsonElement, Message.class);
+        int type = message.getMessageType();
+        message.setMessageStatus(MessageStatus.DELIVERED.ordinal());
+        if (type == MessageType.voiceMessage.ordinal()) {
+            DownloadVoiceMessage(message);
+        } else if (type == MessageType.photoMessage.ordinal()) {
+            DownloadImageMassage(message);
+        } else if (type == MessageType.videoMessage.ordinal()) {
+            DownloadVideoMessage(message);
+        }
+        prepareMessage(message);
     }
 
     private void DownloadVoiceMessage(Message message) {
@@ -741,7 +710,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 @Override
                 public void onFileDownloadFinished(String messageID, File file) {
                     String path = file.getAbsolutePath();
-                    message.setRecordingPath(path);
+                    message.setFilePath(path);
                     Thread thread = new Thread() {
                         @Override
                         public void run() {
@@ -811,7 +780,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                         FileManager manager = FileManager.getInstance();
                         String path = manager.saveImage(bitmap, FirebaseMessageService.this);
                         if (path != null) {
-                            message.setImagePath(path);
+                            message.setFilePath(path);
                             Thread thread = new Thread() {
                                 @Override
                                 public void run() {
@@ -849,7 +818,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                     if (path == null)
                         Log.e("saved video", "saved video path is null");
                     else {
-                        message.setRecordingPath(path);
+                        message.setFilePath(path);
                         Thread thread = new Thread() {
                             @Override
                             public void run() {
@@ -874,16 +843,18 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void markAsDelivered(Message message) {
-        message.setMessageStatus(ConversationActivity.MESSAGE_DELIVERED);
+        message.setMessageStatus(MessageStatus.DELIVERED.ordinal());
         MessageSender sender = MessageSender.getInstance();
         //String token = getRecipientToken(message.getSender());
-        sender.sendMessage(message, message.getSenderToken());
+        List<String>tokens = new ArrayList<>();
+        tokens.add(message.getSenderToken());
+        sender.sendMessage(message, tokens);
         String token = message.getSenderToken();
         Log.e("Senders Token", token);
         Thread thread = new Thread() {
             @Override
             public void run() {
-                dao.updateMessageStatus(message.getMessageID(), ConversationActivity.MESSAGE_DELIVERED);
+                dao.updateMessageStatus(message.getMessageID(), MessageStatus.DELIVERED.ordinal());
             }
         };
         thread.setName("mark as delivered");
@@ -915,26 +886,29 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
     private void markAsSeen(Message message) {
-        message.setMessageStatus(MESSAGE_SEEN);
         MessageSender sender = MessageSender.getInstance();
-        sender.sendMessage(message, message.getSenderToken());
+        List<String>tokens = new ArrayList<>();
+        tokens.add(message.getSenderToken());
+        sender.sendMessage(message, tokens);
         Thread thread = new Thread() {
             @Override
             public void run() {
-                dao.updateMessageStatus(message.getMessageID(), MESSAGE_SEEN);
+                dao.updateMessageStatus(message.getMessageID(), MessageStatus.READ.ordinal());
             }
         };
         thread.setName("mark as seen");
         thread.start();
     }
 
-    private void SendStatusMessage(String status, String token, String conversationID) {
+    private void sendStatusMessage(int status, String token, String conversationID) {
         Message message = new Message();
         message.setConversationID(conversationID);
         message.setMessageKind("statusResponse");
         message.setMessageStatus(status);
         MessageSender sender = MessageSender.getInstance();
-        sender.sendMessage(message, token);
+        List<String>tokens = new ArrayList<>();
+        tokens.add(token);
+        sender.sendMessage(message, tokens);
     }
 
     private void saveMessage(Message message) {
@@ -943,7 +917,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             public void run() {
                 dao.insertNewMessage(message);
                 MessageType type = MessageType.values()[message.getMessageType()];
-                dao.updateConversation(message.getMessage(), message.getMessageID(), type.name(), System.currentTimeMillis() + "", message.getGroupName(), message.getConversationID());
+                dao.updateConversation(message.getContent(), message.getMessageID(), type.ordinal(), System.currentTimeMillis(), message.getConversationName(), message.getConversationID());
             }
         };
         thread.setName("saveMessage");
@@ -958,71 +932,55 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     }
 
 
-    private void prepareMessage(String conversationID, Message message) {
-
+    private void prepareMessage(Message message) {
+        Log.d(FirebaseMessagingService,"prepare message");
         //if this is the current on going conversation
         //if (isConversationExists(conversationID))
+        String conversationID = message.getConversationID();
         if (isOpenConversation(conversationID)) {
-            LiveData<Boolean> blockedConversation = dao.isConversationBlocked(conversationID);
-            Observer<Boolean> blockedConversationObserver = new Observer<Boolean>() {
-                @Override
-                public void onChanged(Boolean aBoolean) {
-                    if (!aBoolean) {
-                        LiveData<Boolean> blockedUser = dao.isUserBlocked(message.getSender());
-                        Observer<Boolean> blockedUserObserver = new Observer<Boolean>() {
-                            @Override
-                            public void onChanged(Boolean aBoolean) {
-                                if (aBoolean == null || !aBoolean) {
-                                    message.setMessageStatus(MESSAGE_SEEN);
-                                    saveMessage(message);
-                                    markAsSeen(message);
-                                    blockedUser.removeObserver(this);
-                                }
-                            }
-                        };
-                        blockedUser.observeForever(blockedUserObserver);
-                    }
-                    blockedConversation.removeObserver(this);
+            if (!isConversationBlocked(conversationID))
+            {
+                if (!isSenderBlocked(message.getSenderID()))
+                {
+                    message.setMessageStatus(MessageStatus.READ.ordinal());
+                    saveMessage(message);
+                    markAsSeen(message);
                 }
-            };
-            Handler handler1 = new Handler(Looper.getMainLooper());
-            handler1.post(new Runnable() {
-                @Override
-                public void run() {
-                    blockedConversation.observeForever(blockedConversationObserver);
-                }
-            });
-
-        }
-        else { //is the conversation exist at all
-            Boolean isExists = dao.isConversationExists(conversationID);
-            if (isExists) {
-                Cursor cursor = dao.conversationUserCombo(message.getSender(), message.getConversationID());
-                Log.e("cursor", "count: " + cursor.getColumnCount());
-                boolean allFalse = true;
-                int i = 0;
-                while (cursor.moveToNext()) {
-                    if (cursor.getString(i).equals("1")) {
-                        allFalse = false;
-                    }
-                    i++;
-                }
-                if (allFalse) {
-                    createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName()
-                            , message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                            message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
-                }
-                markAsDelivered(message);
-                saveMessage(message);
-            } else {
-                if (isNotificationsAllowed())
-                    createNotification(message.getMessage(), message.getSenderName(), message.getSender(), message.getGroupName(),
-                            message.getMessageType(), message.getLongitude(), message.getLatitude(),
-                            message.getLocationAddress(), message.getConversationID(), message.getSenderToken());
-                createNewConversation(message);
-                markAsDelivered(message);
             }
         }
+        else {
+            //conversation not active
+            LiveData<Boolean>isExists = dao.isConversationExists(conversationID);
+            isExists.observeForever(new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean aBoolean) {
+                    if (aBoolean)
+                    {
+                        saveMessage(message);
+                    } else {
+                        createNewConversation(message);
+                    }
+                    markAsDelivered(message);
+
+                }
+            });
+            if (isNotificationsAllowed()) {
+                createNotification(message.getContent(), message.getSenderName(), message.getSenderID(), message.getConversationName()
+                        , message.getMessageType(), message.getLongitude(), message.getLatitude(),
+                        message.getAddress(), message.getConversationID(), message.getSenderToken());
+            }
+
+        }
+    }
+
+    private boolean isConversationBlocked(String conversationID)
+    {
+        return dao.isConversationBlocked1(conversationID);
+    }
+
+    private boolean isSenderBlocked(String userid)
+    {
+        return dao.isUserBlocked1(userid);
     }
 
     private void createNewConversation(Message message) {
@@ -1039,84 +997,9 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         thread.setName("create conversation");
         thread.start();
         saveMessage(message);
-        List<String> recipients = getRecipients(message.getRecipients(), message.getSender());
-        createNewGroup(message.getConversationID(), recipients);
-        downloadRecipients(recipients);
-//        FirebaseDatabase database = FirebaseDatabase.getInstance();
-//        for (String uid : recipients) {
-//            DatabaseReference reference = database.getReference("users/" + uid);
-//            reference.addValueEventListener(new ValueEventListener() {
-//                @Override
-//                public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                    @SuppressWarnings("unchecked")
-//                    HashMap<String, Object> userMap = (HashMap<String, Object>) snapshot.getValue();
-//                    if (userMap != null) {
-//                        String name = (String) userMap.get("name");
-//                        User user = new User();
-//                        user.setPictureLink((String) userMap.get("pictureLink"));
-//                        user.setName(name);
-//                        user.setLastName((String) userMap.get("lastName"));
-//                        user.setUserUID(snapshot.getKey());
-//                        reference.removeEventListener(this);
-//                        LiveData<Boolean> userExists = dao.isUserExists(user.getUserUID());
-//                        Observer<Boolean> userExistsObserver = new Observer<Boolean>() {
-//                            @Override
-//                            public void onChanged(Boolean aBoolean) {
-//                                userExists.removeObserver(this);
-//                                Thread thread1 = new Thread() {
-//                                    @Override
-//                                    public void run() {
-//                                        if (aBoolean) {
-//                                            dao.updateUser(user);
-//                                        } else {
-//                                            dao.insertNewUser(user);
-//                                        }
-//                                        DatabaseReference tokenReference = database.getReference("Tokens/" + message.getSender());
-//                                        ValueEventListener tokenListener = new ValueEventListener() {
-//                                            @Override
-//                                            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                                                tokenReference.removeEventListener(this);
-//                                                String token = (String) snapshot.getValue();
-//                                                String uid = user.getUserUID();
-//                                                if (token != null) {
-//                                                    Thread thread1 = new Thread() {
-//                                                        @Override
-//                                                        public void run() {
-//                                                            dao.updateUserToken(uid, token);
-//                                                        }
-//                                                    };
-//                                                    thread1.setName("token update");
-//                                                    thread1.start();
-//
-//                                                } else
-//                                                    Log.e("NULL", "Recipient Token from fb is null");
-//                                            }
-//
-//                                            @Override
-//                                            public void onCancelled(@NonNull DatabaseError error) {
-//                                                Log.e("FIREBASE_ERROR", "cancelled recipient token retrieval");
-//                                            }
-//                                        };
-//                                        tokenReference.addValueEventListener(tokenListener);
-//                                    }
-//                                };
-//                                thread1.setName("update_insert user");
-//                                thread1.start();
-//
-//                            }
-//                        };
-//                        userExists.observeForever(userExistsObserver);
-//                        Log.d("fcm user save", "saved new user from new conversation to database");
-//                    }
-//
-//                }
-//
-//                @Override
-//                public void onCancelled(@NonNull DatabaseError error) {
-//                    error.toException().printStackTrace();
-//                }
-//            });
-//        }
+//        List<String> recipients = getRecipients(message.getRecipientsIds(), message.getSenderID());
+//        createNewGroup(message.getConversationID(), recipients);
+//        downloadRecipients(recipients);
     }
 
     private List<String> getRecipients(List<String> recipients, String sender) {
@@ -1136,10 +1019,10 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
     private Conversation createConversation(Message message, ConversationType type) {
         Conversation conversation = new Conversation(message.getConversationID());
         conversation.setLastMessageID(message.getMessageID());
-        conversation.setLastMessage(message.getMessage());
+        conversation.setLastMessage(message.getContent());
         conversation.setMessageType(message.getMessageType());
-        conversation.setLastMessageTime(message.getSendingTime());
-        conversation.setGroupName(message.getGroupName());
+        conversation.setLastMessageTime(message.getSendingTime()+"");
+        conversation.setConversationName(message.getConversationName());
         conversation.setMuted(false);
         conversation.setBlocked(false);
         conversation.setConversationType(type);

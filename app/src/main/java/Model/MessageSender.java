@@ -13,7 +13,11 @@ import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 import androidx.preference.SwitchPreferenceCompat;
 
+import java.util.List;
+
 import BroadcastReceivers.SMSBroadcastSent;
+import NormalObjects.ConversationMessage;
+import NormalObjects.ConversationObjectToSend;
 import NormalObjects.Message;
 import NormalObjects.ObjectToSend;
 import Retrofit.RetrofitApi;
@@ -30,11 +34,11 @@ public class MessageSender {
     @SuppressWarnings("FieldMayBeFinal")
     private RetrofitApi api;
     private final String RETROFIT_INFO = "info";
-    private final String RETROFIT_ERROR = "error";
+    private final String RETROFIT_ERROR = "MessageSender Error";
     public interface onMessageSent {
         void onMessageSentSuccessfully(Message message);
 
-        void onMessagePartiallySent(Message message, String[] token, String error);
+        void onMessagePartiallySent(Message message, List<String> token, String error);
 
         void onMessageNotSent(Message message, String error);
 
@@ -56,7 +60,7 @@ public class MessageSender {
         this.listener = listener;
     }
 
-    public void sendMessage(Message message, String... recipientsTokens) {
+    public void sendMessage(Message message, List<String> recipientsTokens) {
         for (String token : recipientsTokens) {
             if (token != null)
                 Log.d("messageSender, sending to token: ", token);
@@ -75,7 +79,7 @@ public class MessageSender {
                             Log.e(RETROFIT_ERROR, "Couldn't send the message");
                             Log.e(RETROFIT_ERROR, "Number of messages that could not be processed: " + response.body().failure);
                             Log.e(RETROFIT_ERROR, "Array of objects representing the status of the messages processed: " + response.body().results.toString());
-                            if (response.body().failure < recipientsTokens.length) {
+                            if (response.body().failure < recipientsTokens.size()) {
                                 if (listener != null)
                                     listener.onMessagePartiallySent(message, recipientsTokens, response.message());
                             } else {
@@ -83,9 +87,12 @@ public class MessageSender {
                                     listener.onMessageNotSent(message, response.message());
                             }
                         } else {
-                            message.setSent(true);
                             if (listener != null)
-                                listener.onMessageSentSuccessfully(message);
+                            {
+                                if (message.getMessageID() != null)
+                                    listener.onMessageSentSuccessfully(message);
+                                else Log.e(RETROFIT_ERROR, "onResponse: message body is empty");
+                            }
                         }
                     }
                 }
@@ -96,6 +103,14 @@ public class MessageSender {
                     t.printStackTrace();
                 }
             });
+        }
+        if (recipientsTokens.isEmpty())
+        {
+            Log.e(RETROFIT_ERROR, "no tokens");
+            if (listener!=null)
+            {
+                listener.onMessageNotSent(message, "server error - can't send msg");
+            }
         }
     }
 
@@ -112,8 +127,44 @@ public class MessageSender {
         PendingIntent delivered = PendingIntent.getBroadcast(context, 183, deliveredIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_UPDATE_CURRENT);
         //pendingIntent is to see if the sms message was sent and/or delivered
         SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(phoneNumber, scAddress, message.getMessage(), sent, delivered);
+        smsManager.sendTextMessage(phoneNumber, scAddress, message.getContent(), sent, delivered);
     }
 
+    public void sendMessage(ConversationMessage message, List<String>recipientsTokens)
+    {
+        for (String token: recipientsTokens)
+        {
+            ConversationObjectToSend objectToSend = new ConversationObjectToSend(message, token);
+            api.sendMessage(objectToSend).enqueue(new Callback<TryMyResponse>() {
+                @Override
+                public void onResponse(@NonNull Call<TryMyResponse> call, @NonNull Response<TryMyResponse> response) {
+                    if (response.isSuccessful())
+                    {
+                        Log.d(RETROFIT_INFO, "conversationMessage was sent successfully to token: " + token);
+                        if (response.body() != null)
+                        {
+                            Log.d(RETROFIT_INFO, "conversationMessage body response not null");
+                            if (response.body().success != 1)
+                            {
+                                Log.e(RETROFIT_ERROR, "conversationMessage wasn't sent to token: " + token);
+                            }
+                            else
+                            {
+                                Log.d(RETROFIT_INFO, "conversationMessage was sent successfully to token: " + token);
+                            }
+                        }
+                    }
+                    else
+                        Log.e(RETROFIT_ERROR, "conversationMessage response code wasn't successful for token: " + token);
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<TryMyResponse> call, @NonNull Throwable t) {
+                    Log.e(RETROFIT_ERROR, "sending conversationMessage error");
+                    t.printStackTrace();
+                }
+            });
+        }
+    }
 
 }

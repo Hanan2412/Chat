@@ -1,35 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:background="@android:color/white"
-    android:layout_height="match_parent"
     android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
     android:orientation="vertical">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="group name"
-        android:gravity="center"
-        android:layout_marginTop="20dp"
-        />
-
     <EditText
+        android:id="@+id/name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="your group name"
-        android:gravity="center"
         android:layout_marginTop="20dp"
-        android:contentDescription="group name"
         android:autofillHints=""
+        android:contentDescription="group name"
+        android:gravity="center"
+        android:hint="your group name"
         android:inputType="text"
-        android:id="@+id/name"
-        />
+        android:textColorHint="@color/blue"
+        android:textColor="@color/blue"/>
 
     <Button
+        android:id="@+id/done"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="done"
-        android:id="@+id/done"
-        />
+        android:textColor="@color/emoji_white"/>
 </LinearLayout>

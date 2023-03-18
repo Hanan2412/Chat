@@ -6,7 +6,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="450dp"
-            android:id="@+id/backgroundImage"
+            android:id="@+id/image"
             android:src="@drawable/ic_baseline_add_circle_24"
             android:layout_gravity="center_horizontal"
             android:contentDescription="@string/previewImage"

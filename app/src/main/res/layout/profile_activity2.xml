@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:id="@+id/rootLayout">
-
+    tools:context=".ProfileActivity2">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbarLayout"
@@ -19,44 +20,43 @@
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
             app:layout_scrollFlags="noScroll">
 
-                <ImageButton
-                    android:id="@+id/goBack"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_gravity="center_vertical"
-                    android:background="@drawable/circle"
-                    android:contentDescription="@string/back"
-                    android:src="@drawable/ic_baseline_arrow_back_24" />
+            <ImageButton
+                android:id="@+id/goBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/circle"
+                android:contentDescription="@string/back"
+                android:src="@drawable/ic_baseline_arrow_back_24" />
 
             <TextView
+                android:id="@+id/userName"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:text="userName"
                 android:gravity="center"
-                android:layout_marginStart="20dp"
-                android:textSize="20sp"
-                android:id="@+id/username"/>
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:text="@string/userStatus"
+                android:textSize="20sp" />
 
         </androidx.appcompat.widget.Toolbar>
-
     </com.google.android.material.appbar.AppBarLayout>
 
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/pictureLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:orientation="vertical"
+        android:layout_below="@+id/appbarLayout"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
 
-        >
-
-        <LinearLayout
+        <RelativeLayout
             style="@style/circleImageView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center">
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_centerInParent="true"
+            >
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/profileImage"
@@ -68,81 +68,38 @@
                 android:contentDescription="show user profile image"
                 android:src="@drawable/ic_baseline_account_circle_black"
                 app:shapeAppearanceOverlay="@style/circleImageView" />
-        </LinearLayout>
-
-
-        <LinearLayout
-            android:id="@+id/extraOptions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:padding="20dp">
 
             <ImageButton
-                android:id="@+id/stats"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="stats for this user"
-                android:src="@drawable/ic_baseline_info_24"
-                android:background="@android:color/holo_blue_light"
-                android:visibility="gone"/>
+                android:id="@+id/edit"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:background="@drawable/circle_blue_no_border"
+                android:contentDescription="@string/edit"
+                android:src="@drawable/ic_baseline_edit_24"
+                android:text="@string/edit" />
+        </RelativeLayout>
+    </RelativeLayout>
 
 
-            <NormalObjects.ImageButtonPlus
-                android:id="@+id/mute"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="mute this user"
-                android:src="@drawable/ic_baseline_volume_off_black" />
-
-            <NormalObjects.ImageButtonPlus
-                android:id="@+id/block"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="block this user"
-                android:src="@drawable/ic_baseline_block_black" />
-
-            <ImageButton
-                android:id="@+id/favorBtn"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="favorite this user - will also appear in a separate ta"
-                android:src="@drawable/ic_baseline_stars_black"
-                android:visibility="gone" />
-
-            <ImageButton
-                android:id="@+id/delete"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="deletes this user"
-                android:src="@drawable/ic_baseline_delete_black"
-                android:background="@android:color/holo_blue_light"
-                android:visibility="gone"/>
-
-        </LinearLayout>
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/title"
-        android:textSize="30sp"
-        android:text="what's showing on the list"
-        android:gravity="center"
-        />
-    <ListView
+    <LinearLayout
+        android:id="@+id/placeholder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/userDetails"
-        />
+        android:layout_below="@+id/pictureLayout"
+        android:layout_above="@+id/bottomNavigationView"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical"
+        android:visibility="visible"
+        >
+    </LinearLayout>
 
-
-
-</LinearLayout>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        app:itemTextColor="@color/black"
+        app:menu="@menu/profile" />
+</RelativeLayout>

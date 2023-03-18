@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/buttonLayout"
+        android:background="@color/emoji_white"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:id="@+id/messageLayout"
+            >
+            <ImageButton
+                android:id="@+id/emojiBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="start"
+                android:background="@drawable/circle_blue_no_border"
+                android:contentDescription="@string/open_imaji_keyboard"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_baseline_tag_faces_24"
+                android:visibility="visible" />
+
+            <com.vanniktech.emoji.EmojiEditText
+                android:id="@+id/messageText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:focusable="true"
+                android:gravity="center"
+                android:hint="@string/message_hint"
+                android:inputType="textMultiLine|textShortMessage|textNoSuggestions"
+                android:textSize="15sp"
+                android:visibility="visible"
+                android:maxLines="7" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/root_container123"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/bottomNavigationView"
+            android:layout_below="@+id/messageLayout"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigationView"
+            android:layout_width="match_parent"
+            android:layout_height="75dp"
+            android:layout_alignParentBottom="true"
+            android:background="@color/lightBlue2"
+            app:itemTextColor="@color/emoji_white"
+            app:menu="@menu/time_date_menu" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/white"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/cancelBtn"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:text="@string/cancel" />
+
+        <Button
+            android:id="@+id/sendDelayMessageBtn"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:text="@string/send" />
+    </LinearLayout>
+</RelativeLayout>

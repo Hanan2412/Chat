@@ -1,6 +1,7 @@
 package Retrofit;
 
 
+import NormalObjects.ConversationObjectToSend;
 import NormalObjects.ObjectToSend;
 import Try.TryMyResponse;
 import Try.TrySender;
@@ -19,5 +20,8 @@ public interface RetrofitApi {
     @POST("fcm/send")
     Call<TryMyResponse>sendMessage(@Body TrySender body);
 
+    @Headers({"Content-Type:application/json","Authorization:key=AAAApuGdNCw:APA91bErXqemHj3mxeLP9UXapoxYbo5pVy1mcI5Pg2bpkNsw9lPMWqMtnw0PQCQHY369sl4q8iqyn_hBMbeBxhbosXEAjgkRXqvWDdeAAJQeRGroavmQ91Xqs-r2QZZx7siWUMcJfj3r"})
+    @POST("fcm/send")
+    Call<TryMyResponse>sendMessage(@Body ConversationObjectToSend objectToSend);
 
 }

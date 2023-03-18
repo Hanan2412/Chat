@@ -1,4 +1,5 @@
 package NormalObjects;
+
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
@@ -7,155 +8,137 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import Consts.MessageAction;
-
 @Entity(tableName = "messageHistory")
 public class MessageHistory implements Serializable {
 
-
     @PrimaryKey(autoGenerate = true)
     int p_key;
-    private String messageID;
 
-    private String message;
-    private String sender;
-    //private String recipient;
-    private String senderName;
-    private String latitude;
-    private String longitude;
-    private String locationAddress;
-    private String to;
+    //    message info
+    private String messageID;
     private String conversationID;
-    private String messageTime;
-    private String sendingTime;
-    private String arrivingTime;
-    private String imagePath;
-    private String quoteMessage;
-    private int messageType = -1;
-    private boolean hasBeenRead = false;
-    private String messageStatus="";
-    private String recordingPath;
-    private int quotedMessagePosition = -1;
-    private String quotedMessageID;
-    private long readAt=-1;
-    @Ignore
-    private boolean star = false;
-    private String starTime;
-    //private String recipientName;
-    private MessageAction messageAction = MessageAction.new_message;
-    private String filePath;
-    private String editTime;
+    private String content;
+    private String senderName;
+    private String senderID;
     private String senderToken;
-    private String messageKind = "newMessage";
-    private String contactName,contactPhone;
-    @Ignore
-    private boolean uploading = false;
-    @Ignore
-    private boolean error = false;
-    @Ignore
-    private boolean sent = true;
-    @Ignore
-    private List<String>recipients;
-    @Ignore
-    private List<String>recipientNames;
+    private String recipientID;
+    private String recipientToken;
+    private String messageKind;
+    private String recipientName;
     private String groupName;
 
-    public MessageHistory()
-    {
-        recipients = new ArrayList<>();
-        recipientNames = new ArrayList<>();
-    }
-    public MessageHistory(Message message)
-    {
-        setMessageID(message.getMessageID());
-        setMessage(message.getMessage());
-        setArrivingTime(message.getArrivingTime());
-        setConversationID(message.getConversationID());
-        setFilePath(message.getFilePath());
-        setGroupName(message.getGroupName());
-        setImagePath(message.getImagePath());
-        setEditTime(message.getEditTime());
-        setLatitude(message.getLatitude());
-        setLongitude(message.getLongitude());
-        setLocationAddress(message.getLocationAddress());
-        setSender(message.getSender());
-        setSenderName(message.getSenderName());
-        setSenderToken(message.getSenderToken());
-        setSendingTime(message.getSendingTime());
-        setMessageStatus(message.getMessageStatus());
-    }
+    //    location
+    private String latitude;
+    private String longitude;
+    private String address;
 
-    public void setP_key(int p_key) {
-        this.p_key = p_key;
+    //    quote message
+    private String quoteID;
+    private String quoteMessage;
+    private int quoteMessagePosition;
+
+    //    message enums
+    private int MessageStatus;
+    private int messageType;
+    private int messageAction;
+
+    //    message times
+    private long sendingTime;
+    private long arrivingTime;
+    private long readingTime;
+    private long editTime;
+
+    private boolean star;
+    private long starTime;
+
+    //    message contacts
+    private String contactName;
+    private String contactNumber;
+    private String filePath;
+
+
+    @Ignore
+    private List<String>recipientsIds;
+
+    public MessageHistory() {
+        sendingTime = 0;
+        arrivingTime = 0;
+        readingTime = 0;
+        editTime = 0;
+        star = false;
+        recipientsIds = new ArrayList<>();
     }
 
     public int getP_key() {
         return p_key;
     }
 
-    public boolean isUploading() {
-        return uploading;
+    public void setP_key(int p_key) {
+        this.p_key = p_key;
     }
 
-    public void setUploading(boolean uploading) {
-        this.uploading = uploading;
+    public String getMessageID() {
+        return messageID;
     }
 
-    public boolean isError() {
-        return error;
+    public void setMessageID(String messageID) {
+        this.messageID = messageID;
     }
 
-    public void setError(boolean error) {
-        this.error = error;
+    public String getConversationID() {
+        return conversationID;
     }
 
-    public void setRecipientNames(List<String> recipientNames) {
-        this.recipientNames = recipientNames;
+    public void setConversationID(String conversationID) {
+        this.conversationID = conversationID;
     }
 
-    public boolean isSent() {
-        return sent;
+    public String getContent() {
+        return content;
     }
 
-    public void setSent(boolean sent) {
-        this.sent = sent;
+    public void setContent(String content) {
+        this.content = content;
     }
 
-    public String getGroupName() {
-        return groupName;
+    public String getSenderName() {
+        return senderName;
     }
 
-    public void setRecipients(List<String>recipients){this.recipients = recipients;}
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
     }
 
-    public void addRecipient(String recipient){
-        recipients.add(recipient);
+    public String getSenderID() {
+        return senderID;
     }
 
-    public String getRecipient(int i){
-        return recipients.get(i);
+    public void setSenderID(String senderID) {
+        this.senderID = senderID;
     }
 
-    public List<String> getRecipients(){
-        return recipients;
+    public String getSenderToken() {
+        return senderToken;
     }
 
-    public String getContactName() {
-        return contactName;
+    public void setSenderToken(String senderToken) {
+        this.senderToken = senderToken;
     }
 
-    public void setContactName(String contactName) {
-        this.contactName = contactName;
+    public String getRecipientID() {
+        return recipientID;
     }
 
-    public String getContactPhone() {
-        return contactPhone;
+    public void setRecipientID(String recipientID) {
+        this.recipientID = recipientID;
     }
 
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
+    public String getRecipientToken() {
+        return recipientToken;
+    }
+
+    public void setRecipientToken(String recipientToken) {
+        this.recipientToken = recipientToken;
     }
 
     public String getMessageKind() {
@@ -166,30 +149,14 @@ public class MessageHistory implements Serializable {
         this.messageKind = messageKind;
     }
 
-    public String getMessage() {
-        return message;
+    public String getRecipientName() {
+        return recipientName;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
     }
 
-    public String getSender() {
-        return sender;
-    }
-
-    public void setSender(String sender) {
-        this.sender = sender;
-    }
-
-    /*public String getRecipient() {
-        return recipient;
-    }
-
-    public void setRecipient(String recipient) {
-        this.recipient = recipient;
-    }
-*/
     public String getLatitude() {
         return latitude;
     }
@@ -206,85 +173,20 @@ public class MessageHistory implements Serializable {
         this.longitude = longitude;
     }
 
-    public String getLocationAddress() {
-        return locationAddress;
+    public String getAddress() {
+        return address;
     }
 
-    public void setLocationAddress(String locationAddress) {
-        this.locationAddress = locationAddress;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
-    public int getMessageType() {
-        return messageType;
+    public String getQuoteID() {
+        return quoteID;
     }
 
-    public void setMessageType(int messageType) {
-        this.messageType = messageType;
-    }
-
-    public boolean isHasBeenRead() {
-        return hasBeenRead;
-    }
-
-    public void setHasBeenRead(boolean hasBeenRead) {
-        this.hasBeenRead = hasBeenRead;
-    }
-
-    public String getSenderName() {
-        return senderName;
-    }
-
-    public void setSenderName(String senderName) {
-        this.senderName = senderName;
-    }
-
-    public String getMessageID() {
-        return messageID;
-    }
-
-    public void setMessageID(String messageID) {
-        this.messageID = messageID;
-    }
-
-    public String getTo() {
-        return to;
-    }
-
-    public void setTo(String to) {
-        this.to = to;
-    }
-
-    public String getConversationID() {
-        return conversationID;
-    }
-
-    public void setConversationID(String conversationID) {
-        this.conversationID = conversationID;
-    }
-
-    public String getMessageTime() {
-        return messageTime;
-    }
-
-    public void setMessageTime(String messageTime) {
-        this.messageTime = messageTime;
-    }
-
-
-    public String getImagePath() {
-        return imagePath;
-    }
-
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
-    }
-
-    public String getMessageStatus() {
-        return messageStatus;
-    }
-
-    public void setMessageStatus(String messageStatus) {
-        this.messageStatus = messageStatus;
+    public void setQuoteID(String quoteID) {
+        this.quoteID = quoteID;
     }
 
     public String getQuoteMessage() {
@@ -295,37 +197,69 @@ public class MessageHistory implements Serializable {
         this.quoteMessage = quoteMessage;
     }
 
-    public String getRecordingPath() {
-        return recordingPath;
+    public int getQuoteMessagePosition() {
+        return quoteMessagePosition;
     }
 
-    public void setRecordingPath(String recordingPath) {
-        this.recordingPath = recordingPath;
+    public void setQuoteMessagePosition(int quoteMessagePosition) {
+        this.quoteMessagePosition = quoteMessagePosition;
     }
 
-
-    public int getQuotedMessagePosition() {
-        return quotedMessagePosition;
+    public int getMessageStatus() {
+        return MessageStatus;
     }
 
-    public void setQuotedMessagePosition(int quotedMessagePosition) {
-        this.quotedMessagePosition = quotedMessagePosition;
+    public void setMessageStatus(int messageStatus) {
+        MessageStatus = messageStatus;
+        setReadingTime(System.currentTimeMillis());
     }
 
-    public String getQuotedMessageID() {
-        return quotedMessageID;
+    public int getMessageType() {
+        return messageType;
     }
 
-    public void setQuotedMessageID(String quotedMessageID) {
-        this.quotedMessageID = quotedMessageID;
+    public void setMessageType(int messageType) {
+        this.messageType = messageType;
     }
 
-    public long getReadAt() {
-        return readAt;
+    public int getMessageAction() {
+        return messageAction;
     }
 
-    public void setReadAt(long readAt) {
-        this.readAt = readAt;
+    public void setMessageAction(int messageAction) {
+        this.messageAction = messageAction;
+    }
+
+    public long getSendingTime() {
+        return sendingTime;
+    }
+
+    public void setSendingTime(long sendingTime) {
+        this.sendingTime = sendingTime;
+    }
+
+    public long getArrivingTime() {
+        return arrivingTime;
+    }
+
+    public void setArrivingTime(long arrivingTime) {
+        this.arrivingTime = arrivingTime;
+    }
+
+    public long getReadingTime() {
+        return readingTime;
+    }
+
+    public void setReadingTime(long readingTime) {
+        this.readingTime = readingTime;
+    }
+
+    public long getEditTime() {
+        return editTime;
+    }
+
+    public void setEditTime(long editTime) {
+        this.editTime = editTime;
     }
 
     public boolean isStar() {
@@ -336,57 +270,28 @@ public class MessageHistory implements Serializable {
         this.star = star;
     }
 
-    public String getStarTime() {
+    public long getStarTime() {
         return starTime;
     }
 
-    public void setStarTime(String starTime) {
+    public void setStarTime(long starTime) {
         this.starTime = starTime;
     }
 
-    public String getSendingTime() {
-        return sendingTime;
+    public String getContactName() {
+        return contactName;
     }
 
-    public void setSendingTime(String sendingTime) {
-        this.sendingTime = sendingTime;
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
     }
 
-    public String getArrivingTime() {
-        return arrivingTime;
+    public String getContactNumber() {
+        return contactNumber;
     }
 
-    public void setArrivingTime(String arrivingTime) {
-        this.arrivingTime = arrivingTime;
-    }
-
-    public List<String>getRecipientNames()
-    {
-        return recipientNames;
-    }
-
-    public void addRecipientName(String name)
-    {
-        recipientNames.add(name);
-    }
-
-    public String getRecipientName(int i){
-        return recipientNames.get(i);
-    }
-    /*public String getRecipientName() {
-        return recipientName;
-    }
-
-    public void setRecipientName(String recipientName) {
-        this.recipientName = recipientName;
-    }*/
-
-    public MessageAction getMessageAction() {
-        return messageAction;
-    }
-
-    public void setMessageAction(MessageAction messageAction) {
-        this.messageAction = messageAction;
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
     }
 
     public String getFilePath() {
@@ -397,59 +302,19 @@ public class MessageHistory implements Serializable {
         this.filePath = filePath;
     }
 
-    public String getEditTime() {
-        return editTime;
+    public String getGroupName() {
+        return groupName;
     }
 
-    public void setEditTime(String editTime) {
-        this.editTime = editTime;
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 
-    public String getSenderToken() {
-        return senderToken;
+    public List<String> getRecipientsIds() {
+        return recipientsIds;
     }
 
-    public void setSenderToken(String senderToken) {
-        this.senderToken = senderToken;
-    }
-
-
-    @Override
-    public String toString() {
-        return "Message{" +
-                "message='" + message + '\'' +
-                ", sender='" + sender + '\'' +
-                ", senderName='" + senderName + '\'' +
-                ", latitude='" + latitude + '\'' +
-                ", longitude='" + longitude + '\'' +
-                ", locationAddress='" + locationAddress + '\'' +
-                ", messageID='" + messageID + '\'' +
-                ", to='" + to + '\'' +
-                ", conversationID='" + conversationID + '\'' +
-                ", messageTime='" + messageTime + '\'' +
-                ", sendingTime='" + sendingTime + '\'' +
-                ", arrivingTime='" + arrivingTime + '\'' +
-                ", imagePath='" + imagePath + '\'' +
-                ", quoteMessage='" + quoteMessage + '\'' +
-                ", messageType=" + messageType +
-                ", hasBeenRead=" + hasBeenRead +
-                ", messageStatus='" + messageStatus + '\'' +
-                ", recordingPath='" + recordingPath + '\'' +
-                ", quotedMessagePosition=" + quotedMessagePosition +
-                ", quotedMessageID='" + quotedMessageID + '\'' +
-                ", readAt=" + readAt +
-                ", star=" + star +
-                ", starTime='" + starTime + '\'' +
-                ", messageAction=" + messageAction +
-                ", filePath='" + filePath + '\'' +
-                ", editTime='" + editTime + '\'' +
-                ", senderToken='" + senderToken + '\'' +
-                ", messageKind='" + messageKind + '\'' +
-                ", contactName='" + contactName + '\'' +
-                ", contactPhone='" + contactPhone + '\'' +
-                ", recipients=" + recipients +
-                ", recipientNames=" + recipientNames +
-                ", groupName='" + groupName + '\'' +
-                '}';
+    public void setRecipientsIds(List<String> recipientsIds) {
+        this.recipientsIds = recipientsIds;
     }
 }

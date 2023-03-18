@@ -102,6 +102,15 @@ public class NewChat extends AppCompatActivity {
                 if (searchUsers.getText() != null) {
                     String search = searchUsers.getText().toString();
                     userVM.searchForUsers(search);
+                    User user = new User();
+                    user.setUserUID("123456789");
+                    user.setName("Hope");
+                    user.setLastName("Yentis");
+                    user.setTimeCreated(System.currentTimeMillis()+"");
+                    user.setBlocked(false);
+                    user.setMuted(false);
+                    user.setToken("987654321");
+                    adapter.addUser(user);
                 }
             }
         });
@@ -139,7 +148,7 @@ public class NewChat extends AppCompatActivity {
 
                             @Override
                             public void onDownloadError(String errorMessage) {
-
+                                Log.e(NEW_CHAT, "error downloading user");
                             }
                         });
                         userVM.downloadImage(user.getUserUID());
@@ -160,8 +169,10 @@ public class NewChat extends AppCompatActivity {
     }
 
     private void startSingleConversation(User user) {
-        Intent openConversationIntent = new Intent(NewChat.this, ConversationActivity.class);
-        openConversationIntent.putExtra("recipientUser", user);
+        Intent openConversationIntent = new Intent(NewChat.this, ConversationActivity2.class);
+        ArrayList<User> users = new ArrayList<>();
+        users.add(user);
+        openConversationIntent.putExtra("recipients", users);
         openConversationIntent.putExtra("conversationID", createConversationID());
         startActivity(openConversationIntent);
         finish();

@@ -37,11 +37,11 @@
         <item name="android:textSize">15sp</item>
     </style>
     <style name="DatePickerStyle" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="android:background">@color/purple</item>
+        <item name="android:background">@color/lightBlue2</item>
         <item name="android:headerBackground">@color/lightBlue</item>
-        <item name="android:numbersBackgroundColor">@color/lightestBlue</item>
+        <item name="android:numbersBackgroundColor">@color/lightBlue2</item>
         <item name="android:numbersSelectorColor">@color/lightBlue</item>
-        <item name="android:numbersTextColor">@color/blue</item>
+        <item name="android:numbersTextColor">@color/emoji_white</item>
         <item name="android:numbersInnerTextColor">@color/blue</item>
 
     </style>

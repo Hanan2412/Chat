@@ -102,7 +102,9 @@ public class UsersAdapter extends BaseAdapter {
             String name = user.getName() + " " + user.getLastName();
             userName.setText(name);
 //            Picasso.get().load(user.getPictureLink()).into(imageView);
-            imageView.setImageBitmap(userImages.get(user.getUserUID()));
+            if (userImages.containsKey(user.getUserUID()))
+                if (userImages.get(user.getUserUID())!=null)
+                    imageView.setImageBitmap(userImages.get(user.getUserUID()));
             if (!single)
                 singleTalk.setVisibility(View.GONE);
             else

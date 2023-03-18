@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -15,7 +14,6 @@ import androidx.core.content.res.ResourcesCompat;
 import com.example.woofmeow.R;
 import com.google.android.material.imageview.ShapeableImageView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import Consts.ConversationType;
@@ -84,7 +82,7 @@ public class ListAdapter extends BaseAdapter {
                         root.setBackground(ResourcesCompat.getDrawable(parent.getResources(),R.drawable.conversation_sms_cell_not_selected,parent.getContext().getTheme()));
                         break;
                 }
-                name.setText(conversation.getGroupName());
+                name.setText(conversation.getConversationName());
                 Bitmap bitmap = null;
                 if (conversation.getConversationType() == ConversationType.single)
                     bitmap = fm.readImage(parent.getContext(), FileManager.user_profile_images,conversation.getRecipient());

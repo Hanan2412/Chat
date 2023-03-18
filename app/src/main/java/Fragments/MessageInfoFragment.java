@@ -41,8 +41,8 @@ public class MessageInfoFragment extends Fragment {
         View view = inflater.inflate(R.layout.list,container,false);
         ListView listView = view.findViewById(android.R.id.list);
         TimeFormat timeFormat = new TimeFormat();
-        String time = timeFormat.getFormattedTime(Long.parseLong(message.getSendingTime()));
-        String[] messageArray = {message.getMessage(),message.getSenderName(),time,message.getArrivingTime(),message.getReadAt() + ""};
+        String time = timeFormat.getFormattedTime(message.getSendingTime());
+        String[] messageArray = {message.getContent(),message.getSenderName(),time,message.getArrivingTime()+"",message.getReadingTime() + ""};
         List<String> list = new ArrayList<>(Arrays.asList(messageArray));
         list.removeIf(Objects::isNull);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1,list);

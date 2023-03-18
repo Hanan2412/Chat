@@ -74,7 +74,8 @@ public class UsersAdapter2 extends BaseAdapter {
             remove.setVisibility(View.GONE);
             String name = user.getName() + " " + user.getLastName();
             userName.setText(name);
-            Picasso.get().load(user.getPictureLink()).into(imageView);
+            if (user.getPictureLink()!=null)
+                Picasso.get().load(user.getPictureLink()).into(imageView);
 
         }
         return convertView;

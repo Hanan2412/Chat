@@ -40,7 +40,6 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.woofmeow.ConversationActivity;
 import com.example.woofmeow.ConversationActivity2;
 import com.example.woofmeow.R;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -56,7 +55,6 @@ import Adapters.ConversationsAdapter2;
 
 import Backend.ConversationVM;
 import Backend.UserVM;
-import Consts.ConversationType;
 import Consts.Tabs;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationTouch;
@@ -325,21 +323,21 @@ public class TabFragment extends Fragment {
     }
 
     private void changeStatus(String currentStatus) {
-        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
-        boolean status = preferences.getBoolean("status", true);//settings preference - allow contacts to see your online status
-        if (user != null) {
-            if (status) {
-                user.setStatus(currentStatus);
-                editor.putString("status", currentStatus);
-            } else {
-                user.setStatus(OFFLINE_S);
-                editor.putString("status", OFFLINE_S);
-            }
-            userModel.updateUser(user);
-        }
-        editor.apply();
+//        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
+//        SharedPreferences.Editor editor = sharedPreferences.edit();
+//        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
+//        boolean status = preferences.getBoolean("status", true);//settings preference - allow contacts to see your online status
+//        if (user != null) {
+//            if (status) {
+//                user.setStatus(currentStatus);
+//                editor.putString("status", currentStatus);
+//            } else {
+//                user.setStatus(OFFLINE_S);
+//                editor.putString("status", OFFLINE_S);
+//            }
+//            userModel.updateUser(user);
+//        }
+//        editor.apply();
     }
 
     @Override
@@ -482,7 +480,7 @@ public class TabFragment extends Fragment {
      * loads the current logged in user from the database.
      * if they doesn't exist, the function will download them from the server
      */
-    private void LoadCurrentUser() {
+    private void onUserLoad() {
         userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
             @Override
             public void onChanged(User user) {
@@ -494,7 +492,7 @@ public class TabFragment extends Fragment {
                         @Override
                         public void downloadedUser(User user) {
                             if (user.getUserUID().equals(currentUser)) {
-                                userModel.insertUser(user);
+                                userModel.saveUser(user);
                                 callback.onUserUpdate(user);
                                 TabFragment.this.user = user;
                             }
@@ -556,6 +554,7 @@ public class TabFragment extends Fragment {
     public void onResume() {
         super.onResume();
         changeStatus(ONLINE_S);
+//        onUserLoad();
     }
 
     @Override
@@ -564,30 +563,13 @@ public class TabFragment extends Fragment {
         System.out.println("on destroy fragment");
     }
 
-    private void demo()
-    {
-        if(conversationsAdapter2 != null) {
-            Conversation conversation = new Conversation("S_" + System.currentTimeMillis());
-            conversation.setConversationType(ConversationType.single);
-            conversation.setGroupName("Demo");
-            conversation.setRecipient("demo recipient");
-            conversation.setRecipientToken("demo token");
-            conversation.setTokens(new ArrayList<>());
-            conversation.setRecipientName("Demo recipient");
-            conversation.setType(ConversationType.single.ordinal());
-            conversation.setLastMessage("this is a demo conversation");
-            conversation.setLastMessageTime(System.currentTimeMillis()+"");
-            conversationsAdapter2.addConversation(conversation);
-        }
-    }
-
     //calls all the functions needed to start the fragment
     private void init() {
         DataBaseSetUp();
         NullifyData();
-        LoadCurrentUser();
+        onUserLoad();
         loadConversations();
-        loadNewOrUpdatedConversation();
+//        loadNewOrUpdatedConversation();
         TokenUpdate();
     }
 
@@ -616,10 +598,8 @@ public class TabFragment extends Fragment {
                 }
                 conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
                 conversationLiveData.removeObserver(this);
-                demo();
             }
         });
-        demo();
     }
 
     private void loadNewOrUpdatedConversation() {
@@ -642,10 +622,8 @@ public class TabFragment extends Fragment {
                             conversationsAdapter2.setConversation(conversation, 0);
                     }
                 }
-                demo();
             }
         });
-        demo();
     }
 
     private void muteConversation(String conversationID) {

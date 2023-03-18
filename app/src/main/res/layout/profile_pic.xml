@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 
-<com.google.android.material.imageview.ShapeableImageView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.imageview.ShapeableImageView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/profileImage"
     android:layout_width="48dp"
     android:layout_height="48dp"
     android:layout_centerHorizontal="true"
-    android:background="@color/colorPrimary"
-    android:src="@drawable/ic_baseline_group_24"
+    android:background="@drawable/circle_blue_no_border"
+    android:src="@drawable/ic_baseline_account_circle_black"
     app:shapeAppearanceOverlay="@style/circleImageView" />

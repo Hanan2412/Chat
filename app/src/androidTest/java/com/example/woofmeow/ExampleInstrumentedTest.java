@@ -688,9 +688,9 @@ public class ExampleInstrumentedTest {
         msg.setMessageID(System.currentTimeMillis() + "");
         msg.setMessage("test1");
         msg.setMessageType(MessageType.textMessage.ordinal());
-        msg.setGroupName("testing");
+        msg.setConversationName("testing");
         msg.setSenderName("hanan");
-        msg.setGroupName("hanan test");
+        msg.setConversationName("hanan test");
         msg.setMessageStatus("Sent");
         msg.setConversationID(conversationID);
         return msg;
