@@ -70,7 +70,7 @@ public class ListAdapter extends BaseAdapter {
             if (conversations!=null)
             {
                 Conversation conversation = conversations.get(position);
-                switch (conversation.getConversationType())
+                switch (ConversationType.values()[conversation.getConversationType()])
                 {
                     case single:
                         root.setBackground(ResourcesCompat.getDrawable(parent.getResources(),R.drawable.conversation_cell_not_selected,parent.getContext().getTheme()));
@@ -84,9 +84,9 @@ public class ListAdapter extends BaseAdapter {
                 }
                 name.setText(conversation.getConversationName());
                 Bitmap bitmap = null;
-                if (conversation.getConversationType() == ConversationType.single)
+                if (conversation.getConversationType() == ConversationType.single.ordinal())
                     bitmap = fm.readImage(parent.getContext(), FileManager.user_profile_images,conversation.getRecipient());
-                else if (conversation.getConversationType() == ConversationType.group)
+                else if (conversation.getConversationType() == ConversationType.group.ordinal())
                     bitmap = fm.readImage(parent.getContext(), FileManager.conversationProfileImage,conversation.getConversationID());
                 if (bitmap!=null)
                     profileImage.setImageBitmap(bitmap);

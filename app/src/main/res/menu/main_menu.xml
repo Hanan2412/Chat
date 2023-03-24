@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group
-        android:id="@+id/standBy"
+        android:id="@+id/normal"
         android:visible="true">
         <item
             android:id="@+id/searchConversation"
@@ -16,9 +16,8 @@
             app:showAsAction="ifRoom" />
 
     </group>
-    <group
-        android:id="@+id/active"
-        android:visible="true">
+    <group android:id="@+id/pin"
+        android:visible="false">
         <item
             android:id="@+id/pinConversation"
             android:icon="@drawable/ic_baseline_push_pin_24"
@@ -30,17 +29,31 @@
             android:title="unpin"
             app:showAsAction="ifRoom"
             android:visible="false"/>
-        <item
-            android:id="@+id/info"
-            android:icon="@drawable/ic_baseline_info_24"
-            android:title="info"
-            android:visible="true"
-            app:showAsAction="ifRoom"/>
+    </group>
+    <group android:id="@+id/singleConversationOptions"
+        android:visible="false">
         <item
             android:id="@+id/callBtn"
             android:icon="@drawable/ic_baseline_call_24"
-            android:title="Call"
+            android:title="@string/call"
             app:showAsAction="never" />
+        <item
+            android:id="@+id/info"
+            android:icon="@drawable/ic_baseline_info_24"
+            android:title="@string/info"
+            app:showAsAction="ifRoom"/>
+    </group>
+    <group android:id="@+id/singleConversationExtraOptions"
+        android:visible="false">
+        <item android:id="@+id/addPhoneNumber"
+            android:title="@string/add_phone"
+            app:showAsAction="never"
+            android:icon="@drawable/common_full_open_on_phone"/>
+
+    </group>
+    <group
+        android:id="@+id/extraOptions"
+        android:visible="true">
         <item
             android:id="@+id/block"
             android:icon="@drawable/ic_baseline_block_white"

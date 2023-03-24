@@ -103,7 +103,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         notifyItemInserted(getItemCount() - 1);
     }
 
-    public void deleteMessage(String messageID) {
+    public void deleteMessage(long messageID) {
         int index = findMessage(messages, 0, messages.size() - 1, messageID);
         if (index!=-1) {
             messages.remove(index);
@@ -130,9 +130,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
     }
 
-    public void updateMessageStatus(String id, MessageStatus status, String time) {
+    public void updateMessageStatus(long messageID, MessageStatus status, String time) {
         Log.d("messageStatus", "updating message status");
-        int index = findMessage(messages, 0, messages.size() - 1, id);
+        int index = findMessage(messages, 0, messages.size() - 1, messageID);
         if (index != -1) {
             Message message = messages.get(index);
             message.setMessageStatus(status.ordinal());
@@ -142,7 +142,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             Log.e("MESSAGE_ID ERROR", "didn't find message in messages");
     }
 
-    public void UpdateMessageImage(String messageID) {
+    public void updateMessageImage(long messageID) {
         int index = findMessage(messages, 0, messages.size() - 1, messageID);
         if (index != -1) {
             notifyItemChanged(index);
@@ -375,7 +375,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         long time;
         //show the time of the messages i sent
         if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
-            time =  Long.parseLong(message.getMessageID());
+            time =  message.getMessageID();
         } else {
             time = message.getArrivingTime();
         }
@@ -446,7 +446,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         this.textSize = textSize;
     }
 
-    public String getMessageID(int position) {
+    public long getMessageID(int position) {
         return messages.get(position).getMessageID();
     }
 
@@ -646,7 +646,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     public int findMessageLocation(List<Message> messages, int min, int max, long key) {
         if (max == -1)
             max = this.messages.size();
-        return findMessage(this.messages, min, max, String.valueOf(key));
+        return findMessage(this.messages, min, max, key);
     }
 
     public ArrayList<Integer> SearchMessage(String searchQuery) {
@@ -660,14 +660,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return searchQueryIndexes;
     }
 
-    public void UpdateMessageStar(String messageID, boolean star) {
+    public void UpdateMessageStar(long messageID, boolean star) {
         int index = findMessage(messages, 0, messages.size() - 1, messageID);//findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(messageID));
         Message message = messages.get(index);
         message.setStar(star);
         notifyItemChanged(index);
     }
 
-    public int updateMessageEdit(String messageID, String content, long time) {
+    public int updateMessageEdit(long messageID, String content, long time) {
         int index = findMessage(messages, 0, messages.size() - 1, messageID);//findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(messageID));
         Message message = messages.get(index);
         message.setContent(content);
@@ -682,14 +682,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         else return null;
     }
 
-    private int findMessage(List<Message> messages, int min, int max, String key) {
+    private int findMessage(List<Message> messages, int min, int max, long key) {
         if (messages.size() == 0)
             return -1;
         if (max >= min) {
             int mid = min + (max - min) / 2;
-            if (messages.get(mid).getMessageID().equals(key))
+            if (messages.get(mid).getMessageID()==key)
                 return mid;
-            if (Long.parseLong(messages.get(mid).getMessageID()) > Long.parseLong(key))
+            if (messages.get(mid).getMessageID() > key)
                 return findMessage(messages, min, mid - 1, key);
             else
                 return findMessage(messages, mid + 1, max, key);
@@ -697,7 +697,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return -1;
     }
 
-    public boolean isMessageExists(String messageID) {
+    public boolean isMessageExists(long messageID) {
         int index = findMessage(messages, 0, messages.size() - 1, messageID);
         return index != -1;
     }

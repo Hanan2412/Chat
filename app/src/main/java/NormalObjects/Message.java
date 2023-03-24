@@ -12,7 +12,7 @@ public class Message implements Serializable {
     int p_key;
 
     //    message info
-    private String messageID;
+    private long messageID = -1;
     private String conversationID;
     private String content;
     private String senderName;
@@ -74,11 +74,11 @@ public class Message implements Serializable {
         this.p_key = p_key;
     }
 
-    public String getMessageID() {
+    public long getMessageID() {
         return messageID;
     }
 
-    public void setMessageID(String messageID) {
+    public void setMessageID(long messageID) {
         this.messageID = messageID;
     }
 

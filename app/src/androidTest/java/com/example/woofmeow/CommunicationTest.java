@@ -73,7 +73,7 @@ public class CommunicationTest {
         conversations.add(conversation);
         server.backupConversations(conversations,userID);
         Message message = new Message();
-        message.setMessageID("212123");
+        message.setMessageID(212123);
         List<Message>messages = new ArrayList<>();
         messages.add(message);
         server.backupMessages(messages,userID);
@@ -152,32 +152,32 @@ public class CommunicationTest {
     {
         server.setFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String msgID, String path) {
+            public void onPathReady(long msgID, String path) {
 
             }
 
             @Override
-            public void onStartedUpload(String msgID) {
-                Assert.assertEquals("212123",msgID);
+            public void onStartedUpload(long msgID) {
+                Assert.assertEquals(212123,msgID);
             }
 
             @Override
-            public void onProgress(String msgID, int progress) {
+            public void onProgress(long msgID, int progress) {
 
             }
 
             @Override
-            public void onUploadFinished(String msgID) {
-                Assert.assertEquals("212123",msgID);
+            public void onUploadFinished(long msgID) {
+                Assert.assertEquals(212123,msgID);
             }
 
             @Override
-            public void onUploadError(String msgID, String errorMessage) {
+            public void onUploadError(long msgID, String errorMessage) {
 
             }
         });
         Bitmap bitmap = BitmapFactory.decodeResource(ApplicationProvider.getApplicationContext().getResources(), R.drawable.cns);
-        server.uploadFile(userID,"212123",bitmap,  ApplicationProvider.getApplicationContext());
+        server.uploadFile(userID,212123,bitmap,  ApplicationProvider.getApplicationContext());
     }
 
     @Test

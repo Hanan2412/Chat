@@ -61,18 +61,18 @@ public class Server {
     }
 
     public interface onFileUpload{
-        void onPathReady(String msgID, String path);
-        void onStartedUpload(String msgID);
-        void onProgress(String msgID, int progress);
-        void onUploadFinished(String msgID);
-        void onUploadError(String msgID,String errorMessage);
+        void onPathReady(long msgID, String path);
+        void onStartedUpload(long msgID);
+        void onProgress(long msgID, int progress);
+        void onUploadFinished(long msgID);
+        void onUploadError(long msgID,String errorMessage);
     }
 
     public interface onFileDownload{
         void onDownloadStarted();
         void onProgress(int progress);
         void onDownloadFinished(File file);
-        void onFileDownloadFinished(String messageID,File file);
+        void onFileDownloadFinished(long messageID,File file);
         void onDownloadError(String errorMessage);
     }
 
@@ -486,7 +486,7 @@ public class Server {
         }
     }
 
-    public void downloadFile(String fileName,String messageID)
+    public void downloadFile(String fileName,long messageID)
     {
         if (fileDownload!=null)
         fileDownload.onDownloadStarted();
@@ -513,7 +513,7 @@ public class Server {
                                         while ((byteRead = bufferedInputStream.read(dataBuffer, 0, 1024)) != -1)
                                             outputStream.write(dataBuffer, 0, byteRead);
                                         if (fileDownload != null)
-                                            if (messageID == null)
+                                            if (messageID == -1)
                                                 fileDownload.onDownloadFinished(file);
                                             else
                                                 fileDownload.onFileDownloadFinished(messageID, file);
@@ -553,10 +553,10 @@ public class Server {
 
     public void downloadImage(String userID)
     {
-        downloadFile(userID,null);
+        downloadFile(userID,-1);
     }
 
-    public void uploadFile(String uid,String msgID,Bitmap bitmap, Context context) {
+    public void uploadFile(String uid,long msgID,Bitmap bitmap, Context context) {
         try {
 
             Log.d("started", "uploadFile: ");
@@ -597,7 +597,7 @@ public class Server {
         }catch (IOException e){e.printStackTrace();}
     }
 
-    public void uploadFile(String msgID, Uri uri,Context context)
+    public void uploadFile(long msgID, Uri uri,Context context)
     {
         File file = new File(uri.getPath());
         RequestBody requestBody = RequestBody.create(MediaType.parse("image/*"), file);

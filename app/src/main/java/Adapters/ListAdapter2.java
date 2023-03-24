@@ -15,6 +15,9 @@ import java.util.List;
 
 public class ListAdapter2 extends BaseAdapter {
 
+    private int itemsColor = -1;
+    private int titlesColor = -1;
+
     private List<String>items;
     private List<String>titles;
 
@@ -65,6 +68,20 @@ public class ListAdapter2 extends BaseAdapter {
         notifyDataSetChanged();
     }
 
+    public void setTextColor(int itemsColor, int titlesColor)
+    {
+        this.titlesColor = titlesColor;
+        this.itemsColor = itemsColor;
+    }
+    public void setItemsColor(int itemsColor)
+    {
+        this.itemsColor = itemsColor;
+    }
+    public void setTitlesColor(int titlesColor)
+    {
+        this.titlesColor = titlesColor;
+    }
+
     @Override
     public int getCount() {
         return items.size();
@@ -86,8 +103,13 @@ public class ListAdapter2 extends BaseAdapter {
         if (layoutInflater!=null) {
             view = layoutInflater.inflate(R.layout.text_cell, viewGroup, false);
             TextView textView = view.findViewById(R.id.infoText);
+            if (itemsColor!=-1)
+                textView.setTextColor(itemsColor);
             TextView title = view.findViewById(R.id.title);
-            textView.setText(String.valueOf(items.get(i)));
+            if (titlesColor!=-1)
+                title.setTextColor(titlesColor);
+            if (items.get(i) != null)
+                textView.setText(String.valueOf(items.get(i)));
             title.setText(titles.get(i));
         }
         return view;

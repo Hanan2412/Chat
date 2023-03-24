@@ -526,20 +526,24 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 break;
             }
             case delete_message: {
-                String messageID = data.get("messageID");
-                if (isOpenConversation(conversationID)) {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
-                            .putExtra("delete", false)
-                            .putExtra("messageID", messageID));
-                } else {
-                    Thread thread = new Thread() {
-                        @Override
-                        public void run() {
-                            dao.deleteMessage(messageID);
-                        }
-                    };
-                    thread.setName("delete thread");
-                    thread.start();
+                String msgID = data.get("messageID");
+                if (msgID!= null) {
+                    long messageID = Long.parseLong(msgID);
+                    if (isOpenConversation(conversationID)) {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(conversationID)
+                                .putExtra("delete", false)
+                                .putExtra("messageID", messageID));
+                    } else {
+                        Thread thread = new Thread() {
+                            @Override
+                            public void run() {
+                                dao.deleteMessage(messageID);
+                            }
+                        };
+                        thread.setName("delete thread");
+                        thread.start();
+                    }
+
                 }
                 break;
             }
@@ -558,37 +562,40 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 Thread thread = new Thread() {
                     @Override
                     public void run() {
-                        Message message = new Message();
-                        String e_t = data.get("editTime");
-                        String content = data.get("message");
-                        String messageID = data.get("messageID");
-                        message.setConversationID(conversationID);
-                        message.setContent(content);
-                        message.setMessageID(messageID);
-                        if (e_t !=null)
-                            message.setEditTime(Long.parseLong(e_t));
-                        Observer<Message> observer;
-                        Observer<Message> finalObserver = null;
-                        observer = new Observer<Message>() {
-                            @Override
-                            public void onChanged(Message message) {
+                        String msgID =  data.get("messageID");
+                        if (msgID != null) {
+                            long messageID = Long.parseLong(msgID);
+                            Message message = new Message();
+                            String e_t = data.get("editTime");
+                            String content = data.get("message");
+                            message.setConversationID(conversationID);
+                            message.setContent(content);
+                            message.setMessageID(messageID);
+                            if (e_t != null)
+                                message.setEditTime(Long.parseLong(e_t));
+                            Observer<Message> observer;
+                            Observer<Message> finalObserver = null;
+                            observer = new Observer<Message>() {
+                                @Override
+                                public void onChanged(Message message) {
 //                                MessageHistory history = new MessageHistory(message);
 //                                dao.saveMessageHistory(history);
-                                dao.updateMessage(messageID, content, e_t);
-                                dao.updateConversationLastMessage(conversationID, content);
-                                if (finalObserver!=null)
-                                    dao.getMessage(messageID).removeObserver(finalObserver);
-                            }
-                        };
+                                    dao.updateMessage(messageID, content, e_t);
+                                    dao.updateConversationLastMessage(conversationID, content);
+                                    if (finalObserver != null)
+                                        dao.getMessage(messageID).removeObserver(finalObserver);
+                                }
+                            };
 
-                        Handler handler = new Handler(Looper.getMainLooper());
-                        Observer<Message> finalObserver1 = observer;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                dao.getMessage(messageID).observeForever(finalObserver1);
-                            }
-                        });
+                            Handler handler = new Handler(Looper.getMainLooper());
+                            Observer<Message> finalObserver1 = observer;
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    dao.getMessage(messageID).observeForever(finalObserver1);
+                                }
+                            });
+                        }
                     }
                 };
                 thread.setName("edit thread");
@@ -658,7 +665,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         assert conversationID != null;
         Conversation conversation = new Conversation(conversationID);
         conversation.setRecipients(list);
-        conversation.setConversationType(ConversationType.values()[conversationType]);
+        conversation.setConversationType(conversationType);
         Thread thread = new Thread() {
             @Override
             public void run() {
@@ -708,7 +715,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
                 }
 
                 @Override
-                public void onFileDownloadFinished(String messageID, File file) {
+                public void onFileDownloadFinished(long messageID, File file) {
                     String path = file.getAbsolutePath();
                     message.setFilePath(path);
                     Thread thread = new Thread() {
@@ -1021,11 +1028,11 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
         conversation.setLastMessageID(message.getMessageID());
         conversation.setLastMessage(message.getContent());
         conversation.setMessageType(message.getMessageType());
-        conversation.setLastMessageTime(message.getSendingTime()+"");
+        conversation.setLastMessageTime(message.getArrivingTime());
         conversation.setConversationName(message.getConversationName());
         conversation.setMuted(false);
         conversation.setBlocked(false);
-        conversation.setConversationType(type);
+        conversation.setConversationType(type.ordinal());
         return conversation;
     }
 

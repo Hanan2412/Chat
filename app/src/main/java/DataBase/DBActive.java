@@ -157,7 +157,7 @@ public class DBActive {
                     String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TIME));
                     int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TYPE));
                     String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT));
-                    String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
+                    long lastMessageID = cursor.getLong(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
                     String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME));
                     String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.IMAGE_PATH));
                     String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
@@ -175,12 +175,7 @@ public class DBActive {
                     conversation.setRecipientImagePath(imagePath);
                     conversation.setSenderName(recipientName);
                     conversation.setRecipientName(recipientName);
-                    if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
-                        conversation.setConversationType(ConversationType.single);
-                    else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
-                        conversation.setConversationType(ConversationType.group);
-                    else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
-                        conversation.setConversationType(ConversationType.sms);
+                    conversation.setConversationType(Integer.parseInt(conversationType));
 
                     if (muted != null)
                         conversation.setMuted(muted.equals("muted"));
@@ -229,7 +224,7 @@ public class DBActive {
                 String lastMessageTime = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TIME));
                 int lastMessageType = cursor.getInt(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_TYPE));
                 String recipient = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT));
-                String lastMessageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
+                long lastMessageID = cursor.getLong(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.LAST_MESSAGE_ID));
                 String recipientName = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME));
                 String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.IMAGE_PATH));
                 String muted = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.MUTED));
@@ -248,12 +243,7 @@ public class DBActive {
                 conversation.setMuted(muted.equals("1"));
                 conversation.setRecipientToken(recipientToken);
                 conversation.setConversationName(group);
-                if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
-                    conversation.setConversationType(ConversationType.single);
-                else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
-                    conversation.setConversationType(ConversationType.group);
-                else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
-                    conversation.setConversationType(ConversationType.sms);
+                conversation.setConversationType(Integer.parseInt(conversationType));
             }
             cursor.close();
 
@@ -275,7 +265,7 @@ public class DBActive {
         values.put(DataBaseContract.Conversations.RECIPIENT_NAME, conversation.getSenderName());
         values.put(DataBaseContract.Conversations.USER_UID, user.getUserUID());
         values.put(DataBaseContract.Conversations.GROUP_NAME,conversation.getConversationName());
-        values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversation.getConversationType().name());
+        values.put(DataBaseContract.Conversations.CONVERSATION_TYPE,conversation.getConversationType());
         long newRowId = db.insert(DataBaseContract.Conversations.CONVERSATIONS_TABLE, null, values);
         if (newRowId == -1)
             Log.e(DataBaseError, "error inserting data to database");
@@ -403,7 +393,7 @@ public class DBActive {
                     user.setPictureLink(pictureLink);
                     user.setTimeCreated(timeCreated);
                     user.setPhoneNumber(phoneNumber);
-                    user.setStatus(status);
+                    user.setStatus(Integer.parseInt(status));
                     user.setToken(token);
                     if (blocked != null)
                         user.setBlocked(blocked.equals("blocked"));
@@ -458,7 +448,7 @@ public class DBActive {
             }
             values.put(DataBaseContract.Messages.MESSAGE_STAR, message.isStar());
             String selection = DataBaseContract.Messages.MESSAGE_ID + " LIKE ?";
-            String[] selectionArgs = {message.getMessageID()};
+            String[] selectionArgs = {message.getMessageID()+""};
             long updatedRow = db.update(DataBaseContract.Messages.MESSAGES_TABLE, values, selection, selectionArgs);
             if (updatedRow != 1)
                 Log.e(DataBaseError, "updated more than 1 message");
@@ -691,7 +681,7 @@ public class DBActive {
             String[] selectionArgs = {id};
             Cursor cursor = db.query(DataBaseContract.Messages.MESSAGES_TABLE, projections, selection, selectionArgs, null, null, null);
             while (cursor.moveToNext()) {
-                String messageID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
+                long messageID = cursor.getLong(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
                 String conversationID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_ID));
                 String content = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.CONTENT));
                 String senderUID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.SENDER));
@@ -886,7 +876,7 @@ public class DBActive {
             if (cursor.moveToNext()) {
                 String ID = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Messages.MESSAGE_ID));
                 long id = Long.parseLong(ID);
-                long messageId = Long.parseLong(message.getMessageID());
+                long messageId = message.getMessageID();
                 cursor.close();
                 return id >= messageId;
             } else {
@@ -1094,12 +1084,7 @@ public class DBActive {
                 conversation.setRecipientName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.RECIPIENT_NAME)));
                 conversation.setConversationName(cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.GROUP_NAME)));
                 String conversationType = cursor.getString(cursor.getColumnIndexOrThrow(DataBaseContract.Conversations.CONVERSATION_TYPE));
-                if (Integer.parseInt(conversationType) == ConversationType.single.ordinal())
-                    conversation.setConversationType(ConversationType.single);
-                else if (Integer.parseInt(conversationType) == ConversationType.group.ordinal())
-                    conversation.setConversationType(ConversationType.group);
-                else if (Integer.parseInt(conversationType) == ConversationType.sms.ordinal())
-                    conversation.setConversationType(ConversationType.sms);
+                conversation.setConversationType(Integer.parseInt(conversationType));
                 conversations.add(conversation);
             }
             cursor.close();

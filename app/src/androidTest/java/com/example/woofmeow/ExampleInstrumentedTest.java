@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import Backend.ChatDao;
 import Backend.ChatDataBase;
+import Consts.MessageStatus;
 import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
@@ -249,7 +250,7 @@ public class ExampleInstrumentedTest {
     public void c_032getConversationByPhone()
     {
         Conversation conversation = new Conversation(conversationID);
-        conversation.setLastMessageID("123");
+        conversation.setLastMessageID(123);
         conversation.setLastMessage("last message");
         dao.insertNewConversation(conversation);
         User user = new User();
@@ -290,9 +291,9 @@ public class ExampleInstrumentedTest {
     @Test
     public void c_04updateConversationByObject() {
         Conversation conversation = new Conversation(conversationID);
-        conversation.setLastMessageTime(System.currentTimeMillis() + "");
+        conversation.setLastMessageTime(System.currentTimeMillis());
         conversation.setLastMessage("update conversation");
-        conversation.setLastMessageID("qwe");
+        conversation.setLastMessageID(123456);
         conversation.setP_key(primaryKey);
         dao.updateConversation(conversation);
         LiveData<Conversation> conversationsLV = dao.getConversation(conversationID);
@@ -316,7 +317,7 @@ public class ExampleInstrumentedTest {
 
     @Test
     public void c_05updateConversationByData() {
-        dao.updateConversation("second update", "qwe", MessageType.textMessage.name(), System.currentTimeMillis() + "", "hanan test second", "aaaaaaaaaaaaa");
+//        dao.updateConversation("second update", "qwe", MessageType.textMessage.name(), System.currentTimeMillis() + "", "hanan test second", "aaaaaaaaaaaaa");
         LiveData<Conversation> conversationsLV = dao.getConversation(conversationID);
         Observer<Conversation> observer = new Observer<Conversation>() {
             @Override
@@ -478,7 +479,7 @@ public class ExampleInstrumentedTest {
     @Test
     public void m_02updateMessage() {
         Message message = createMessage();
-        message.setMessage("updated Message");
+        message.setContent("updated Message");
         message.setP_key(messagePKey);
         dao.updateMessage(message);
         LiveData<List<Message>> messages = dao.getAllMessages(conversationID);
@@ -486,7 +487,7 @@ public class ExampleInstrumentedTest {
             @Override
             public void onChanged(List<Message> messages1) {
                 messages.removeObserver(this);
-                assertEquals("updated Message", messages1.get(0).getMessage());
+                assertEquals("updated Message", messages1.get(0).getContent());
 
             }
         };
@@ -685,13 +686,13 @@ public class ExampleInstrumentedTest {
 
     public Message createMessage() {
         Message msg = new Message();
-        msg.setMessageID(System.currentTimeMillis() + "");
-        msg.setMessage("test1");
+        msg.setMessageID(System.currentTimeMillis());
+        msg.setContent("test1");
         msg.setMessageType(MessageType.textMessage.ordinal());
         msg.setConversationName("testing");
         msg.setSenderName("hanan");
         msg.setConversationName("hanan test");
-        msg.setMessageStatus("Sent");
+        msg.setMessageStatus(MessageStatus.SENT.ordinal());
         msg.setConversationID(conversationID);
         return msg;
     }

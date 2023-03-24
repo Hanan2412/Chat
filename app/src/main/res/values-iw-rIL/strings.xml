@@ -58,4 +58,10 @@
     <string name="date">תאריך</string>
     <string name="contact_name">שם איש קשר</string>
     <string name="contact_number">מספר איש קשר</string>
+    <string name="phone_number">מספר טלפון</string>
+    <string name="start_conversation">התחל שיחה</string>
+    <string name="delete_conversation_confirm_msg">אתם בטוחים שברצונכם למחוק את השיחה? אין אפשרות לשחזר פעולה זו</string>
+    <string name="confirm">אישור פעולה</string>
+    <string name="nothing_delete">שום דבר לא ימחק</string>
+    <string name="select_convirsation_delete">השיחות שניבחרו ימקחו</string>
 </resources>

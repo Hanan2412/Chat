@@ -13,6 +13,8 @@ import java.util.Calendar;
 import java.util.List;
 
 import Consts.ConversationType;
+import Time.StandardTime;
+import Time.TimeFormat;
 
 
 @Entity(tableName = "conversations")
@@ -25,14 +27,16 @@ public class Conversation implements Serializable {
     //@Ignore
     private String recipient;
     private String lastMessage;
-    private String lastMessageTime;
+    private long lastMessageTime;
+    private String lastMessageTimeParse;
     private String recipientImagePath;
+
     @Ignore
     private ArrayList<Message>messages;
     private String senderName;
     private boolean muted = false;
     private int messageType;
-    private String lastMessageID;
+    private long lastMessageID;
     @Ignore
     private boolean typing;
     private String recipientName;
@@ -45,18 +49,14 @@ public class Conversation implements Serializable {
     private List<String>tokens;
     private String lastMessageRecipient;
     private String conversationName;
-    private ConversationType conversationType = ConversationType.single;
+    private int conversationType = ConversationType.single.ordinal();
     private int type = 0;
-
+    private boolean pinned;
     private int unreadMessages = 0;
+    private long lastUpdate;
 
-    public int getUnreadMessages() {
-        return unreadMessages;
-    }
-
-    public void setUnreadMessages(int unreadMessages) {
-        this.unreadMessages = unreadMessages;
-    }
+    @Ignore
+    TimeFormat timeFormat = new TimeFormat();
 
     public Conversation(@NonNull String conversationID)
     {
@@ -82,11 +82,11 @@ public class Conversation implements Serializable {
         return p_key;
     }
 
-    public ConversationType getConversationType() {
+    public int getConversationType() {
         return conversationType;
     }
 
-    public void setConversationType(ConversationType conversationType) {
+    public void setConversationType(int conversationType) {
         this.conversationType = conversationType;
     }
 
@@ -127,35 +127,23 @@ public class Conversation implements Serializable {
         this.lastMessage = lastMessage;
     }
 
-    public String getLastMessageTime() {
+    public long getLastMessageTime() {
         return lastMessageTime;
     }
 
-    public void setLastMessageTime(String lastMessageTime) {
+    public void setLastMessageTime(long lastMessageTime) {
         this.lastMessageTime = lastMessageTime;
-        /*if(lastMessageTime!=null) {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(Long.parseLong(lastMessageTime));
-            int minute = calendar.get(Calendar.MINUTE);
-            int hour = calendar.get(Calendar.HOUR_OF_DAY);
-            int day = calendar.get(Calendar.DAY_OF_MONTH);
-            int month = calendar.get(Calendar.MONTH) + 1;
-            int year = calendar.get(Calendar.YEAR);
-            String minutes;
-            if(minute<10)
-                minutes = "0" + minute;
-            else
-                minutes = minute + "";
-            this.lastMessageTime = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
-        }*/
+        setLastUpdate(lastMessageTime);
+        setLastMessageTimeParse(timeFormat.getFormattedDate(lastMessageTime));
+
     }
     public void setLastMessageTimeFormatted(String lastMessageTime)
     {
-        if(lastMessageTime!=null) {
-            if (!lastMessageTime.contains("/"))
-                parseTime(Long.parseLong(lastMessageTime));
-            else this.lastMessageTime = lastMessageTime;
-        }
+//        if(lastMessageTime!=null) {
+//            if (!lastMessageTime.contains("/"))
+//                parseTime(Long.parseLong(lastMessageTime));
+//            else this.lastMessageTime = lastMessageTime;
+//        }
     }
 
     public void addRecipient(String uid){
@@ -220,7 +208,8 @@ public class Conversation implements Serializable {
     {
         lastMessageRecipient = lastMessage.getSenderID();
         this.lastMessage = lastMessage.getContent();
-        lastMessageTime = String.valueOf(lastMessage.getSendingTime());
+        lastMessageTime = lastMessage.getSendingTime();
+
     }
 
     public String getSenderName() {
@@ -258,12 +247,13 @@ public class Conversation implements Serializable {
         this.messageType = messageType;
     }
 
-    public String getLastMessageID() {
+    public long getLastMessageID() {
         return lastMessageID;
     }
 
-    public void setLastMessageID(String lastMessageID) {
+    public void setLastMessageID(long lastMessageID) {
         this.lastMessageID = lastMessageID;
+//        setLastUpdate(lastMessageID);
     }
 
     public boolean isTyping() {
@@ -298,17 +288,6 @@ public class Conversation implements Serializable {
         this.recipientToken = recipientToken;
     }
 
-    public void setConversationMetaData(Message message)
-    {
-        lastMessageID = message.getMessageID();
-        lastMessage = message.getContent();
-        parseTime(message.getArrivingTime());
-        //lastMessageTime = message.getArrivingTime();
-        messageType = message.getMessageType();
-        recipientName = message.getSenderName();
-        recipientToken = message.getSenderToken();
-    }
-
     private void parseTime(long time)
     {
             Calendar calendar = Calendar.getInstance();
@@ -323,7 +302,40 @@ public class Conversation implements Serializable {
                 minutes = "0" + minute;
             else
                 minutes = minute + "";
-            this.lastMessageTime = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
+            this.lastMessageTimeParse = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
 
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
+    }
+
+    public long getLastUpdate() {
+        return lastUpdate;
+    }
+
+    public String getLastMessageTimeParse() {
+        return lastMessageTimeParse;
+    }
+
+    public void setLastMessageTimeParse(String lastMessageTimeParse) {
+        this.lastMessageTimeParse = lastMessageTimeParse;
+    }
+
+    public void setLastUpdate(long lastUpdate) {
+        this.lastUpdate = lastUpdate;
+    }
+
+    public int getUnreadMessages() {
+        return unreadMessages;
+    }
+
+    public void setUnreadMessages(int unreadMessages) {
+        this.unreadMessages = unreadMessages;
     }
 }

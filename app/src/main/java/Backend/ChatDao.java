@@ -70,7 +70,7 @@ public interface ChatDao {
     void clearUsersTable();
 
     @Query("DELETE FROM messages where messages.messageID = :messageID")
-    void deleteMessage(String messageID);
+    void deleteMessage(long messageID);
 
     @Query("SELECT * FROM groups")
     LiveData<List<Group>>getAllGroups();
@@ -84,10 +84,13 @@ public interface ChatDao {
     @Query("SELECT * FROM conversations ORDER BY lastMessageID DESC LIMIT 1")
     LiveData<Conversation>getNewOrUpdatedConversation();
 
+    @Query("SELECT * FROM conversations WHERE lastUpdate = (SELECT MAX(lastUpdate) FROM conversations)")
+    LiveData<Conversation>getLastUpdateConversation();
+
     @Query("DELETE FROM messages WHERE conversationID = :conversationID")
     void deleteMessages(String conversationID);
 
-    @Query("SELECT * FROM conversations ORDER BY lastMessageID DESC")
+    @Query("SELECT * FROM conversations ORDER BY pinned DESC,lastMessageID DESC")
     LiveData<List<Conversation>>getAllConversations();
 
     @Query("SELECT * FROM users")
@@ -103,10 +106,10 @@ public interface ChatDao {
     LiveData<Conversation>isConversationExist(String conversationID);
 
     @Query("UPDATE messages SET messageStatus = :status WHERE messageID = :id")
-    void updateMessageStatus(String id,int status);
+    void updateMessageStatus(long id,int status);
 
     @Query("UPDATE messages SET content = :content, editTime = :time WHERE messageID = :messageID")
-    void updateEditMessage(String messageID,String content,String time);
+    void updateEditMessage(long messageID,String content,String time);
 
     @Query("SELECT * FROM conversations WHERE conversationID = :conversationID")
     LiveData<Conversation> getConversation(String conversationID);
@@ -129,6 +132,9 @@ public interface ChatDao {
     @Query("SELECT conversationID FROM groups JOIN users ON uid = userUID WHERE phoneNumber = :phone AND conversationID LIKE 's%'")
     LiveData<String>getConversationIDByPhone(String phone);
 
+    @Query("SELECT conversationID FROM conversations where recipientPhoneNumber = :phone and conversationType = 2")
+    LiveData<String>getConversationIdByPhone(String phone);
+
     @Query("SELECT * FROM users WHERE userUID IN (SELECT uid From groups where groups.conversationID = :conversationID)")
     LiveData<List<User>>getRecipients(String conversationID);
 
@@ -144,11 +150,23 @@ public interface ChatDao {
     @Query("UPDATE conversations SET lastMessage = :message WHERE conversationID = :conversationID")
     void updateConversationLastMessage(String conversationID,String message);
 
+    @Query("UPDATE conversations SET lastMessage = :message, lastMessageTime = :lastMessageTime WHERE conversationID = :conversationID")
+    void updateConversationLastMessage(String conversationID, String message, String lastMessageTime);
+
+    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :lastMessageID WHERE conversationID = :conversationID")
+    void updateConversationLastMessage(String conversationID, String message, long lastMessageID);
+
+    @Query("SELECT * FROM conversations WHERE pinned = 1")
+    LiveData<List<Conversation>>getPinnedConversations();
+
     @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName WHERE conversationID = :conversationID")
-    void updateConversation(String message,String id,int type,long time,String groupName,String conversationID);
+    void updateConversation(String message,long id,int type,long time,String groupName,String conversationID);
 
     @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
     LiveData<Boolean> isConversationExists(String conversationID);
+
+    @Query("SELECT EXISTS (SELECT * FROM conversations WHERE recipientPhoneNumber = :phone and conversationType = 2)")
+    LiveData<Boolean> isConversationExistsByPhone(String phone);
 
     @Query("SELECT blocked from users where userUID = :id")
     Boolean isUserBlocked1(String id);
@@ -157,7 +175,7 @@ public interface ChatDao {
     Boolean isConversationBlocked1(String conversationID);
 
     @Query("UPDATE messages SET content = :content,arrivingTime = :time WHERE messageID = :id")
-    void updateMessage(String id, String content,String time);
+    void updateMessage(long id, String content,String time);
 
     @Query("DELETE FROM conversations WHERE conversationID = :conversationID")
     void deleteConversation(String conversationID);
@@ -178,7 +196,7 @@ public interface ChatDao {
     void updateMessageMetaData(String id,String status, String readAt);
 
     @Query("SELECT EXISTS (SELECT * FROM messages WHERE messageID = :messageID)")
-    LiveData<Boolean> isMessageExists(String messageID);
+    LiveData<Boolean> isMessageExists(long messageID);
 
     @Query("UPDATE conversations SET blocked = 1 WHERE conversationID = :conversationID")
     void blockConversation(String conversationID);
@@ -229,10 +247,13 @@ public interface ChatDao {
     LiveData<String>getUnreadConversationsCount();
 
     @Query("SELECT * FROM messageHistory WHERE messageID = :messageID")
-    LiveData<List<MessageHistory>>getMessageHistory(String messageID);
+    LiveData<List<MessageHistory>>getMessageHistory(long messageID);
 
     @Query("SELECT * FROM messages WHERE messageID = :messageID")
-    LiveData<Message>getMessage(String messageID);
+    LiveData<Message>getMessage(long messageID);
     @Insert
     void saveMessageHistory(MessageHistory messageHistory);
+
+    @Query("SELECT * FROM messages WHERE messageType in (4,5,10)")
+    LiveData<List<Message>>mediaMessage();
 }

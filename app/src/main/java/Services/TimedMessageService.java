@@ -59,7 +59,7 @@ public class TimedMessageService extends Service{
             Message message = (Message) intent.getSerializableExtra("message");
             if (message != null) {
                 Log.d(FOREGROUND_SERVICE, "stated foreground service - timed message");
-                long x = Long.parseLong(message.getMessageID());
+                long x = message.getMessageID();
                 BigInteger bigInteger = BigInteger.valueOf(x);
                 notificationID = bigInteger.intValue();
                 List<String> tokens = (List<String>)intent.getSerializableExtra("tokens");

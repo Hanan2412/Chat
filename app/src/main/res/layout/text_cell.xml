@@ -20,8 +20,6 @@
         android:id="@+id/infoText"
         android:gravity="start"
         android:textSize="36sp"
-
-        android:text="@string/info"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="10dp"

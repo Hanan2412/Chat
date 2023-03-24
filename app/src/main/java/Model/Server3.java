@@ -115,7 +115,7 @@ public class Server3 extends Uploads{
                         user.setNickName((String) userHash.get("nickname"));
                         user.setPictureLink((String) userHash.get("pictureLink"));
                         user.setTimeCreated((String) userHash.get("timeCreated"));
-                        user.setStatus((String) userHash.get("status"));
+                        user.setStatus((Integer) userHash.get("status"));
                         user.setLastTimeLogIn((String) userHash.get("lastTimeLogIn"));
                         user.setPhoneNumber((String) userHash.get("phoneNumber"));
                         user.setUserUID(uid);

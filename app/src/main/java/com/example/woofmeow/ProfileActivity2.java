@@ -4,6 +4,8 @@ package com.example.woofmeow;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -42,6 +44,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.squareup.picasso.Picasso;
 
@@ -55,13 +58,16 @@ import java.util.Objects;
 
 import Adapters.ImageAdapterRV;
 import Adapters.ListAdapter2;
+import Backend.ConversationVM;
 import Backend.UserVM;
 import Consts.MessageType;
 import Fragments.BinaryFragment;
 import Fragments.ImageFragment;
 import Fragments.ListFragment;
 import Fragments.SingleFieldFragment;
+import NormalObjects.Conversation;
 import NormalObjects.FileManager;
+import NormalObjects.Message;
 import NormalObjects.User;
 
 @SuppressWarnings("Convert2Lambda")
@@ -84,21 +90,30 @@ public class ProfileActivity2 extends AppCompatActivity {
     private final String recordingsReceivedAmount = "Recordings Received";
     private final String filesSentAmount = "Files Sent";
     private final String recordingSentAmount = "Recording Sent";
-    private final String imagesSentAmount = "Images Sent ";
+    private final String imagesSentAmount = "Images Sent";
+    private final String token = "Token";
     private final String name = "Name";
     private final String lastName = "Last Name";
     private final String about = "About";
     private final String phoneNumber = "Phone Number";
-
+    private List<String> blockedTitles;
+    private List<String> blockedDetails;
+    private List<String> mutedTitles;
+    private List<String> mutedDetails;
     private final int WRITE_PERMISSION = 3;
     private ActivityResultLauncher<Intent> takePicture, openGallery;
     private UserVM userVM;
-
+    private ConversationVM conversationVM;
     private String photoPath;
     private Uri imageUri;
-
+    private List<User>mutedUsers1;
+    private List<User>blockedUsers;
+    private List<Conversation>mutedConversations;
+    private List<Conversation>blockedConversations;
     private ShapeableImageView profileImage;
     private FileManager fileManager;
+
+    private List<Message>mediaMessages;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -108,6 +123,7 @@ public class ProfileActivity2 extends AppCompatActivity {
         TextView userName = findViewById(R.id.userName);
         userName.setText(user.getName());
         userVM = new ViewModelProvider(this).get(UserVM.class);
+        conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
         profileImage = findViewById(R.id.profileImage);
 
         ImageButton editProfileImageBtn = findViewById(R.id.edit);
@@ -127,12 +143,16 @@ public class ProfileActivity2 extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.d(PROFILE_ACTIVITY,"clicked on image");
-                Bundle bundle = new Bundle();
                 String path = user.getPictureLink();
-                bundle.putString("image", path);
-                ImageFragment imageFragment = new ImageFragment();
-                imageFragment.setArguments(bundle);
-                imageFragment.show(getSupportFragmentManager(), "IMAGE_FRAGMENT");
+                if (path!=null && !path.equals("")) {
+                    Bundle bundle = new Bundle();
+                    bundle.putString("image", path);
+                    ImageFragment imageFragment = new ImageFragment();
+                    imageFragment.setArguments(bundle);
+                    imageFragment.show(getSupportFragmentManager(), "IMAGE_FRAGMENT");
+                }
+                else
+                    Log.e(PROFILE_ACTIVITY, "user picture link is null");
             }
         });
         editProfileImageBtn.setOnClickListener(new View.OnClickListener() {
@@ -216,11 +236,13 @@ public class ProfileActivity2 extends AppCompatActivity {
         profileInfoTitles.add(lastName);
         profileInfoTitles.add(about);
         profileInfoTitles.add(phoneNumber);
+        profileInfoTitles.add(token);
         List<String> dits = new ArrayList<>();
         dits.add(user.getName());
         dits.add(user.getLastName());
         dits.add(user.getAbout());
         dits.add(user.getPhoneNumber());
+        dits.add(user.getToken());
         profileFragment.setListener(new ListFragment.ItemClickListener() {
             @Override
             public void onClickItem(int position) {
@@ -244,50 +266,87 @@ public class ProfileActivity2 extends AppCompatActivity {
                         updateDB();
                     }
                 });
-                singleFieldFragment.setHint(profileInfoTitles.get(position));
-                Log.d(PROFILE_ACTIVITY, "info - clicked on: " + profileInfoTitles.get(position));
-                singleFieldFragment.show(getSupportFragmentManager(), "Edit_Content");
+                if (profileInfoTitles.get(position).equals(token))
+                {
+                    ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clipData = ClipData.newPlainText("message", user.getToken());
+                    if (clipboardManager != null) {
+                        clipboardManager.setPrimaryClip(clipData);
+                        Toast.makeText(ProfileActivity2.this, "copied", Toast.LENGTH_SHORT).show();
+                    }
+                    else
+                        Toast.makeText(ProfileActivity2.this, "oops, an error has happened", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    singleFieldFragment.setHint(profileInfoTitles.get(position));
+                    Log.d(PROFILE_ACTIVITY, "info - clicked on: " + profileInfoTitles.get(position));
+                    singleFieldFragment.show(getSupportFragmentManager(), "Edit_Content");
+                }
 
             }
         });
 
 
-        List<String> mutedTitles = new ArrayList<>();
-        List<String> mutedDetails = new ArrayList<>();
+        mutedTitles = new ArrayList<>();
+        mutedDetails = new ArrayList<>();
         ListFragment mutedUsers = new ListFragment();
         mutedUsers.setListener(new ListFragment.ItemClickListener() {
             @Override
             public void onClickItem(int position) {
-
+//                User user = mutedUsers1.get(position);
+//                createConfirmWindow("unmute this conversation?", "Unmute",true, true, user.getUserUID());
             }
         });
         userVM.getAllMutedOrBlockedUsers(false).observe(ProfileActivity2.this, new Observer<List<User>>() {
             @Override
             public void onChanged(List<User> users) {
                 for (User user : users) {
-                    mutedTitles.add("Name");
-                    mutedDetails.add(user.getName() + " " + user.getLastName());
+                    setMuted(user.getName() + " " + user.getLastName());
                 }
-
+                mutedUsers1 = users;
+                userVM.getAllMutedOrBlockedUsers(false).removeObservers(ProfileActivity2.this);
             }
         });
-        List<String> blockedTitles = new ArrayList<>();
-        List<String> blockedDetails = new ArrayList<>();
+        blockedTitles = new ArrayList<>();
+        blockedDetails = new ArrayList<>();
         ListFragment blockedFragment = new ListFragment();
         blockedFragment.setListener(new ListFragment.ItemClickListener() {
             @Override
             public void onClickItem(int position) {
-
+//                User user = mutedUsers1.get(position);
+//                createConfirmWindow("unmute this conversation?", "Unmute",true, false, user.getUserUID());
             }
         });
         userVM.getAllMutedOrBlockedUsers(true).observe(ProfileActivity2.this, new Observer<List<User>>() {
             @Override
             public void onChanged(List<User> users) {
                 for (User user : users) {
-                    blockedTitles.add("name");
-                    blockedDetails.add(user.getName() + " " + user.getLastName());
+                    setBlocked(user.getName() + " " + user.getLastName());
                 }
+                blockedUsers = users;
                 userVM.getAllMutedOrBlockedUsers(true).removeObservers(ProfileActivity2.this);
+            }
+        });
+        conversationVM.getAllMutedOrBlockedConversations(true).observe(this, new Observer<List<Conversation>>() {
+            @Override
+            public void onChanged(List<Conversation> conversations) {
+                for (Conversation conversation: conversations)
+                {
+                    setBlocked(conversation.getConversationName());
+                }
+                blockedConversations = conversations;
+                conversationVM.getAllMutedOrBlockedConversations(true).removeObservers(ProfileActivity2.this);
+            }
+        });
+        conversationVM.getAllMutedOrBlockedConversations(false).observe(this, new Observer<List<Conversation>>() {
+            @Override
+            public void onChanged(List<Conversation> conversations) {
+                for(Conversation conversation: conversations)
+                {
+                    setMuted(conversation.getConversationName());
+                }
+                mutedConversations = conversations;
+                conversationVM.getAllMutedOrBlockedConversations(false).removeObservers(ProfileActivity2.this);
             }
         });
         BottomNavigationView navigationView = findViewById(R.id.bottomNavigationView);
@@ -358,8 +417,16 @@ public class ProfileActivity2 extends AppCompatActivity {
         if (!user.getUserUID().equals(currentUserID))
         {
           editProfileImageBtn.setVisibility(View.GONE);
-          navigationView.getMenu().setGroupVisible(R.id.currentUserGroup, false);
+          navigationView.getMenu().getItem(R.id.muted).setVisible(false);
+          navigationView.getMenu().getItem(R.id.block).setVisible(false);
         }
+        conversationVM.getMediaMessage().observe(this, new Observer<List<Message>>() {
+            @Override
+            public void onChanged(List<Message> messages) {
+                Log.d(PROFILE_ACTIVITY, "media msg");
+                mediaMessages = messages;
+            }
+        });
     }
 
     private void saveAndSetImage() {
@@ -466,5 +533,46 @@ public class ProfileActivity2 extends AppCompatActivity {
                     .show();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private synchronized void setBlocked(String name)
+    {
+        blockedTitles.add("Name");
+        blockedDetails.add(name);
+    }
+
+    private synchronized void setMuted(String name)
+    {
+        mutedTitles.add("Name");
+        mutedDetails.add(name);
+    }
+
+    private void createConfirmWindow(String msg, String title, boolean user, boolean mute, String id)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(msg).setTitle(title).setCancelable(true).setPositiveButton("ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if (user)
+                {
+                    if (mute)
+                        userVM.unMuteUser(id);
+                    else
+                        userVM.unBlockUser(id);
+                }
+                else
+                {
+                    if (mute)
+                        conversationVM.unMuteConversation(id);
+                    else
+                        conversationVM.unBlockConversation(id);
+                }
+            }
+        }).setNegativeButton(getResources().getString(R.string.cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        }).create().show();
     }
 }

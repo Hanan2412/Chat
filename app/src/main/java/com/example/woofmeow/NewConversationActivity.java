@@ -156,7 +156,7 @@ public class NewConversationActivity extends AppCompatActivity {
                     transaction.addToBackStack(null);
                     transaction.commit();
                 }
-
+                finish();
 //                else
 //                {
 //                    Intent startConversation = new Intent(NewConversationActivity.this, ConversationActivity2.class);

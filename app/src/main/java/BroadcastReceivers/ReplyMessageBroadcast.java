@@ -15,6 +15,7 @@ import java.util.TimeZone;
 import Consts.MessageType;
 import Model.MessageSender;
 import NormalObjects.Message;
+import Time.StandardTime;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -70,7 +71,7 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
         //message.setRecipient(recipient);
         message.setConversationName(recipient);
         message.setConversationID(conversationID);
-        message.setMessageID(time);
+        message.setMessageID(StandardTime.getInstance().getStandardTime());
         message.setSendingTime(Current_time);
         SharedPreferences sharedPreferences = context.getSharedPreferences("Token",MODE_PRIVATE);
         String token = sharedPreferences.getString("token","no token");

@@ -29,8 +29,8 @@ public class CustomConversation extends ArrayList<Conversation> {
             int i = 0;
             for (onConversationChange listener : listeners) {
                 String lastMessage = conversations.get(i).getLastMessage();
-                String lastMessageTime = conversations.get(i).getLastMessageTime();
-                listener.onLastMessageInConversationChange(lastMessage, lastMessageTime);
+//                String lastMessageTime = conversations.get(i).getLastMessageTime();
+//                listener.onLastMessageInConversationChange(lastMessage, lastMessageTime);
             }
         }
     }
@@ -44,8 +44,8 @@ public class CustomConversation extends ArrayList<Conversation> {
             int i = 0;
             for (onConversationChange listener : listeners) {
                 String lastMessage = conversation.getLastMessage();
-                String lastMessageTime = conversation.getLastMessageTime();
-                listener.onLastMessageInConversationChange(lastMessage, lastMessageTime);
+//                String lastMessageTime = conversation.getLastMessageTime();
+//                listener.onLastMessageInConversationChange(lastMessage, lastMessageTime);
             }
         }
     }

@@ -20,16 +20,17 @@ public class User implements Serializable {
 
     private String name,nickName,lastName,pictureLink;
     private String timeCreated,lastTimeLogIn,activityTime;
+    private long lastUpdateTime;
     @Ignore
     private ArrayList<String>conversations;
     @Ignore
     private ArrayList<String>blockedUsers;
-    private String status;
+    private int status;
     @Ignore
     private ArrayList<String>mutedConversations;
     @Ignore
     private ArrayList<String>mutedUsersUID;
-    private String phoneNumber;
+    private String phoneNumber = "";
     @Ignore
     private HashMap<String,String>phoneNumbers;
     @Ignore
@@ -103,6 +104,7 @@ public class User implements Serializable {
 
     public User(String timeCreated) {
         this.timeCreated = timeCreated;
+        setTimeRegisteredAmount(Long.parseLong(timeCreated));
     }
 
     public String getName() {
@@ -143,6 +145,8 @@ public class User implements Serializable {
 
     public void setTimeCreated(String timeCreated) {
         this.timeCreated = timeCreated;
+        if (timeCreated!=null)
+            setTimeRegisteredAmount(Long.parseLong(timeCreated));
     }
 
     public String getLastTimeLogIn() {
@@ -193,11 +197,11 @@ public class User implements Serializable {
         return blockedUsers.get(blockedUserIndex);
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 
@@ -409,5 +413,13 @@ public class User implements Serializable {
 
     public void setAbout(String about) {
         this.about = about;
+    }
+
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
+    }
+
+    public void setLastUpdateTime(long lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
     }
 }

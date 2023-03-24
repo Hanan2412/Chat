@@ -63,9 +63,14 @@ public class Repository {
         return chatDao.getConversationIDByPhone(phone);
     }
 
-    public LiveData<Message> getMessage(String msgID)
+    public LiveData<Message> getMessage(long msgID)
     {
         return chatDao.getMessage(msgID);
+    }
+
+    public LiveData<List<Message>>getAllMediaMessages()
+    {
+        return chatDao.mediaMessage();
     }
 
     public void unMuteUser(String uid)
@@ -112,6 +117,22 @@ public class Repository {
         return chatDao.getNewOrUpdatedConversation();
     }
 
+    public LiveData<Conversation>getLastUpdateConversation()
+    {
+        return chatDao.getLastUpdateConversation();
+    }
+
+    public void updateConversationLastMessage(String conversationID, String message, long lastMessageID)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.updateConversationLastMessage(conversationID, message, lastMessageID);
+            }
+        };
+        pool.execute(runnable);
+    }
+
     public void deleteMessages(String conversationID)
     {
         Runnable runnable = new Runnable() {
@@ -154,7 +175,7 @@ public class Repository {
         return chatDao.getUser(userID);
     }
 
-    public void updateMessageStatus(String id,int status)
+    public void updateMessageStatus(long id,int status)
     {
         Runnable runnable = new Runnable() {
             @Override
@@ -165,7 +186,7 @@ public class Repository {
         pool.execute(runnable);
     }
 
-    public void updateMessage(String id, String content,String time)
+    public void updateMessage(long id, String content,String time)
     {
         Runnable runnable = new Runnable() {
             @Override
@@ -236,7 +257,7 @@ public class Repository {
         pool.execute(runnable);
     }
 
-    public LiveData<Boolean> isMessageExists(String messageID)
+    public LiveData<Boolean> isMessageExists(long messageID)
     {
         return chatDao.isMessageExists(messageID);
     }
@@ -349,7 +370,7 @@ public class Repository {
         return chatDao.getAllMessages(conversationID);
     }
 
-    public LiveData<List<MessageHistory>>getMessageHistory(String messageID)
+    public LiveData<List<MessageHistory>>getMessageHistory(long messageID)
     {
         return chatDao.getMessageHistory(messageID);
     }
@@ -358,6 +379,11 @@ public class Repository {
     {
         getUser = chatDao.getUser(uid);
         return getUser;
+    }
+
+    public LiveData<List<Conversation>>getPinnedConversations()
+    {
+        return chatDao.getPinnedConversations();
     }
 
     public void clearAll()
@@ -485,7 +511,7 @@ public class Repository {
         pool.execute(runnable);
     }
 
-    public void deleteMessage(String messageID)
+    public void deleteMessage(long messageID)
     {
         Runnable runnable = new Runnable() {
             @Override
@@ -515,7 +541,7 @@ public class Repository {
     {
         server.setFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String msgID, String path) {
+            public void onPathReady(long msgID, String path) {
                 server.setFileUploadListener(null);
                 String relativePath = path.split("downloadFile/")[1];
                 user.setPictureLink(relativePath);
@@ -546,26 +572,26 @@ public class Repository {
             }
 
             @Override
-            public void onStartedUpload(String msgID) {
+            public void onStartedUpload(long msgID) {
                 Log.d("fileUpload", "started uploading user image ");
             }
 
             @Override
-            public void onProgress(String msgID, int progress) {
+            public void onProgress(long msgID, int progress) {
 
             }
 
             @Override
-            public void onUploadFinished(String msgID) {
+            public void onUploadFinished(long msgID) {
                 Log.d("fileUpload", "finished uploading user image ");
             }
 
             @Override
-            public void onUploadError(String msgID, String errorMessage) {
+            public void onUploadError(long msgID, String errorMessage) {
                 Log.e("fileUpload", errorMessage );
             }
         });
-        server.uploadFile(user.getUserUID(),null,userImage,context);
+        server.uploadFile(user.getUserUID(),-1,userImage,context);
     }
 
     public void createNewUser(User user, Bitmap userImage,Context context)
@@ -610,7 +636,7 @@ public class Repository {
     }
 
 
-    public void uploadFile(String uid,String msgID,Bitmap bitmap,Context context)
+    public void uploadFile(String uid,long msgID,Bitmap bitmap,Context context)
     {
         server.uploadFile(uid,msgID,bitmap,context);
     }
@@ -620,7 +646,7 @@ public class Repository {
         server.setFileUploadListener(listener);
     }
 
-    public void uploadFile(String msgID, Uri uri,Context context)
+    public void uploadFile(long msgID, Uri uri,Context context)
     {
         server.uploadFile(msgID, uri, context);
     }

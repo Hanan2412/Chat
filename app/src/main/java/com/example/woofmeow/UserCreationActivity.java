@@ -81,7 +81,7 @@ public class UserCreationActivity extends AppCompatActivity{
                     user.setLastName(last);
                     user.setTimeCreated(System.currentTimeMillis() + "");
                     user.setLastTimeLogIn(System.currentTimeMillis() + "");
-                    user.setStatus(MainActivity.ONLINE_S);
+                    user.setStatus(0);
                     createNewUser(user,imageBitmap);
                     saveUserUIDLocally(user);
                     Intent intent = new Intent(UserCreationActivity.this,MainActivity.class);

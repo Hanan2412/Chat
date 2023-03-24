@@ -142,7 +142,7 @@ public class NewChat extends AppCompatActivity {
                             }
 
                             @Override
-                            public void onFileDownloadFinished(String messageID, File file) {
+                            public void onFileDownloadFinished(long messageID, File file) {
 
                             }
 

@@ -510,7 +510,7 @@
                 android:layout_alignParentEnd="true"
                 android:orientation="horizontal">
 
-                <ImageView
+                <NormalObjects.ImageButtonState
                     android:id="@+id/messageStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

@@ -89,7 +89,7 @@ public class MessageSender {
                         } else {
                             if (listener != null)
                             {
-                                if (message.getMessageID() != null)
+                                if (message.getMessageID() != -1)
                                     listener.onMessageSentSuccessfully(message);
                                 else Log.e(RETROFIT_ERROR, "onResponse: message body is empty");
                             }

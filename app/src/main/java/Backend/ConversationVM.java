@@ -30,7 +30,7 @@ public class ConversationVM extends AndroidViewModel {
         conversations = repository.getGetAllConversations();
     }
 
-    public LiveData<Message>getMessage(String msgID)
+    public LiveData<Message>getMessage(long msgID)
     {
         return repository.getMessage(msgID);
     }
@@ -47,9 +47,14 @@ public class ConversationVM extends AndroidViewModel {
         repository.deleteGroup(conversationID);
     }
 
-    public LiveData<List<MessageHistory>>getMessageHistory(String messageID)
+    public LiveData<List<MessageHistory>>getMessageHistory(long messageID)
     {
         return repository.getMessageHistory(messageID);
+    }
+
+    public LiveData<List<Message>>getMediaMessage()
+    {
+        return repository.getAllMediaMessages();
     }
 
     public LiveData<List<User>> getRecipients(String conversationID) {
@@ -73,6 +78,16 @@ public class ConversationVM extends AndroidViewModel {
         return repository.getNewOrUpdatedConversation();
     }
 
+    public LiveData<Conversation>getLastUpdateConversation()
+    {
+        return repository.getLastUpdateConversation();
+    }
+
+    public void updateConversationLastMessage(String conversationID, String message, long lastMessageID)
+    {
+        repository.updateConversationLastMessage(conversationID, message, lastMessageID);
+    }
+
     public void updateConversation(Conversation conversation){repository.updateConversation(conversation);}
 
     public void updateConversationLastMessage(String conversationID, String message) {
@@ -83,11 +98,11 @@ public class ConversationVM extends AndroidViewModel {
         repository.updateConversation(message);
     }
 
-    public void updateMessageStatus(String messageID, int status) {
+    public void updateMessageStatus(long messageID, int status) {
         repository.updateMessageStatus(messageID, status);
     }
 
-    public void updateMessage(String id, String content, String time) {
+    public void updateMessage(long id, String content, String time) {
         repository.updateMessage(id, content, time);
     }
 
@@ -95,7 +110,7 @@ public class ConversationVM extends AndroidViewModel {
         repository.updateMessage(message);
     }
 
-    public void deleteMessage(String messageID) {
+    public void deleteMessage(long messageID) {
         repository.deleteMessage(messageID);
     }
 
@@ -202,13 +217,18 @@ public class ConversationVM extends AndroidViewModel {
         conversation.setLastMessageID(message.getMessageID());
         conversation.setLastMessage(message.getContent());
         conversation.setMessageType(message.getMessageType());
-        conversation.setLastMessageTime(String.valueOf(message.getSendingTime()));
+        conversation.setLastMessageTime(message.getSendingTime());
         conversation.setConversationName(message.getConversationName());
         conversation.setMuted(false);
         conversation.setBlocked(false);
-        conversation.setConversationType(type);
+        conversation.setConversationType(type.ordinal());
         repository.saveNewConversation(conversation);
         createNewGroup(conversation.getConversationID(), ids);
+    }
+
+    public LiveData<List<Conversation>>getPinnedConversations()
+    {
+        return repository.getPinnedConversations();
     }
 
     public void createNewGroup(String conversationID, List<String> recipients) {
@@ -233,12 +253,12 @@ public class ConversationVM extends AndroidViewModel {
         repository.setOnFileUploadListener(listener);
     }
 
-    public void uploadFile(String uploaderID,String msgID, Bitmap bitmap, Context context)
+    public void uploadFile(String uploaderID,long msgID, Bitmap bitmap, Context context)
     {
         repository.uploadFile(uploaderID,msgID, bitmap, context);
     }
 
-    public void uploadFile(String msgID, Uri uri, Context context)
+    public void uploadFile(long msgID, Uri uri, Context context)
     {
         repository.uploadFile(msgID, uri, context);
     }

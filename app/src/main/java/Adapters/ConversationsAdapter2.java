@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,13 +24,13 @@ import com.vanniktech.emoji.EmojiTextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 
 import Consts.ConversationType;
 import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
-import NormalObjects.Message;
 import Time.TimeFormat;
 
 @SuppressWarnings("Convert2Lambda")
@@ -37,117 +38,138 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
 
 
     private final FileManager fileManager;
+    private final String CONVERSATIONS_ADAPTER = "CONVERSATIONS_ADAPTER";
 
     public interface onPressed {
-
         void onClicked(Conversation conversation);
 
-        void onImageDownloaded(Conversation conversation,boolean image);
     }
-    public interface onLongPress{
+
+    public interface onLongPress {
         void onConversationLongPress(Conversation conversation);
     }
+
     private onLongPress longPressListener;
-    public void setLongPressListener(onLongPress listener)
-    {
+
+    public void setLongPressListener(onLongPress listener) {
         longPressListener = listener;
     }
+
     private onPressed callback;
 
     public void setListener(onPressed listener) {
         callback = listener;
     }
 
-    private ArrayList<Conversation> conversations;
-    private ArrayList<Integer> selectedPosition = new ArrayList<>();
-    private List<Conversation>selectedConversations;
-    public ConversationsAdapter2()
-    {
-        conversations = new ArrayList<>();
+    private List<Conversation> conversations;
+    private List<Conversation> tmpConversations;
+
+    public ConversationsAdapter2() {
+        Log.d(CONVERSATIONS_ADAPTER, "constructor");
+        init();
         fileManager = FileManager.getInstance();
-        selectedConversations = new ArrayList<>();
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void setConversations(ArrayList<Conversation> conversations) {
+    public void setConversations(List<Conversation> conversations) {
         this.conversations = conversations;
         notifyDataSetChanged();
     }
 
     public void addConversation(Conversation conversation) {
+        Log.d(CONVERSATIONS_ADAPTER, "add conversation: " + conversation.getConversationName());
         init();
         conversations.add(conversation);
         notifyItemInserted(conversations.size() - 1);
     }
-    public void setConversation(Conversation conversation,int position)
-    {
-        init();
-        if(conversation!=null) {
-            conversations.add(position, conversation);
-            notifyItemInserted(position);
-            notifyItemRangeChanged(position, conversations.size());
-        }
-    }
-    private void init()
-    {
+
+    private void init() {
+        Log.d(CONVERSATIONS_ADAPTER, "init");
         if (conversations == null)
             conversations = new ArrayList<>();
     }
-    public void updateConversation(Conversation conversation) {
-            int index = findCorrectConversationIndex(conversation.getConversationID());
-            if (index > -1) {
-                if (!conversation.isTyping()){
-                    if (!conversation.getLastMessageID().equals(conversations.get(index).getLastMessageID()))
-                    {
-                        conversations.remove(index);
-                        conversations.add(0,conversation);
-                        notifyItemMoved(index,0);
-                        notifyItemChanged(0);
-                    }
-                    else {
-                        conversations.set(index, conversation);
-                        notifyItemChanged(index);
-                    }
-                }
+
+    public synchronized void updateConversation(Conversation conversation) {
+        Log.d(CONVERSATIONS_ADAPTER, "update conversation: " + conversation.getConversationName());
+        int index = findCorrectConversationIndex(conversation.getConversationID());
+        if (index > -1) {
+            if (!conversation.isTyping()) {
+                if (conversation.getLastMessageID() != conversations.get(index).getLastMessageID())
+                    moveToTop(conversation,index);
+
             }
+        } else {
+            if (conversations.isEmpty())
+                addConversation(conversation);
+            else {
+                conversations.add(0, conversation);
+                notifyItemRangeChanged(0, conversations.size());
+                notifyItemInserted(0);
+            }
+        }
 
     }
 
-    public void UpdateConversation(Message message,String conversationID)
+    private void moveToTop(Conversation conversation, int index)
     {
+        if (conversation.isPinned() && index == 0)
+            notifyItemChanged(0);
+        else {
+            int startIndex = 0;
+            if (getConversation(0).isPinned())
+                startIndex = 1;
+            notifyItemChanged(index);
+            conversations.remove(index);
+            conversations.add(startIndex, conversation);
+            notifyItemMoved(index, startIndex);
+        }
+    }
+
+    public void muteConversation(String conversationID, boolean mute) {
+        Log.d(CONVERSATIONS_ADAPTER, "mute conversation: " + conversationID + " mute: " + mute);
         int index = findCorrectConversationIndex(conversationID);
-        Conversation conversation = conversations.get(index);
-        conversation.setLastMessageTime(String.valueOf(message.getArrivingTime()));
-        conversation.setLastMessage(message.getContent());
-        conversation.setRecipientName(message.getConversationName());
-        notifyItemChanged(index);
-    }
-
-    public Conversation findConversation(String conversationID)
-    {
-        int index = findCorrectConversationIndex(conversationID);
-        if(index>=0)
-            return conversations.get(index);
-        return null;
-    }
-
-    public void MuteConversation(String conversationID,boolean mute)
-    {
-        int index =  findCorrectConversationIndex(conversationID);
         Conversation conversation = conversations.get(index);
         conversation.setMuted(mute);
         notifyItemChanged(index);
     }
 
-
-
-    public void DeleteConversation(String conversationID)
+    public void muteConversation(Conversation conversation)
     {
+        int index = findCorrectConversationIndex(conversation.getConversationID());
+        notifyItemChanged(index);
+    }
+
+    public void blockConversation(Conversation conversation)
+    {
+        int index = findCorrectConversationIndex(conversation.getConversationID());
+        notifyItemChanged(index);
+    }
+
+    public void blockConversation(boolean blocked, String conversationID) {
+        Log.d(CONVERSATIONS_ADAPTER, "block conversation: " + conversationID + " block: " + blocked);
+        int index = findCorrectConversationIndex(conversationID);
+        Conversation conversation = conversations.get(index);
+        conversation.setBlocked(blocked);
+        notifyItemChanged(index);
+    }
+
+    public void deleteConversation(String conversationID) {
+        Log.d(CONVERSATIONS_ADAPTER, "delete conversation: " + conversationID);
         int index = findCorrectConversationIndex(conversationID);
         conversations.remove(index);
         notifyItemRemoved(index);
     }
+
+    public Conversation findConversation(String conversationID) {
+        Log.d(CONVERSATIONS_ADAPTER, "find conversation: " + conversationID);
+        int index = findCorrectConversationIndex(conversationID);
+        if (index >= 0)
+            return conversations.get(index);
+        return null;
+    }
+
     public int findCorrectConversationIndex(String conversationID) {
+        Log.d(CONVERSATIONS_ADAPTER, "find conversation index: " + conversationID);
         for (int i = 0; i < conversations.size(); i++) {
             if (conversationID.equals(conversations.get(i).getConversationID()))
                 return i;
@@ -155,21 +177,12 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         return -1;
     }
 
-    public void deleteConversation(Conversation conversation) {
-        int index = findCorrectConversationIndex(conversation.getConversationID());
-        if (index > -1) {
-            conversations.remove(index);
-            notifyItemRemoved(index);
-        }
-    }
-
     @NonNull
     @Override
     public ConversationsAdapter2.ConversationsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ConversationType type = ConversationType.values()[viewType];
         View view;
-        switch (type)
-        {
+        switch (type) {
             case sms:
                 view = LayoutInflater.from(parent.getContext()).inflate(R.layout.conversations_sms_cell, parent, false);
                 break;
@@ -180,14 +193,14 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
                 view = LayoutInflater.from(parent.getContext()).inflate(R.layout.conversations_single_cell, parent, false);
                 break;
             default:
-                Log.e("Error viewType","view type is not conversation Type, setting default value");
+                Log.e("Error viewType", "view type is not conversation Type, setting default value");
                 view = LayoutInflater.from(parent.getContext()).inflate(R.layout.conversations_group_cell, parent, false);
         }
         return new ConversationsAdapter2.ConversationsViewHolder(view);
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void Reset() {
+    public void reset() {
         conversations = new ArrayList<>();
         notifyDataSetChanged();
     }
@@ -195,143 +208,66 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     @Override
     public void onBindViewHolder(@NonNull ConversationsAdapter2.ConversationsViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Conversation conversation = conversations.get(position);
-        SharedPreferences sharedPreferences = holder.itemView.getContext().getSharedPreferences("conversations",MODE_PRIVATE);
-        if (sharedPreferences.contains("pin"))
-        {
-            String conversationID = sharedPreferences.getString("pin","");
-            if (conversation.getConversationID().equals(conversationID))
-            {
-                holder.pinLayout.setVisibility(View.VISIBLE);
-            }
-            else
-            {
-                holder.pinLayout.setVisibility(View.GONE);
-            }
-        }
+        if (conversation.isPinned())
+            holder.pinLayout.setVisibility(View.VISIBLE);
         else
-        {
             holder.pinLayout.setVisibility(View.GONE);
-        }
         if (conversation.getMessageType() == MessageType.voiceMessage.ordinal())
             holder.lastMessage.setText(R.string.voice_message);
         else
             holder.lastMessage.setText(conversation.getLastMessage());
-        TimeFormat timeFormat = new TimeFormat();
-        String lastMessageTime="";
-        if (conversation.getLastMessageTime() == null)
-            conversation.setLastMessageTime(conversation.getLastMessageID());
-        else if (conversation.getLastMessageTime().contains("/"))
-            lastMessageTime = conversation.getLastMessageTime();
-        else
-            lastMessageTime = timeFormat.getFormattedDate(Long.parseLong(conversation.getLastMessageTime()));
+        String lastMessageTime = conversation.getLastMessageTimeParse();
         holder.lastMessageTime.setText(lastMessageTime);
         holder.recipientName.setText(conversation.getConversationName());
         if (conversation.isMuted())
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
             holder.conversationStatus.setVisibility(View.GONE);
-        Bitmap bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.conversationProfileImage,conversation.getConversationID());
+        Bitmap bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(), FileManager.conversationProfileImage, conversation.getConversationID());
         if (bitmap == null)
-            if (conversation.getConversationType() == ConversationType.group)
-                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.conversationProfileImage,conversation.getConversationID());
-            else if (conversation.getConversationType() == ConversationType.single)
-                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(),FileManager.user_profile_images,conversation.getRecipient());
-        if (bitmap!=null)
+            if (conversation.getConversationType() == ConversationType.group.ordinal())
+                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(), FileManager.conversationProfileImage, conversation.getConversationID());
+            else if (conversation.getConversationType() == ConversationType.single.ordinal())
+                bitmap = fileManager.readImage(holder.itemView.getContext().getApplicationContext(), FileManager.user_profile_images, conversation.getRecipient());
+        if (bitmap != null)
             holder.profileImage.setImageBitmap(bitmap);
         else Log.e("bitmap - conversationsAdapter2", "no image for conversation");
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callback.onClicked(conversations.get(position));
-            }
-        });
-        holder.rootLayout.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                if (selectedConversations.contains(conversation))
-                {
-                    selectedConversations.remove(conversation);
-                }
-                else
-                {
-                    selectedConversations.add(conversation);
-                }
-                if (longPressListener!=null)
-                {
-                    longPressListener.onConversationLongPress(conversation);
-                }
-                v.setSelected(!v.isSelected());
-                return true;
-            }
-        });
-        if(conversation.isMuted())
-        {
+
+        if (conversation.isMuted()) {
             holder.conversationStatus.setVisibility(View.VISIBLE);
-            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_volume_off_24,holder.itemView.getContext().getTheme()));
+            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_volume_off_24, holder.itemView.getContext().getTheme()));
         }
-        if(conversation.isBlocked())
-        {
+        if (conversation.isBlocked()) {
             holder.conversationStatus.setVisibility(View.VISIBLE);
-            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_block_white,holder.itemView.getContext().getTheme()));
+            holder.conversationStatus.setImageDrawable(ResourcesCompat.getDrawable(holder.itemView.getResources(), R.drawable.ic_baseline_block_white, holder.itemView.getContext().getTheme()));
         }
-        if(!conversation.isMuted() && !conversation.isBlocked())
-        {
+        if (!conversation.isMuted() && !conversation.isBlocked()) {
             holder.conversationStatus.setVisibility(View.GONE);
             holder.conversationStatus.setImageDrawable(null);
         }
-        if (conversation.getUnreadMessages()!=0)
-        {
+        if (conversation.getUnreadMessages() != 0) {
             holder.unreadMessages.setVisibility(View.VISIBLE);
             holder.unreadMessages.setText(String.valueOf(conversation.getUnreadMessages()));
-            Log.e("unread","unread should be visible");
+            Log.e("unread", "unread should be visible");
         }
     }
 
-    public List<Conversation>getSelectedConversations()
-    {
-        return selectedConversations;
-    }
-
-    public void pinConversation(Conversation conversation, String oldPinConversationID) {
-//        if (conversation.getConversationID().equals(oldPinConversationID)) {
-//            int position = findCorrectConversationIndex(oldPinConversationID);
-//            if (position!=0)
-//            return;
-//        }
-//        else
+    public void pinConversation(Conversation conversation, boolean pin) {
+        conversation.setPinned(pin);
+        int conversationIndex = findCorrectConversationIndex(conversation.getConversationID());
+        if (pin)
         {
-            int position = findCorrectConversationIndex(oldPinConversationID);
-            notifyItemChanged(position);
+            moveToTop(conversation, conversationIndex);
         }
-      int index = findCorrectConversationIndex(conversation.getConversationID());
-      if (index!=-1) {
-          if (index == 0)
-              notifyItemChanged(0);
-          else {
-              Conversation conversation1 = conversations.get(index);
-              conversations.remove(index);
-              conversations.add(0, conversation1);
-              notifyItemMoved(index, 0);
-              notifyItemChanged(0);
-          }
-      }
-      else Log.e("index error", "conversationAdapter pinConversation: index out of bound - index is equals -1");
-    }
-    public void unPinConversation()
-    {
-        notifyItemChanged(0);
-    }
-    public void BlockConversation(boolean blocked,String conversationID)
-    {
-        int index =  findCorrectConversationIndex(conversationID);
-        Conversation conversation = conversations.get(index);
-        conversation.setBlocked(blocked);
-        notifyItemChanged(index);
-    }
+        else
+        {
+            notifyItemChanged(conversationIndex);
+        }
 
+    }
 
     public Conversation getConversation(int position) {
-        if(position>-1 && position < getItemCount())
+        if (position > -1 && position < getItemCount())
             return conversations.get(position);
         else return null;
     }
@@ -348,9 +284,10 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     public class ConversationsViewHolder extends RecyclerView.ViewHolder {
         ShapeableImageView profileImage;
         EmojiTextView lastMessage;
-        TextView lastMessageTime, recipientName,unreadMessages;
+        TextView lastMessageTime, recipientName, unreadMessages;
         ImageView conversationStatus;
         RelativeLayout rootLayout, pinLayout;
+
         public ConversationsViewHolder(@NonNull View itemView) {
             super(itemView);
             profileImage = itemView.findViewById(R.id.conversationImage);
@@ -363,26 +300,57 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             pinLayout = itemView.findViewById(R.id.pinLayout);
         }
 
+        public void bind(Conversation conversation) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (callback != null) {
+                        callback.onClicked(conversation);
+                    }
+                }
+            });
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    if (longPressListener != null)
+                        longPressListener.onConversationLongPress(conversation);
+                    view.setSelected(!view.isSelected());
+                    return true;
+                }
+            });
+        }
     }
 
-    public void Search(String search)
+    @Override
+    public void onBindViewHolder(@NonNull ConversationsViewHolder holder, int position, @NonNull List<Object> payloads) {
+        super.onBindViewHolder(holder, position, payloads);
+        holder.bind(conversations.get(position));
+    }
+
+    public void searchForConversations(String searchQuery1)
     {
-        ArrayList<Conversation> conversationsCopy = new ArrayList<>();
-        for(Conversation conversation : conversations)
+        if (tmpConversations != null)
+            if (!tmpConversations.isEmpty())
+                setConversations(tmpConversations);
+        if (!searchQuery1.matches("^$"))
         {
-            if (conversation.getRecipientName()!=null)
-                if(conversation.getRecipientName().toLowerCase().contains(search.toLowerCase()))
-                {
-                    conversationsCopy.add(conversation);
+            String searchQuery = searchQuery1.toLowerCase();
+            List<Conversation> searchedConversations = new ArrayList<>();
+            for (Conversation conversation : conversations) {
+                if (conversation.getConversationName().toLowerCase().contains(searchQuery) || searchQuery.contains(conversation.getConversationName().toLowerCase())) {
+                    searchedConversations.add(conversation);
+                } else if (conversation.getLastMessage().toLowerCase().contains(searchQuery) || searchQuery.contains(conversation.getLastMessage().toLowerCase())) {
+                    searchedConversations.add(conversation);
                 }
+            }
+            tmpConversations = conversations;
+            setConversations(searchedConversations);
         }
-        conversations = conversationsCopy;
     }
 
     @Override
     public int getItemViewType(int position) {
-        switch (conversations.get(position).getConversationType())
-        {
+        switch (ConversationType.values()[conversations.get(position).getConversationType()]) {
             case sms:
                 return ConversationType.sms.ordinal();
             case group:
@@ -390,7 +358,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             case single:
                 return ConversationType.single.ordinal();
             default:
-                Log.e("Conversation Type","non existing conversation type");
+                Log.e("Conversation Type", "non existing conversation type");
                 return ConversationType.group.ordinal();
         }
 

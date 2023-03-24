@@ -158,6 +158,7 @@ import NormalObjects.User;
 import Retrofit.RetrofitClient;
 import Retrofit.Server;
 import Services.TimedMessageService;
+import Time.StandardTime;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -237,7 +238,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private final String CONVERSATION_ACTIVITY = "ConversationActivity";
     private final String AUDIO_PLAYER = "Audio Player";
     private final String AUDIO_RECORDER = "Audio Recorder";
-    private BroadcastReceiver delayedMsgReceiver, interactionMsgReceiver;
+    private BroadcastReceiver delayedMsgReceiver, interactionMsgReceiver, smsReceiver;
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -467,7 +468,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 messageText.setVisibility(View.GONE);
                 recordingTimeLive.setVisibility(View.VISIBLE);
                 playSound(R.raw.recording_sound_start);
-                onInteractionMessage(null, MessageAction.recording);
+                onInteractionMessage(-1, MessageAction.recording);
             }
 
             @Override
@@ -492,7 +493,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void onFinished(long duration) {
-                onInteractionMessage(null, MessageAction.not_recording);
+                onInteractionMessage(-1, MessageAction.not_recording);
             }
 
             @Override
@@ -523,40 +524,40 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         chatAdapter = new ChatAdapter();
         model.setOnFileUploadListener(new Server.onFileUpload() {
             @Override
-            public void onPathReady(String msgID, String path) {
-                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+            public void onPathReady(long msgID, String path) {
+                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
                 Message message = chatAdapter.getMessage(index);
                 message.setFilePath(path);
                 sendMessage2(message);
             }
 
             @Override
-            public void onStartedUpload(String msgID) {
+            public void onStartedUpload(long msgID) {
                 //shows progress bar
-                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
                 if (index != -1) {
                     chatAdapter.notifyItemChanged(index);
                 }
             }
 
             @Override
-            public void onProgress(String msgID, int progress) {
+            public void onProgress(long msgID, int progress) {
 
             }
 
             @Override
-            public void onUploadFinished(String msgID) {
+            public void onUploadFinished(long msgID) {
                 //disables progress bar
-                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
                 if (index != -1) {
                     chatAdapter.notifyItemChanged(index);
                 }
             }
 
             @Override
-            public void onUploadError(String msgID, String errorMessage) {
+            public void onUploadError(long msgID, String errorMessage) {
                 //displays error message and gives option to resend the message file
-                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(msgID));
+                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
                 Message message = chatAdapter.getMessage(index);
                 if (index != -1) {
                     chatAdapter.notifyItemChanged(index);
@@ -638,14 +639,14 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
                     actionBtn.setCurrentButtonType(ButtonType.cancel);
                     if (chatAdapter.getItemCount() > 0) {
-                        onInteractionMessage(null,MessageAction.typing);
+                        onInteractionMessage(-1,MessageAction.typing);
                     }
                     Log.d(CONVERSATION_ACTIVITY, "new text starting from 0 was entered");
                 }
                 else if(s.toString().length() == 0)//no typing
                 {
                     sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
-                    onInteractionMessage(null, MessageAction.not_typing);
+                    onInteractionMessage(-1, MessageAction.not_typing);
                     actionBtn.setCurrentButtonType(actionBtn.getPreviousButtonType());
                     Log.d(CONVERSATION_ACTIVITY, "no more text in text area");
                 }
@@ -710,6 +711,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Log.d(CONVERSATION_ACTIVITY, "message sent successfully");
                 message.setMessageStatus(MessageStatus.SENT.ordinal());
                 updateMessage(message);
+                user.setMsgSentAmount(user.getMsgSentAmount() + 1);
+                updateUser(user);
             }
 
             @Override
@@ -794,7 +797,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                 String number = cursor.getString(numberIndex);
                                 cursor.close();
                                 recipients.get(0).setPhoneNumber(number);
-                                userModel.updateUser(recipients.get(0));
+                                updateUser(recipients.get(0));
+//                                userModel.updateUser(recipients.get(0));
                                 //dbActive.updateUser(recipients.get(0));
                                 Toast.makeText(ConversationActivity2.this, "number saved ", Toast.LENGTH_SHORT).show();
                             }
@@ -1010,7 +1014,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     private void smsSendMessage(Message message) {
-        Log.d("smsMessageID", message.getMessageID());
+        Log.d("smsMessageID", message.getMessageID()+"");
 //        MessageSender sender = MessageSender.getInstance();
         messageSender.sendMessage(message, recipientPhoneNumber, this);
     }
@@ -1019,7 +1023,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         BroadcastReceiver smsReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String messageID = intent.getStringExtra("messageID");
+                long messageID = intent.getLongExtra("messageID", -1);
 //                String status = intent.getStringExtra("status");
                 MessageStatus status = MessageStatus.READ;
                 chatAdapter.updateMessageStatus(messageID, status, System.currentTimeMillis() + "");
@@ -1029,6 +1033,18 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         };
         LocalBroadcastManager.getInstance(this).registerReceiver(smsReceiver, new IntentFilter(SMSBroadcastSent.SENT_SMS_STATUS));
     }
+
+    private void onSMSReceived()
+    {
+        smsReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(CONVERSATION_ACTIVITY, "received sms");
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(smsReceiver, new IntentFilter(conversationID));
+    }
+
 
     private void onDelayedMessageBroadcast()
     {
@@ -1167,7 +1183,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         conversation.setUnreadMessages(0);
         this.conversation = conversation;
         setConversationName(conversation.getConversationName());
-        setConversationType(conversation.getConversationType());
+        setConversationType(ConversationType.values()[conversation.getConversationType()]);
     }
 
     private void setConversationName(String conversationName)
@@ -1286,7 +1302,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 }
 
                 @Override
-                public void onFileDownloadFinished(String messageID, File file) {
+                public void onFileDownloadFinished(long messageID, File file) {
 
                 }
 
@@ -1474,7 +1490,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         message.setSendingTime(System.currentTimeMillis());
         message.setMessageStatus(MessageStatus.WAITING.ordinal());
         //todo
-        message.setMessageID(System.currentTimeMillis() + "");
+        message.setMessageID(StandardTime.getInstance().getStandardTime());
         message.setConversationID(conversationID);
         message.setMessageAction(MessageAction.new_message.ordinal());
         MessageType type = MessageType.values()[messageType.ordinal()];
@@ -2343,7 +2359,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         Toast.makeText(ConversationActivity2.this, "phone number is missing", Toast.LENGTH_SHORT).show();
                     else {
                         recipients.get(0).setPhoneNumber(phoneNumber);
-                        userModel.updateUser(recipients.get(0));
+                        updateUser(recipients.get(0));
+//                        userModel.updateUser(recipients.get(0));
                     }
                 }
             });
@@ -2432,7 +2449,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             intent.putExtra("recipients", (ArrayList<User>) recipients);
             newRecipients.launch(intent);
         } else if (item.getItemId() == R.id.leaveGroup) {
-            onInteractionMessage(null, MessageAction.leave_group);
+            onInteractionMessage(-1, MessageAction.leave_group);
             Log.d(CONVERSATION_ACTIVITY, "leave group");
         }
         else if (item.getItemId() == R.id.edit)
@@ -2606,6 +2623,27 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     showMessageOnScreen(message, MessageAction.activity_start.ordinal());
                 }
                 mld.removeObservers(ConversationActivity2.this);
+                model.getNewMessage(currentUserID, conversationID).observe(ConversationActivity2.this, new Observer<Message>() {
+                    @Override
+                    public void onChanged(Message message) {
+                        if (message != null) {
+                            if (!chatAdapter.isMessageExists(message.getMessageID())) {
+                                Log.d(CONVERSATION_ACTIVITY, "loaded new message");
+                                initNewConversation(message);
+                                showMessageOnScreen(message, MessageAction.new_message.ordinal());
+                            }
+                            else
+                            {
+                                Log.e(CONVERSATION_ACTIVITY, "getNewMessage - msg already exist");
+                            }
+
+                        }
+                        else
+                        {
+                            Log.e(CONVERSATION_ACTIVITY, "loading new message, msg is null");
+                        }
+                    }
+                });
             }
         });
         LiveData<Conversation> cld = model.getConversation(conversationID);
@@ -2624,27 +2662,28 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 cld.removeObservers(ConversationActivity2.this);
             }
         });
-        model.getNewMessage(currentUserID, conversationID).observe(this, new Observer<Message>() {
-            @Override
-            public void onChanged(Message message) {
-                if (message != null) {
-                    if (!chatAdapter.isMessageExists(message.getMessageID())) {
-                        Log.d(CONVERSATION_ACTIVITY, "loaded new message");
-                        initNewConversation(message);
-                        showMessageOnScreen(message, MessageAction.new_message.ordinal());
-                    }
-                    else
-                    {
-                        Log.e(CONVERSATION_ACTIVITY, "getNewMessage - msg already exist");
-                    }
-
-                }
-                else
-                {
-                    Log.e(CONVERSATION_ACTIVITY, "loading new message, msg is null");
-                }
-            }
-        });
+//        if (conversationType != ConversationType.sms)
+//            model.getNewMessage(currentUserID, conversationID).observe(this, new Observer<Message>() {
+//                @Override
+//                public void onChanged(Message message) {
+//                    if (message != null) {
+//                        if (!chatAdapter.isMessageExists(message.getMessageID())) {
+//                            Log.d(CONVERSATION_ACTIVITY, "loaded new message");
+//                            initNewConversation(message);
+//                            showMessageOnScreen(message, MessageAction.new_message.ordinal());
+//                        }
+//                        else
+//                        {
+//                            Log.e(CONVERSATION_ACTIVITY, "getNewMessage - msg already exist");
+//                        }
+//
+//                    }
+//                    else
+//                    {
+//                        Log.e(CONVERSATION_ACTIVITY, "loading new message, msg is null");
+//                    }
+//                }
+//            });
         LiveData<User>currentUser = userModel.loadUserByID(currentUserID);
         currentUser.observe(this, new Observer<User>() {
             @Override
@@ -2717,7 +2756,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             conversation.setUnreadMessages(0);
                             conversation.setBlocked(false);
                             conversation.setMuted(false);
-                            conversation.setConversationType(type);
+                            conversation.setConversationType(type.ordinal());
                             new Handler(getMainLooper()).post(new Runnable() {
                                 @Override
                                 public void run() {
@@ -2765,7 +2804,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 if (message1 != message)
                 {
                     Log.d(CONVERSATION_ACTIVITY, "msg update is needed");
-                    if (chatAdapter.getMessage(chatAdapter.getItemCount()-1).getMessageID().equals(message.getMessageID()))
+                    if (chatAdapter.getMessage(chatAdapter.getItemCount()-1).getMessageID()==message.getMessageID())
                         updateConversation(message);
                     model.updateMessage(message);
                     chatAdapter.updateMessage(message);
@@ -2798,10 +2837,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
     }
 
-    private void deleteMessage(@NonNull String messageID) {
+    private void deleteMessage(long messageID) {
         Log.d(CONVERSATION_ACTIVITY, "delete message id: " + messageID);
         Message message = chatAdapter.getMessage(chatAdapter.getItemCount()-1);
-        if (message.getMessageID().equals(messageID))
+        if (message.getMessageID() == messageID)
         {
             message.setContent("deleted");
             updateConversation(message);
@@ -2827,7 +2866,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         messageSender.sendMessage(conversationMessage, getRecipientsTokens());
     }
 
-    private void onInteractionMessage(String messageID, MessageAction action) {
+    private void onInteractionMessage(long messageID, MessageAction action) {
         if (conversationType != ConversationType.sms) {
             Message message = new Message();
             message.setConversationID(conversationID);
@@ -2877,7 +2916,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     private void onDeselectMessage()
     {
-        int msgIndex = chatAdapter.findMessageLocation(null, 0, -1, Long.parseLong(selectedMessage.getMessageID()));
+        int msgIndex = chatAdapter.findMessageLocation(null, 0, -1, selectedMessage.getMessageID());
         if (msgIndex != -1) {
             RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(msgIndex);
             if (holder != null) {
@@ -2963,5 +3002,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         quoteText.setText("");
         quoteSender.setText("");
         quoteLayout.setVisibility(View.GONE);
+    }
+
+    private void updateUser(User user)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "update user");
+        userModel.updateUser(user);
     }
 }

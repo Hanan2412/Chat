@@ -72,12 +72,12 @@ public class AppViewModel extends AndroidViewModel {
         return repository.getUserByID(userUID);
     }
 
-    public void updateMessageStatus(String messageID,int status)
+    public void updateMessageStatus(long messageID,int status)
     {
         repository.updateMessageStatus(messageID,status);
     }
 
-    public void updateMessage(String id, String content,String time)
+    public void updateMessage(long id, String content,String time)
     {
         repository.updateMessage(id,content,time);
     }
@@ -87,7 +87,7 @@ public class AppViewModel extends AndroidViewModel {
         repository.updateMessage(message);
     }
 
-    public void deleteMessage(String messageID)
+    public void deleteMessage(long messageID)
     {
         repository.deleteMessage(messageID);
     }

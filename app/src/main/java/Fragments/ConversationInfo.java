@@ -24,8 +24,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import java.util.ArrayList;
 import java.util.List;
 
+import Adapters.ListAdapter2;
 import NormalObjects.Conversation;
+import NormalObjects.onDismissFragment;
 
+@SuppressWarnings("Convert2Lambda")
 public class ConversationInfo extends BottomSheetDialogFragment {
 
     public static ConversationInfo getInstance(){
@@ -33,6 +36,13 @@ public class ConversationInfo extends BottomSheetDialogFragment {
         ConversationInfo fragment = new ConversationInfo();
         fragment.setArguments(args);
         return fragment;
+    }
+
+    private onDismissFragment listener;
+
+    public void setDismissListener(onDismissFragment listener)
+    {
+        this.listener = listener;
     }
 
     @Nullable
@@ -43,16 +53,22 @@ public class ConversationInfo extends BottomSheetDialogFragment {
         if(bundle!=null) {
             Conversation conversation = (Conversation) bundle.getSerializable("conversation");
             List<String>conversations = new ArrayList<>();
-            conversations.add("conversationID: " + conversation.getConversationID());
-            conversations.add("conversation name: " + conversation.getConversationName());
-            conversations.add("conversation last message id: " + conversation.getLastMessageID());
-            conversations.add("conversation last message: " + conversation.getLastMessage());
-            conversations.add("conversation last message time: " + conversation.getLastMessageTime());
-            conversations.add("conversation recipient name: " + conversation.getRecipientName());
-            conversations.add("conversation sender name: " + conversation.getSenderName());
+            conversations.add(conversation.getConversationID());
+            conversations.add( conversation.getConversationName());
+            conversations.add(conversation.getLastMessage());
+            conversations.add(conversation.getLastMessageTimeParse());
             ListView listView = linearLayout.findViewById(android.R.id.list);
-            ArrayAdapter<String>adapter = new ArrayAdapter<>(requireContext(),R.layout.text_cell,R.id.infoText,conversations);
-            listView.setAdapter(adapter);
+            ListAdapter2 listAdapter2 = new ListAdapter2();
+            List<String>titles = new ArrayList<>();
+            titles.add("Conversation ID");
+            titles.add("Name");
+            titles.add("Last Message");
+            titles.add("Last Message Time");
+            listAdapter2.setTitles(titles);
+            listAdapter2.setItems(conversations);
+            listAdapter2.setTextColor(getResources().getColor(android.R.color.white, requireActivity().getTheme()), getResources().getColor(R.color.black, requireActivity().getTheme()));
+//            ArrayAdapter<String>adapter = new ArrayAdapter<>(requireContext(),R.layout.text_cell,R.id.infoText,conversations);
+            listView.setAdapter(listAdapter2);
         }
         return linearLayout;
     }
@@ -99,5 +115,12 @@ public class ConversationInfo extends BottomSheetDialogFragment {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         requireActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         return displayMetrics.heightPixels;
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
+        if (listener!=null)
+            listener.onDismiss();
     }
 }

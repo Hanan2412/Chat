@@ -14,16 +14,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -35,7 +38,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
-import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -44,7 +46,6 @@ import com.example.woofmeow.ConversationActivity2;
 import com.example.woofmeow.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -61,31 +62,28 @@ import NormalObjects.ConversationTouch;
 
 import NormalObjects.TouchListener;
 import NormalObjects.User;
+import NormalObjects.onDismissFragment;
 import Retrofit.Server;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.example.woofmeow.MainActivity.OFFLINE_S;
-import static com.example.woofmeow.MainActivity.ONLINE_S;
-import static com.example.woofmeow.MainActivity.STANDBY_S;
 
-
-@SuppressWarnings("Convert2Lambda")
+@SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef"})
 public class TabFragment extends Fragment {
 
     private static final String tabNumber = "tabNumber";
     private String currentUser;
     private User user;
-    private String currentStatus = ONLINE_S;
-    private boolean openingActivity = false;
     private ConversationsAdapter2 conversationsAdapter2;
-    private boolean selected = false;
     private RecyclerView recyclerView;
     private final String FCM_ERROR = "fcm error";
     private LinearLayout searchLayout;
     private UserVM userModel;
     private ConversationVM conversationVM;
-    private final String pin = "pin";
-    private SharedPreferences preferences;
+    private final String TAB_FRAGMENT = "TAB_FRAGMENT";
+    private List<Conversation>selectedConversations;
+    private final int online = 0, standby = 1, offline = 2;
+    private int currentStatus = online;
+    private EditText searchQuery;
 
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
@@ -106,13 +104,6 @@ public class TabFragment extends Fragment {
          * @param user the user that is updated
          */
         void onUserUpdate(User user);
-
-        /**
-         * loads user from memory
-         *
-         * @param user the user to load from memory
-         */
-        void onLoadUserFromMemory(User user);
 
         /**
          * called when conversation is opened
@@ -146,19 +137,30 @@ public class TabFragment extends Fragment {
         currentUser = getArguments().getString("currentUser");
         setHasOptionsMenu(true);
         Tabs tab = Tabs.values()[getArguments().getInt(tabNumber)];
+        if ( selectedConversations == null)
+            selectedConversations = new ArrayList<>();
+        initGeneral();
         switch (tab) {
             case chat: {
                 conversationsAdapter2 = new ConversationsAdapter2();
-                init();
+                initChatTab();
                 view = inflater.inflate(R.layout.conversations_layout2, container, false);
                 searchLayout = view.findViewById(R.id.searchLayout);
+                searchQuery = view.findViewById(R.id.searchText);
                 Button searchBtn = view.findViewById(R.id.searchBtn);
-                EditText searchQuery = view.findViewById(R.id.searchText);
+                ImageButton clearText = view.findViewById(R.id.clear_text);
+                clearText.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        searchQuery.setText("");
+                        conversationsAdapter2.searchForConversations("");
+                    }
+                });
                 searchBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         String search = searchQuery.getText().toString();
-                        conversationsAdapter2.Search(search);
+                        conversationsAdapter2.searchForConversations(search);
                     }
                 });
                 recyclerView = view.findViewById(R.id.recycle_view);
@@ -175,29 +177,35 @@ public class TabFragment extends Fragment {
                     public void onSwipe(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                         if (direction == ItemTouchHelper.LEFT) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                            builder.setMessage("Are you sure you would like to delete the selected conversations? this action can't be undone")
-                                    .setTitle("Confirm Action")
+                            builder.setMessage(getResources().getString(R.string.delete_conversation_confirm_msg))
+                                    .setTitle(getResources().getString(R.string.confirm))
                                     .setCancelable(true)
                                     .setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_baseline_delete_24, requireActivity().getTheme()))
-                                    .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+                                    .setPositiveButton(getResources().getString(R.string.delete), new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             Conversation conversation = conversationsAdapter2.getConversation(viewHolder.getAdapterPosition());
                                             deleteConversation(conversation.getConversationID());
-                                            Toast.makeText(requireContext(), "Selected conversations were deleted", Toast.LENGTH_SHORT).show();
+                                            displayMessageToast(getResources().getString(R.string.select_convirsation_delete));
                                         }
-                                    }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                    }).setNegativeButton(getResources().getString(R.string.cancel), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     conversationsAdapter2.notifyItemChanged(viewHolder.getAdapterPosition());
-                                    Toast.makeText(requireContext(), "Nothing will be deleted", Toast.LENGTH_SHORT).show();
+                                    displayMessageToast(getResources().getString(R.string.nothing_delete));
                                 }
-                            }).create().show();
+                            }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                        @Override
+                                        public void onDismiss(DialogInterface dialogInterface) {
+                                            conversationsAdapter2.notifyItemChanged(viewHolder.getAdapterPosition());
+                                            displayMessageToast(getResources().getString(R.string.nothing_delete));
+                                        }
+                                    }).create().show();
 
                         }
                         //swiping right will promote to mute the conversation
                         else if (direction == ItemTouchHelper.RIGHT) {
-                            muteConversation(conversationsAdapter2.getConversation(viewHolder.getAdapterPosition()).getConversationID());
+                            muteConversation(conversationsAdapter2.getConversation(viewHolder.getAdapterPosition()));
                         }
                     }
 
@@ -209,43 +217,49 @@ public class TabFragment extends Fragment {
                 touch.setConversations(conversationsAdapter2);
                 ItemTouchHelper itemTouchHelper = new ItemTouchHelper(touch);
                 itemTouchHelper.attachToRecyclerView(recyclerView);
+                recyclerView.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View view, MotionEvent motionEvent) {
+                        if (motionEvent.getAction() == MotionEvent.ACTION_UP)
+                        {
+                            Log.d(TAB_FRAGMENT, "click on recyclerview");
+                            if (!selectedConversations.isEmpty())
+                                unselectConversations();
+                        }
+                        return false;
+                    }
+                });
                 conversationsAdapter2.setLongPressListener(new ConversationsAdapter2.onLongPress() {
                     @Override
                     public void onConversationLongPress(Conversation conversation) {
-                        selected = true;
+                        int x = selectedConversations.size();
+                        selectedConversations.removeIf(selectedConversation -> selectedConversation.getConversationID().equals(conversation.getConversationID()));
+                        int y = selectedConversations.size();
+                        if (y >= x)
+                            selectedConversations.add(conversation);
                         requireActivity().invalidateOptionsMenu();
                     }
                 });
-
                 conversationsAdapter2.setListener(new ConversationsAdapter2.onPressed() {
-
                     @Override
                     public void onClicked(Conversation conversation) {
-                        if (selected) {
-                            unSelectAll();
-                            selected = false;
-                        } else {
-                            Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity2.class);
-                            startConversationIntent.putExtra("conversationID", conversation.getConversationID());
-                            SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
-                            String title = sharedPreferences.getString("title", "noTitle");
-                            String link = sharedPreferences.getString("link", "noLink");
-                            if (!link.equals("noLink")) {
-                                startConversationIntent.putExtra("title", title);
-                                startConversationIntent.putExtra("link", link);
-                                SharedPreferences.Editor editor = sharedPreferences.edit();
-                                editor.remove("title");
-                                editor.remove("link");
-                                editor.apply();
-                            }
-                            callback.onOpenedConversation(conversation.getConversationID());
-                            requireActivity().startActivity(startConversationIntent);
+                        unselectConversations();
+                        Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity2.class);
+                        startConversationIntent.putExtra("conversationID", conversation.getConversationID());
+                        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
+                        String title = sharedPreferences.getString("title", "noTitle");
+                        String link = sharedPreferences.getString("link", "noLink");
+                        if (!link.equals("noLink")) {
+                            startConversationIntent.putExtra("title", title);
+                            startConversationIntent.putExtra("link", link);
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.remove("title");
+                            editor.remove("link");
+                            editor.apply();
                         }
-                    }
+                        callback.onOpenedConversation(conversation.getConversationID());
+                        requireActivity().startActivity(startConversationIntent);
 
-                    @Override
-                    public void onImageDownloaded(Conversation conversation, boolean image) {
-                        UpdateConversationsInDataBase(conversation, image);
                     }
                 });
                 break;
@@ -256,31 +270,85 @@ public class TabFragment extends Fragment {
         return view;
     }
 
+    private void displayMessageToast(String msg)
+    {
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+
+    private void unselectConversations()
+    {
+        for (int i = 0; i < selectedConversations.size(); i++) {
+            Conversation conversation = selectedConversations.get(i);
+            int selectedConversationIndex = conversationsAdapter2.findCorrectConversationIndex(conversation.getConversationID());
+            if (recyclerView != null) {
+                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(selectedConversationIndex);
+                if (holder != null) {
+                    i--;
+                    holder.itemView.performLongClick();
+                }
+            }
+        }
+        selectedConversations.clear();
+        requireActivity().invalidateOptionsMenu();
+    }
+
+    private void pinConversations()
+    {
+        for (Conversation conversation: selectedConversations)
+        {
+            conversationsAdapter2.pinConversation(conversation, true);
+            conversation.setPinned(true);
+            updateConversation(conversation);
+        }
+        restoreBaseMenu();
+    }
+
+    private void unPinConversation()
+    {
+        for (Conversation conversation: selectedConversations)
+        {
+            conversationsAdapter2.pinConversation(conversation, false);
+            updateConversation(conversation);
+        }
+       restoreBaseMenu();
+    }
+
+    private void restoreBaseMenu()
+    {
+        unselectConversations();
+        requireActivity().invalidateOptionsMenu();
+    }
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-        if (item.getItemId() == R.id.pinConversation)
-            pinConversation();
-        else if (item.getItemId() == R.id.unpin)
+        if (item.getItemId() == R.id.pinConversation) {
+            pinConversations();
+        }
+        else if (item.getItemId() == R.id.unpin) {
             unPinConversation();
+        }
         else if (item.getItemId() == R.id.info)
         {
-            if (conversationsAdapter2.getSelectedConversations().size() == 1) {
-                ConversationInfo conversationInfo = ConversationInfo.getInstance();
-                Bundle backDropBundle = new Bundle();
-                backDropBundle.putSerializable("conversation", conversationsAdapter2.getSelectedConversations().get(0));
-                conversationInfo.setArguments(backDropBundle);
-                conversationInfo.show(requireActivity().getSupportFragmentManager(), "CONVERSATION_INFO");
-            }
-            else
-                Toast.makeText(requireContext(), "can't show info of more than 1 selected conversation", Toast.LENGTH_SHORT).show();
-            unSelectAll();
+            ConversationInfo conversationInfo = ConversationInfo.getInstance();
+            Bundle backDropBundle = new Bundle();
+            backDropBundle.putSerializable("conversation", selectedConversations.get(0));
+            conversationInfo.setArguments(backDropBundle);
+            conversationInfo.setDismissListener(new onDismissFragment() {
+                @Override
+                public void onDismiss() {
+                    unselectConversations();
+                    requireActivity().invalidateOptionsMenu();
+                }
+            });
+            conversationInfo.show(requireActivity().getSupportFragmentManager(), "CONVERSATION_INFO");
         }
         else if (item.getItemId() == R.id.callBtn) {
-            if (conversationsAdapter2.getSelectedConversations().size() == 1)
-                callPhone();
-        } else if (item.getItemId() == R.id.block)
+            callPhone();
+        } else if (item.getItemId() == R.id.block) {
             blockConversation();
+            unselectConversations();
+        }
         else if (item.getItemId() == R.id.searchConversation) {
             Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
             Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
@@ -288,6 +356,8 @@ public class TabFragment extends Fragment {
                 searchLayout.setVisibility(View.VISIBLE);
                 searchLayout.startAnimation(in);
                 recyclerView.startAnimation(in);
+                if (searchQuery!=null)
+                    searchQuery.setText("");
 
             } else {
                 new Handler().postDelayed(new Runnable() {
@@ -301,219 +371,125 @@ public class TabFragment extends Fragment {
                 loadConversations();
             }
         } else if (item.getItemId() == R.id.status) {
-            switch (currentStatus) {
-                case ONLINE_S:
-                    item.setIcon(R.drawable.circle_red);
-                    currentStatus = OFFLINE_S;
-                    changeStatus(OFFLINE_S);
-                    break;
-                case OFFLINE_S:
-                    item.setIcon(R.drawable.circle_yellow);
-                    currentStatus = STANDBY_S;
-                    changeStatus(STANDBY_S);
-                    break;
-                case STANDBY_S:
-                    item.setIcon(R.drawable.circle_green);
-                    currentStatus = ONLINE_S;
-                    changeStatus(ONLINE_S);
-                    break;
-            }
+            user.setStatus((user.getStatus() + 1)%3);
+            updateUser(user);
+        }else if (item.getItemId() == R.id.addPhoneNumber)
+        {
+            SingleFieldFragment phoneFragment = new SingleFieldFragment();
+            phoneFragment.setHint(getResources().getString(R.string.phone_number));
+            phoneFragment.setInputType(InputType.TYPE_CLASS_PHONE);
+            phoneFragment.setListener(new SingleFieldFragment.onText() {
+                @Override
+                public void onTextChange(String name) {
+                    selectedConversations.get(0).setRecipientPhoneNumber(name);
+                    updateConversation(selectedConversations.get(0));
+                }
+            });
+            phoneFragment.setOnDismissListener(new SingleFieldFragment.onDismiss() {
+                @Override
+                public void onDismissFragment() {
+                    unselectConversations();
+                }
+            });
+            phoneFragment.show(requireActivity().getSupportFragmentManager(),"PhoneFragment");
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void changeStatus(String currentStatus) {
-//        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("Status", MODE_PRIVATE);
-//        SharedPreferences.Editor editor = sharedPreferences.edit();
-//        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
-//        boolean status = preferences.getBoolean("status", true);//settings preference - allow contacts to see your online status
-//        if (user != null) {
-//            if (status) {
-//                user.setStatus(currentStatus);
-//                editor.putString("status", currentStatus);
-//            } else {
-//                user.setStatus(OFFLINE_S);
-//                editor.putString("status", OFFLINE_S);
-//            }
-//            userModel.updateUser(user);
-//        }
-//        editor.apply();
     }
 
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
-        if (conversationsAdapter2 != null) {
-            if (conversationsAdapter2.getSelectedConversations().isEmpty()) {
-                menu.setGroupVisible(R.id.active, false);
-                menu.setGroupVisible(R.id.standBy, true);
-            } else {
-                menu.setGroupVisible(R.id.active, true);
-                SharedPreferences sharedPreferences = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-                if (sharedPreferences.contains(pin)) {
-                    String conversationID = sharedPreferences.getString(pin, "");
-                    menu.findItem(R.id.unpin).setVisible(conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-                    menu.findItem(R.id.pinConversation).setVisible(!conversationsAdapter2.getSelectedConversations().get(0).getConversationID().equals(conversationID));
-                } else menu.findItem(R.id.unpin).setVisible(false);
-                menu.setGroupVisible(R.id.standBy, false);
+        menu.setGroupVisible(R.id.normal, selectedConversations.isEmpty());
+        menu.setGroupVisible(R.id.extraOptions, !selectedConversations.isEmpty());
+        if (user!=null)
+        {
+            onChangeStatus(menu.findItem(R.id.status), user.getStatus());
+        }
+        if (selectedConversations.size()>1)
+        {
+            menu.setGroupVisible(R.id.pin, false);
+            menu.setGroupVisible(R.id.singleConversationOptions, false);
+        }
+        else if (selectedConversations.size() == 1)
+        {
+
+            menu.setGroupVisible(R.id.pin, true);
+            if(conversationsAdapter2.getConversation(0).isPinned() && !selectedConversations.get(0).isPinned())
+            {
+                menu.findItem(R.id.pinConversation).setVisible(false);
+                menu.findItem(R.id.unpin).setVisible(false);
             }
-        }
-    }
-
-    private void callPhone() {
-        //needs to check for recipient phone number, if it doesn't exist - display appropriate message
-        if (conversationsAdapter2.getSelectedConversations().size() == 1) {
-            String phoneNumber = conversationsAdapter2.getSelectedConversations().get(0).getRecipientPhoneNumber();
-            if (phoneNumber != null) {
-                Intent callRecipientIntent = new Intent(Intent.ACTION_DIAL);
-                callRecipientIntent.setData(Uri.parse("tel:" + phoneNumber));
-                if (callRecipientIntent.resolveActivity(requireActivity().getPackageManager()) != null)
-                    startActivity(callRecipientIntent);
-            } else
-                Toast.makeText(requireContext(), "this contact has no phone number", Toast.LENGTH_SHORT).show();
-        } else
-            Toast.makeText(requireContext(), "can only call to one person at a time", Toast.LENGTH_SHORT).show();
-        requireActivity().invalidateOptionsMenu();
-        unSelectAll();
-    }
-
-    private void unSelectAll() {
-        List<Conversation> selectedConversations = conversationsAdapter2.getSelectedConversations();
-        for (int i = 0; i < selectedConversations.size(); i++) {
-            Conversation conversation = selectedConversations.get(i);
-            int selectedConversationIndex = conversationsAdapter2.findCorrectConversationIndex(conversation.getConversationID());
-            if (recyclerView != null) {
-                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(selectedConversationIndex);
-                if (holder != null) {
-                    i--;
-                    holder.itemView.performLongClick();
-                }
+            else
+            {
+                menu.findItem(R.id.pinConversation).setVisible(!selectedConversations.get(0).isPinned());
+                menu.findItem(R.id.unpin).setVisible(selectedConversations.get(0).isPinned());
             }
+            menu.setGroupVisible(R.id.singleConversationOptions, true);
+            if (selectedConversations.get(0).getRecipientPhoneNumber() == null)
+                menu.findItem(R.id.callBtn).setVisible(false);
+            if (selectedConversations.get(0).isBlocked())
+                menu.findItem(R.id.block).setTitle("unblock");
+            if (selectedConversations.get(0).getRecipientPhoneNumber() == null)
+                menu.setGroupVisible(R.id.singleConversationExtraOptions, true);
         }
     }
 
-    private void blockConversation() {
-        if (!conversationsAdapter2.getSelectedConversations().isEmpty()) {
-            String conversationID = conversationsAdapter2.getSelectedConversations().get(0).getConversationID();
-            LiveData<Boolean> blockedConversation = conversationVM.isConversationBlocked(conversationID);
-            blockedConversation.observe(requireActivity(), new Observer<Boolean>() {
-                @Override
-                public void onChanged(Boolean aBoolean) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                    if (aBoolean) {
-                        builder.setTitle("un block conversation")
-                                .setMessage("unblock this conversation to start receiving messages from the conversation")
-                                .setPositiveButton("unblock", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        conversationVM.unBlockConversation(conversationID);
-                                        onConversationStatusUpdate(conversationID);
-                                        Toast.makeText(requireContext(), "conversation was unblocked", Toast.LENGTH_SHORT).show();
-                                    }
-                                }).setCancelable(true)
-                                .create()
-                                .show();
-                    } else {
-                        builder.setTitle("block conversation")
-                                .setMessage("block this conversation to stop receiving messages from this conversation")
-                                .setPositiveButton("block", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        conversationVM.blockConversation(conversationID);
-                                        onConversationStatusUpdate(conversationID);
-                                        Toast.makeText(requireContext(), "conversation was blocked", Toast.LENGTH_SHORT).show();
-                                    }
-                                }).setCancelable(true)
-                                .create()
-                                .show();
-
-                    }
-                    blockedConversation.removeObservers(requireActivity());
-                }
-            });
-            requireActivity().invalidateOptionsMenu();
-            unSelectAll();
-
-        }
-    }
-
-    private void pinConversation() {
-        if (conversationsAdapter2.getSelectedConversations().size() == 1) {
-            SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-            String oldPin = sp.getString(pin, "");
-            SharedPreferences.Editor editor = sp.edit();
-            editor.putString(pin, conversationsAdapter2.getSelectedConversations().get(0).getConversationID());
-            editor.apply();
-            conversationsAdapter2.pinConversation(conversationsAdapter2.getSelectedConversations().get(0), oldPin);
-
-        }else if (conversationsAdapter2.getSelectedConversations().size() == 0){
-            SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-            String oldPin = sp.getString(pin, "");
-            if (!oldPin.equals(""))
-                conversationsAdapter2.pinConversation(conversationsAdapter2.findConversation(oldPin),oldPin);
-        }else {
-            Toast.makeText(requireContext(), "can't pin more than 1 conversation", Toast.LENGTH_SHORT).show();
-        }
-
-        requireActivity().invalidateOptionsMenu();
-        unSelectAll();
-    }
-
-    private void unPinConversation() {
-        SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.remove("pin");
-        editor.apply();
-        conversationsAdapter2.unPinConversation();
-        requireActivity().invalidateOptionsMenu();
-        unSelectAll();
-    }
-
-    private void DataBaseSetUp() {
+    private void dataBaseSetUp() {
         userModel = new ViewModelProvider(this).get(UserVM.class);
         conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
     }
 
-    //if the user exists in the database - load it, if not - download it from firebase database
-
-    /**
-     * loads the current logged in user from the database.
-     * if they doesn't exist, the function will download them from the server
-     */
-    private void onUserLoad() {
+    private void onUserUpdate()
+    {
         userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
             @Override
             public void onChanged(User user) {
-                TabFragment.this.user = user;
-                if (user != null) {
-                    callback.onLoadUserFromMemory(user);
-                } else {
-                    userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
-                        @Override
-                        public void downloadedUser(User user) {
-                            if (user.getUserUID().equals(currentUser)) {
-                                userModel.saveUser(user);
-                                callback.onUserUpdate(user);
-                                TabFragment.this.user = user;
-                            }
-                        }
-                    });
-                    userModel.downloadUser(currentUser);
+                Log.d(TAB_FRAGMENT, "loaded current user: " + user);
+                if (user != null)
+                {
+                    setCurrentUser(user);
+                }
+                else
+                {
+                    Log.d(TAB_FRAGMENT, "loaded null user");
                 }
             }
         });
     }
 
-
-    private void UpdateConversationsInDataBase(Conversation conversation, boolean image) {
-        conversationVM.updateConversation(conversation);
-        //dbActive.updateConversation(conversation);
-        if (!image)
-            conversationsAdapter2.updateConversation(conversation);
-
+    private void onDownloadUser()
+    {
+        userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
+            @Override
+            public void downloadedUser(User user) {
+                if (user != null)
+                {
+                    setCurrentUser(user);
+                    updateUser(user);
+                }
+            }
+        });
+        userModel.downloadUser(currentUser);
     }
 
-    private void TokenUpdate() {
+    private void setCurrentUser(User user)
+    {
+        if (this.user!=null)
+        {
+            if (user.getLastUpdateTime() > this.user.getLastUpdateTime()) {
+                Log.d(TAB_FRAGMENT, "setting updated user");
+                this.user = user;
+            } else {
+                Log.e(TAB_FRAGMENT, "loaded older version of user, ignoring it");
+            }
+        }
+        else {
+            this.user = user;
+        }
+        callback.onUserUpdate(user);
+        requireActivity().invalidateOptionsMenu();
+    }
+    private void tokenUpdate() {
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
             public void onComplete(@NonNull Task<String> task) {
@@ -535,42 +511,19 @@ public class TabFragment extends Fragment {
         });
     }
 
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (!openingActivity)
-            changeStatus(OFFLINE_S);
-        openingActivity = false;
-
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        changeStatus(ONLINE_S);
-//        onUserLoad();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        System.out.println("on destroy fragment");
-    }
-
     //calls all the functions needed to start the fragment
-    private void init() {
-        DataBaseSetUp();
+    private void initChatTab() {
         NullifyData();
-        onUserLoad();
         loadConversations();
-//        loadNewOrUpdatedConversation();
-        TokenUpdate();
+        onNewOrUpdatedConversation();
+    }
+
+    private void initGeneral()
+    {
+        dataBaseSetUp();
+        onUserUpdate();
+        onDownloadUser();
+        tokenUpdate();
     }
 
     private void NullifyData() {
@@ -583,96 +536,96 @@ public class TabFragment extends Fragment {
 
     //called when the fragment is lunched
     private void loadConversations() {
-        preferences = PreferenceManager.getDefaultSharedPreferences(requireContext());
         LiveData<List<Conversation>> conversationLiveData = conversationVM.getConversations();
         conversationLiveData.observe(requireActivity(), new Observer<List<Conversation>>() {
             @Override
             public void onChanged(List<Conversation> conversations) {
-                SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
-                for (Conversation conversation : conversations) {
-                    if (conversation.getConversationID().equals(sharedPreferences.getString(pin, ""))) {
-                        conversations.remove(conversation);
-                        conversations.add(0, conversation);
-                        break;
-                    }
-                }
-                conversationsAdapter2.setConversations((ArrayList<Conversation>) conversations);
+                conversationsAdapter2.setConversations(conversations);
                 conversationLiveData.removeObserver(this);
             }
         });
     }
 
-    private void loadNewOrUpdatedConversation() {
+    private void onNewOrUpdatedConversation() {
         conversationVM.getNewOrUpdatedConversation().observe(requireActivity(), new Observer<Conversation>() {
             @Override
             public void onChanged(Conversation conversation) {
-                if (conversation != null) {
-                    SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("conversations", MODE_PRIVATE);
-                    Conversation existingConversation = conversationsAdapter2.findConversation(conversation.getConversationID());
-                    if (existingConversation != null) {
-                        conversationsAdapter2.updateConversation(conversation);
-                        if (sharedPreferences.contains(pin))
-                            if (conversationsAdapter2.getItemCount() > 1)
-                                pinConversation();
-                    } else {
-                        if (sharedPreferences.contains(pin))
-                            if (conversationsAdapter2.getItemCount() > 1)
-                                conversationsAdapter2.setConversation(conversation, 1);
-                        else
-                            conversationsAdapter2.setConversation(conversation, 0);
-                    }
+                if (conversation!=null)
+                {
+                    conversationsAdapter2.updateConversation(conversation);
                 }
             }
         });
     }
 
-    private void muteConversation(String conversationID) {
-
-        LiveData<Boolean> mutedConversation = conversationVM.isConversationMuted(conversationID);
-        mutedConversation.observe(requireActivity(), new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean aBoolean) {
-                String dialog;
-                if (!aBoolean) {
-                    dialog = "Conversation was Muted";
-                    conversationVM.muteConversation(conversationID);
-
-                } else {
-                    dialog = "Conversation was unMuted";
-                    conversationVM.unMuteConversation(conversationID);
-                }
-                onConversationStatusUpdate(conversationID);
-                mutedConversation.removeObservers(requireActivity());
-                Snackbar.make(requireContext(), recyclerView, dialog, Snackbar.LENGTH_SHORT)
-                        .setAction("undo", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                muteConversation(conversationID);
-                            }
-                        }).show();
-                mutedConversation.removeObserver(this);
-            }
-        });
-
+    private void muteConversation(Conversation conversation)
+    {
+        conversation.setMuted(!conversation.isMuted());
+        updateConversation(conversation);
+        conversationsAdapter2.muteConversation(conversation);
     }
 
-    private void onConversationStatusUpdate(String conversationID) {
-        LiveData<Conversation> liveData = conversationVM.loadConversation(conversationID);
-        liveData.observe(requireActivity(), new Observer<Conversation>() {
-            @Override
-            public void onChanged(Conversation conversation) {
-                conversationsAdapter2.updateConversation(conversation);
-                liveData.removeObserver(this);
-            }
-        });
+    private void blockConversation()
+    {
+        for (Conversation conversation: selectedConversations) {
+            conversation.setBlocked(!conversation.isBlocked());
+            updateConversation(conversation);
+            conversationsAdapter2.blockConversation(conversation);
+        }
+    }
+
+    private void callPhone()
+    {
+        Log.d(TAB_FRAGMENT,"callPhone");
+        String phoneNumber = selectedConversations.get(0).getRecipientPhoneNumber();
+        Intent callRecipientIntent = new Intent(Intent.ACTION_DIAL);
+        callRecipientIntent.setData(Uri.parse("tel:" + phoneNumber));
+        unselectConversations();
+        requireActivity().invalidateOptionsMenu();
+        if (callRecipientIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            Log.d(TAB_FRAGMENT, "starting dial");
+            startActivity(callRecipientIntent);
+        }
+        else{
+            Log.e(TAB_FRAGMENT, "can't start dial");
+        }
     }
 
     private void deleteConversation(String conversationID) {
-        conversationsAdapter2.DeleteConversation(conversationID);
+        Log.d(TAB_FRAGMENT, "delete conversation: " + conversationID);
+        conversationsAdapter2.deleteConversation(conversationID);
         conversationVM.deleteConversation(conversationID);
-        SharedPreferences sp = requireContext().getSharedPreferences("conversations", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.remove(pin);
-        editor.apply();
+    }
+
+    private void updateConversation(Conversation conversation)
+    {
+        Log.d(TAB_FRAGMENT, "update conversation: " + conversation.getConversationID());
+        conversationVM.updateConversation(conversation);
+    }
+
+    private void onChangeStatus(MenuItem item, int newStatus)
+    {
+        switch (newStatus) {
+            case online:
+                item.setIcon(R.drawable.circle_green);
+                currentStatus = online;
+                break;
+            case offline:
+                item.setIcon(R.drawable.circle_red);
+                currentStatus = offline;
+                break;
+            case standby:
+                item.setIcon(R.drawable.circle_yellow);
+                currentStatus = standby;
+                break;
+        }
+        Log.d(TAB_FRAGMENT, "changed status: " + currentStatus);
+    }
+
+    public void updateUser(User user)
+    {
+        Log.d(TAB_FRAGMENT, "update user: " + user.getUserUID());
+        user.setLastUpdateTime(System.currentTimeMillis());
+        userModel.updateUser(user);
     }
 }

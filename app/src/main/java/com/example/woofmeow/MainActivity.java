@@ -43,7 +43,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.dropbox.core.DbxRequestConfig;
@@ -102,13 +101,15 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     public static final String OFFLINE_S = "offline";
     private String currentStatus = ONLINE_S;
     private final String MISSED_MESSAGES = "missed messages";
-    private boolean onUserUpdate = false;
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;
     private ExtendedFloatingActionButton smsBtn, chatBtn;
     private final int READ_SMS = 1;
     private UserVM userVM;
     private ActivityResultLauncher<Intent>settings;
+
+    private final String MAIN_ACTIVITY = "MAIN ACTIVITY";
+
     @SuppressWarnings("Convert2Lambda")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,17 +130,15 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
-//        // demo user
+        userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
+        // demo user
 //        user = new User();
 //        user.setUserUID(currentUser);
-//        user.setName("Hope");
-//        user.setLastName("Yentis");
+//        user.setName("Hanan");
+//        user.setLastName("Dorfman");
 //        user.setAbout("A development account");
-//        user.setPhoneNumber("0506968634");
+//        user.setPhoneNumber("0502071248");
 //        user.setTimeCreated("1645524540000");
-
-
-        userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
 //        userVM.saveUser(user);
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
@@ -162,9 +161,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 if (item.getItemId() == R.id.profile) {
-                    Intent intent = new Intent(MainActivity.this, ProfileActivity2.class);
-                    intent.putExtra("user", user);
-                    startActivity(intent);
+                    openProfile();
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else if (item.getItemId() == R.id.disconnect) {
                     FirebaseMessaging.getInstance().deleteToken();
@@ -271,13 +268,11 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         });
         if (getIntent().getBooleanExtra("newUser", false))
             user = (User) getIntent().getSerializableExtra("user");
-        LoadCurrentUserPicture();
+        loadCurrentUserPicture();
         shapeableImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent profileIntent = new Intent(MainActivity.this, ProfileActivity2.class);
-                profileIntent.putExtra("user", user);
-                startActivity(profileIntent);
+                openProfile();
             }
         });
         createNotificationChannel();
@@ -297,6 +292,15 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         //ConnectedToInternet();
         //DropBox();
     }
+
+    private void openProfile()
+    {
+        Log.d(MAIN_ACTIVITY, "openProfile");
+        Intent intent = new Intent(MainActivity.this, ProfileActivity2.class);
+        intent.putExtra("user", user);
+        startActivity(intent);
+    }
+
     private void setUpBySettings()
     {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -474,45 +478,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         return super.onOptionsItemSelected(item);
     }
 
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        MenuItem item = menu.findItem(R.id.status);
-        if (currentStatus != null && onUserUpdate) {
-            switch (currentStatus) {
-                case ONLINE_S:
-                    item.setIcon(R.drawable.circle_green);
-                    currentStatus = OFFLINE_S;
-                    user.setStatus(currentStatus);
-                    userVM.updateUser(user);
-                    break;
-                case OFFLINE_S:
-                    item.setIcon(R.drawable.circle_red);
-                    currentStatus = STANDBY_S;
-                    user.setStatus(currentStatus);
-                    userVM.updateUser(user);
-                    break;
-                case STANDBY_S:
-                    item.setIcon(R.drawable.circle_yellow);
-                    currentStatus = ONLINE_S;
-                    user.setStatus(currentStatus);
-                    userVM.updateUser(user);
-                    break;
-            }
-            onUserUpdate = false;
-        }
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
-    public void onLoadUserFromMemory(User user) {
-        if (user != null) {
-            this.user = user;
-            LoadCurrentUserPicture();
-        }
-    }
-
-    private void LoadCurrentUserPicture() {
+    private void loadCurrentUserPicture() {
         FileManager fileManager = FileManager.getInstance();
         Bitmap profileBitmap = fileManager.readImage(this, FileManager.user_profile_images, currentUser);
         if (profileBitmap == null)
@@ -534,18 +500,18 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
 
     @Override
     public void onUserUpdate(User user) {
-        if (user != null) {
-            if (user.getUserUID().equals(currentUser)) {//us
-                this.user = user;
-//                FirebaseMessageService.myName = user.getName();
-                downloadUserImage(user.getPictureLink());
-                currentStatus = user.getStatus();
-                onUserUpdate = true;
-                invalidateOptionsMenu();
-            }
-
+        if (user.getUserUID().equals(currentUser)) {
+            setCurrentUser(user);
+            downloadUserImage(user.getPictureLink());
+//            invalidateOptionsMenu();
         }
-        else Log.e("ERROR", "mainActivity - onUserUpdate - user is null");
+    }
+
+    private void setCurrentUser(User user)
+    {
+        Log.d(MAIN_ACTIVITY, "set current user: " + user);
+        this.user = user;
+        loadCurrentUserPicture();
     }
 
     private void downloadUserImage(String imagePath)
@@ -574,7 +540,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
             }
 
             @Override
-            public void onFileDownloadFinished(String messageID, File file) {
+            public void onFileDownloadFinished(long messageID, File file) {
 
             }
 
@@ -709,9 +675,9 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private boolean askPermission(MessageType messageType) {
         switch (messageType) {
             case sms:
-                int hasPermission = this.checkSelfPermission(Manifest.permission.RECEIVE_SMS);
+                int hasPermission = this.checkSelfPermission(Manifest.permission.RECEIVE_SMS) | this.checkSelfPermission(Manifest.permission.SEND_SMS) | this.checkSelfPermission(Manifest.permission.WRITE_CONTACTS) | this.checkSelfPermission(Manifest.permission.READ_CONTACTS);
                 if (hasPermission != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS, Manifest.permission.SEND_SMS}, READ_SMS);
+                    requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS, Manifest.permission.SEND_SMS, Manifest.permission.WRITE_CONTACTS, Manifest.permission.READ_CONTACTS}, READ_SMS);
                     return false;
                 } else return true;
             default:
