@@ -75,6 +75,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -109,6 +110,7 @@ import Audio.AudioPlayer3;
 import Consts.MessageStatus;
 import Controller.NotificationsController;
 import Fragments.GifBackdropFragment;
+import Fragments.ImageFragment;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationMessage;
 import NormalObjects.Gif;
@@ -173,8 +175,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private RecyclerView recyclerView;
     private String conversationID;
 
-    private Uri imageUri;
-    private ImageView imageView;
+    private Uri previewImageUri;
+    private ImageView previewImageView;
     private Bitmap imageBitmap;
     private String photoPath;
 
@@ -238,6 +240,9 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private final String CONVERSATION_ACTIVITY = "ConversationActivity";
     private final String AUDIO_PLAYER = "Audio Player";
     private final String AUDIO_RECORDER = "Audio Recorder";
+
+    private MessageType previewMessageType = MessageType.undefined;
+
     private BroadcastReceiver delayedMsgReceiver, interactionMsgReceiver, smsReceiver;
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -260,7 +265,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
         recyclerView = findViewById(R.id.recycle_view);
         imagePreviewLayout = findViewById(R.id.imagePreviewLayout);
-        imageView = findViewById(R.id.imagePreview);
+        previewImageView = findViewById(R.id.imagePreview);
+        ImageButton closePreviewBtn = findViewById(R.id.closePreviewBtn);
 
         quoteLayout = findViewById(R.id.quoteLayout);
         quoteSender = findViewById(R.id.senderName);
@@ -298,26 +304,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         actionBtn = findViewById(R.id.actionBtn);
         textLayout = findViewById(R.id.textLayout);
 
+        recordingTimeLive = findViewById(R.id.recordingTimeLive);
+        sendMessageBtn = findViewById(R.id.sendMessageBtn);
         setRecipients(new ArrayList<>());
         initBackend();
         initConversation();
         initDB();
         // loads map with possible images for action button
-        Map<ButtonType, Integer>buttonImages = new HashMap<>();
-        buttonImages.put(ButtonType.location, R.drawable.ic_baseline_location_on_24);
-        buttonImages.put(ButtonType.attachFile, R.drawable.ic_baseline_attach_file_white);
-        buttonImages.put(ButtonType.camera, R.drawable.ic_baseline_camera_alt_white);
-        buttonImages.put(ButtonType.gallery, R.drawable.ic_baseline_photo_24);
-        buttonImages.put(ButtonType.delay, R.drawable.ic_baseline_access_time_white);
-        buttonImages.put(ButtonType.video, R.drawable.ic_baseline_videocam_white);
-        buttonImages.put(ButtonType.play, R.drawable.ic_baseline_play_circle_outline_white);
-        buttonImages.put(ButtonType.pause,R.drawable.ic_baseline_pause_circle_outline_white);
-        buttonImages.put(ButtonType.cancel, R.drawable.ic_baseline_cancel_24);
-        buttonImages.put(ButtonType.joke, R.drawable.cns);
-        buttonImages.put(ButtonType.poll,R.drawable.ic_baseline_poll_24);
-        buttonImages.put(ButtonType.contact, R.drawable.ic_baseline_contacts_24);
-        actionBtn.setButtonTypeImages(buttonImages);
-        actionBtn.setCurrentButtonType(ButtonType.location);
         actionBtn.setTypeBtnClickListener(new ImageButtonType.onTypeButtonClick() {
             @Override
             public void onPress(ButtonType buttonType) {
@@ -329,7 +322,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 onActionMessageSelected(buttonType);
             }
         });
-        recordingTimeLive = findViewById(R.id.recordingTimeLive);
         audioPlayer3 = new AudioPlayer3();
         voiceSeek.setEnabled(false);
         voiceSeek.setMin(0);
@@ -426,7 +418,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(ConversationActivity2.this, "an error happened during attempt to play file", Toast.LENGTH_SHORT).show();
+                        onShowToastMessage("an error happened during attempt to play file");
                     }
                 });
             }
@@ -498,12 +490,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void onFailed(String msg) {
-                Snackbar.make(ConversationActivity2.this, recyclerView,"an error happened, try recording a message later",5).setAction("more info", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        Toast.makeText(ConversationActivity2.this, msg, Toast.LENGTH_SHORT).show();
-                    }
-                }).show();
+                onShowError(msg);
                 onReset();
             }
 
@@ -517,7 +504,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             });
             }
         });
-//        conversationID = getIntent().getStringExtra("conversationID");
         NotificationsController notificationsController = NotificationsController.getInstance();
         notificationsController.removeNotification(conversationID);
         geocoder = new Geocoder(this);
@@ -556,21 +542,16 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
             @Override
             public void onUploadError(long msgID, String errorMessage) {
-                //displays error message and gives option to resend the message file
-                int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
-                Message message = chatAdapter.getMessage(index);
-                if (index != -1) {
-                    chatAdapter.notifyItemChanged(index);
+                if(getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                    //displays error message and gives option to resend the message file
+                    int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
+                    Message message = chatAdapter.getMessage(index);
+                    if (index != -1) {
+                        chatAdapter.notifyItemChanged(index);
+                    }
+                    onShowError("an error occurred while sending the file");
+                    sendMessage2(message);
                 }
-                AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity2.this);
-                builder.setTitle("Error")
-                        .setMessage("an error occurred while sending the file")
-                        .setIcon(R.drawable.ic_baseline_error_24)
-                        .setCancelable(true)
-                        .setNeutralButton("ok", null)
-                        .create()
-                        .show();
-                sendMessage2(message);
             }
         });
         recyclerView.setHasFixedSize(true);
@@ -592,12 +573,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
         Animation in = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left);
         Animation out = AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right);
-        sendMessageBtn = findViewById(R.id.sendMessageBtn);
-        Map<ButtonType,Integer>sendBtnImages = new HashMap<>();
-        sendBtnImages.put(ButtonType.microphone,R.drawable.ic_baseline_mic_black);
-        sendBtnImages.put(ButtonType.sendMessage,R.drawable.ic_baseline_send_white);
-        sendMessageBtn.setButtonTypeImages(sendBtnImages);
-        sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
+
         sendMessageBtn.setSelected(true);
         sendMessageBtn.setOnFullClickListener(new OnClick() {
             @Override
@@ -619,8 +595,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     if (editMessage != null)
                         onInteractionMessage(editMessage.getMessageID(), MessageAction.edit_message);
                     else
-                        fullMessageProcess(MessageType.textMessage);
-//                        onMessageReady(MessageType.textMessage);
+                    {
+                        if (previewMessageType != MessageType.undefined)
+                            fullMessageProcess(previewMessageType);
+                        else
+                            fullMessageProcess(MessageType.textMessage);
+                    }
                     playSound(R.raw.send_message_sound);
                     onReset();
                 }
@@ -692,12 +672,9 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             messageText.setText(link);
             messagePreview(link);
         }
-
         chatAdapter.setMessages(new ArrayList<>());
         chatAdapter.setCurrentUserUID(currentUserID);
         chatAdapter.setListener(this);
-
-
         scrollToBot.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -755,11 +732,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             @Override
             public void onActivityResult(ActivityResult result) {
                 if (result.getResultCode() == RESULT_OK) {
-                    Drawable drawable = Drawable.createFromPath(photoPath);
-                    if (drawable != null) {
-                        imagePreviewLayout.setVisibility(View.VISIBLE);
-                        imageView.setImageDrawable(drawable);
-                    }
+                    onShowPreview(MessageType.photoMessage, photoPath);
                 }
             }
         });
@@ -770,13 +743,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     Intent resultIntent = result.getData();
                     if (resultIntent != null) {
                         Uri uri = resultIntent.getData();
+                        ContentResolver resolver = ConversationActivity2.this.getApplicationContext().getContentResolver();
+                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         if (uri != null) {
-                            imagePreviewLayout.setVisibility(View.VISIBLE);
-                            imageUri = uri;
-                            imageView.setImageURI(uri);
-                            imageBitmap = getImageBitmap(uri);
-                            imageView.setImageBitmap(imageBitmap);
-                            imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 500, 450, false);
+                            onShowPreview(MessageType.imageMessage, uri.toString());
                         }
                     }
                 }
@@ -810,7 +780,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         attachFile = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
             @Override
             public void onActivityResult(ActivityResult result) {
-                // TODO: 17/01/2022  
+                // TODO: 17/01/2022
+                onShowPreview(MessageType.fileMessage, "");
             }
         });
         sendContact = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -846,20 +817,22 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     if (resultIntent != null) {
                         docUri = resultIntent.getData();
                         if (docUri != null && docUri.getPath() != null) {
-                            File file = new File(docUri.getPath());
-                            if (file.exists()) {
-                                try {
-                                    ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
-                                    PdfRenderer renderer = new PdfRenderer(descriptor);
-                                    PdfRenderer.Page page = renderer.openPage(0);
-                                    Bitmap docBitmap = BitmapFactory.decodeFileDescriptor(descriptor.getFileDescriptor());
-                                    page.render(docBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                                    imagePreviewLayout.setVisibility(View.VISIBLE);
-                                    imageView.setImageBitmap(docBitmap);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
+                            onShowPreview(MessageType.document, docUri.toString());
+//                            File file = new File(docUri.getPath());
+//                            if (file.exists()) {
+//                                try {
+//                                    ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+//                                    PdfRenderer renderer = new PdfRenderer(descriptor);
+//                                    PdfRenderer.Page page = renderer.openPage(0);
+//                                    Bitmap docBitmap = BitmapFactory.decodeFileDescriptor(descriptor.getFileDescriptor());
+//                                    page.render(docBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+//
+//                                    imagePreviewLayout.setVisibility(View.VISIBLE);
+//                                    previewImageView.setImageBitmap(docBitmap);
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
                         }
                     }
                 }
@@ -868,7 +841,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         video = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
             @Override
             public void onActivityResult(ActivityResult result) {
-
+                onShowPreview(MessageType.videoMessage, "");
             }
         });
         EmojiPopup emojiPopup = EmojiPopup.Builder.fromRootView(layout).build(messageText);
@@ -953,6 +926,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 return true;
             }
         });
+        closePreviewBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                imagePreviewLayout.setVisibility(View.GONE);
+                setPreviewMessageType(MessageType.undefined);
+            }
+        });
         conversationImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -962,8 +942,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     profileIntent.putExtra("user", recipients.get(0));
                     startActivity(profileIntent);
                 }
-//                if (chatAdapter.getItemCount() == 0)
-//                    Toast.makeText(ConversationActivity2.this, "send or receive a message to open conversation profile", Toast.LENGTH_SHORT).show();
+                else if (conversationType == ConversationType.group)
+                {
+                    Intent openGroupIntent = new Intent(ConversationActivity2.this, GroupActivity.class);
+                    openGroupIntent.putExtra("conversationID", conversationID);
+                    openGroupIntent.putExtra("recipients", (ArrayList<User>)recipients);
+                    startActivity(openGroupIntent);//opens group profile
+                }
 //                else {
 //                    if (recipients.size() > 1) {
 //                        Intent openGroupIntent = new Intent(ConversationActivity2.this, GroupActivity.class);
@@ -1034,6 +1019,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         LocalBroadcastManager.getInstance(this).registerReceiver(smsReceiver, new IntentFilter(SMSBroadcastSent.SENT_SMS_STATUS));
     }
 
+    private void onShowError(String error)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "show error: " + error);
+        AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity2.this);
+        builder.setTitle(getResources().getString(R.string.error))
+                .setMessage(error)
+                .setIcon(R.drawable.ic_baseline_error_24)
+                .setCancelable(true)
+                .setNeutralButton("ok", null)
+                .create()
+                .show();
+    }
+
+    private void onShowToastMessage(String message)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "on show toast msg: " + message);
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
     private void onSMSReceived()
     {
         smsReceiver = new BroadcastReceiver() {
@@ -1194,27 +1197,29 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     private void setConversationType(ConversationType conversationType) {
         this.conversationType = conversationType;
-        Log.d(CONVERSATION_ACTIVITY, "conversation type was set to: " + conversationType.name());
-        switch (conversationType)
-        {
-            case sms:
-                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
-                toolbar.setPopupTheme(R.style.sms);
-                listenToSMSStatus();
-                actionBtn.setVisibility(View.GONE);
-                break;
-            case group:
-                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
-                toolbar.setPopupTheme(R.style.group);
-                break;
-            case single:
-                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
-                toolbar.setPopupTheme(R.style.single);
-                break;
-            default:
-                Log.e(CONVERSATION_ACTIVITY, "unsupported conversation type");
-        }
-        invalidateOptionsMenu();
+        if (conversationType == ConversationType.sms)
+            listenToSMSStatus();
+//        Log.d(CONVERSATION_ACTIVITY, "conversation type was set to: " + conversationType.name());
+//        switch (conversationType)
+//        {
+//            case sms:
+//                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
+//                toolbar.setPopupTheme(R.style.sms);
+//                listenToSMSStatus();
+//                actionBtn.setVisibility(View.GONE);
+//                break;
+//            case group:
+//                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
+//                toolbar.setPopupTheme(R.style.group);
+//                break;
+//            case single:
+//                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
+//                toolbar.setPopupTheme(R.style.single);
+//                break;
+//            default:
+//                Log.e(CONVERSATION_ACTIVITY, "unsupported conversation type");
+//        }
+//        invalidateOptionsMenu();
     }
 
     private void setRecipients(List<User> recipients) {
@@ -1357,8 +1362,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     private void onCameraAction() {
-        if (askPermission(MessageType.photoMessage))
-            requestCamera();
+        if (askPermission(MessageType.imageMessage))
+            takePicture();
     }
 
     private void onFileAction() {
@@ -1504,11 +1509,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 message.setLongitude(longitude);
                 message.setAddress(gpsAddress);
                 break;
-            case photoMessage://photo from gallery
-                message.setFilePath(imageUri.toString());
+            case imageMessage://photo from gallery
+                message.setFilePath(previewImageUri.toString());
                 model.uploadFile(currentUserID, message.getMessageID(), imageBitmap, ConversationActivity2.this);
                 break;
-            case imageMessage://image from camera
+            case photoMessage://image from camera
                 message.setFilePath(photoPath);
                 model.uploadFile(currentUserID, message.getMessageID(), Bitmap.createScaledBitmap(BitmapFactory.decodeFile(photoPath), 500, 450, false), ConversationActivity2.this);
                 break;
@@ -1656,6 +1661,14 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             String geoString = String.format(Locale.ENGLISH, "geo:%S,%S", message.getLatitude(), message.getLongitude());
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(geoString));
             startActivity(intent);
+        }
+        else if (message.getMessageType() == MessageType.photoMessage.ordinal() || message.getMessageType() == MessageType.imageMessage.ordinal())
+        {
+            ImageFragment imageFragment = new ImageFragment();
+            Bundle bundle = new Bundle();
+            bundle.putString("image", message.getFilePath());
+            imageFragment.setArguments(bundle);
+            imageFragment.show(getSupportFragmentManager(), "imageFragment");
         }
     }
 
@@ -1816,7 +1829,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     return false;
                 } else return true;
             }
-            case photoMessage: {
+            case photoMessage: case imageMessage:{
                 int hasWritePermission = ConversationActivity2.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
                 if (hasWritePermission != PackageManager.PERMISSION_GRANTED) {
                     requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION);
@@ -2085,7 +2098,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 break;
             }
             case poll: {
-                System.out.println();
+                Log.d(CONVERSATION_ACTIVITY, "POLL!!!!");
+                break;
             }
             case undefined: {
                 Log.e(CONVERSATION_ACTIVITY, "action button type is undefined");
@@ -2101,6 +2115,54 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
             default:
                 Log.e(ERROR_CASE, "onActionMessageSelected error " + new Throwable().getStackTrace()[0].getLineNumber());
+        }
+        if (buttonType != ButtonType.location && buttonType != ButtonType.delay)
+            sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
+    }
+
+    private void setPreviewMessageType(MessageType messageType)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "setting preview message type: " + messageType.name());
+        previewMessageType = messageType;
+    }
+
+    public void onShowPreview(MessageType messageType, String info)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "on show message preview: " + messageType.name());
+        setPreviewMessageType(messageType);
+        switch (messageType)
+        {
+            case imageMessage:
+                Uri imageUri = Uri.parse(info);
+                previewImageUri = imageUri;
+                imagePreviewLayout.setVisibility(View.VISIBLE);
+                previewImageView.setImageURI(imageUri);
+                imageBitmap = getImageBitmap(imageUri);
+                previewImageView.setImageBitmap(imageBitmap);
+                imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 500, 450, false);
+                break;
+            case photoMessage:
+                imagePreviewLayout.setVisibility(View.VISIBLE);
+                Drawable drawable = Drawable.createFromPath(info);
+                previewImageView.setImageDrawable(drawable);
+                break;
+            case document:
+                Uri docUri = Uri.parse(info);
+                File file = new File(docUri.getPath());
+                if (file.exists()) {
+                    try {
+                        ParcelFileDescriptor descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+                        PdfRenderer renderer = new PdfRenderer(descriptor);
+                        PdfRenderer.Page page = renderer.openPage(0);
+                        Bitmap docBitmap = BitmapFactory.decodeFileDescriptor(descriptor.getFileDescriptor());
+                        page.render(docBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        imagePreviewLayout.setVisibility(View.VISIBLE);
+                        previewImageView.setImageBitmap(docBitmap);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
         }
     }
 
@@ -2232,11 +2294,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }*/
 
-    private void requestCamera() {
-        if (askPermission(MessageType.photoMessage))
-            takePicture();
-    }
-
     private void openGallery() {
         Intent galleryIntent = new Intent();
         galleryIntent.setType("image/*");
@@ -2262,7 +2319,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         "com.example.woofmeow.provider", photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
 
-                imageUri = photoURI;
+                previewImageUri = photoURI;
                 takePicture.launch(takePictureIntent);
                 //startActivityForResult(takePictureIntent, CAMERA_REQUEST);
             }
@@ -2431,17 +2488,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 ClipData clipData = ClipData.newPlainText("message", selectedMessage.getContent());
                 if (clipboardManager != null) {
                     clipboardManager.setPrimaryClip(clipData);
-                    Toast.makeText(this, "Copied message", Toast.LENGTH_SHORT).show();
-                } else {
-                    Snackbar s = Snackbar.make(this, recyclerView, "oops, something went wrong", Snackbar.LENGTH_SHORT);
-                    s.setAction("Submit error report", new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            //opens error activity or fragment for the user to fill in OR sends information of this error automatically
-                            s.setText("thx, a report was submitted");
-                        }
-                    });
-                    s.show();
+                    onShowToastMessage("Copied message");
                 }
             }
         } else if (item.getItemId() == R.id.addNewMember) {
@@ -2537,6 +2584,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         initNewConversation(message);
         showMessageOnScreen(message, message.getMessageAction());
         saveMessage(message);
+        setPreviewMessageType(MessageType.undefined);
     }
 
     private void sendMessage2(@NonNull Message message) {
@@ -2554,6 +2602,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 message.setMessageStatus(MessageStatus.WAITING.ordinal());
             }
         }
+        setPreviewMessageType(MessageType.undefined);
     }
 
     private void initNewConversation(Message message)
@@ -2654,6 +2703,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 if (conversation != null)
                 {
                     setConversation(conversation);
+                    initConversationLook();
                 }
                 else
                 {
@@ -2763,6 +2813,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                     setConversation(conversation);
                                 }
                             });
+                            initConversationLook();
 
                         } else
                             Log.e(CONVERSATION_ACTIVITY, "init conversation - no recipients in list");
@@ -2772,6 +2823,59 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 isConversationExist.removeObservers(ConversationActivity2.this);
             }
         });
+    }
+
+    private void initConversationLook()
+    {
+        Map<ButtonType, Integer> sendBtnImages = new HashMap<>();
+        sendBtnImages.put(ButtonType.sendMessage, R.drawable.ic_baseline_send_white);
+        switch (conversationType)
+        {
+            case sms:
+                actionBtn.setVisibility(View.GONE);
+                sendMessageBtn.setButtonTypeImages(sendBtnImages);
+                sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
+
+                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
+                toolbar.setPopupTheme(R.style.sms);
+                break;
+            case group:case single:
+                actionBtn.setVisibility(View.VISIBLE);
+                Map<ButtonType, Integer>buttonImages = new HashMap<>();
+                buttonImages.put(ButtonType.location, R.drawable.ic_baseline_location_on_24);
+                buttonImages.put(ButtonType.attachFile, R.drawable.ic_baseline_attach_file_white);
+                buttonImages.put(ButtonType.camera, R.drawable.ic_baseline_camera_alt_white);
+                buttonImages.put(ButtonType.gallery, R.drawable.ic_baseline_photo_24);
+                buttonImages.put(ButtonType.delay, R.drawable.ic_baseline_access_time_white);
+                buttonImages.put(ButtonType.video, R.drawable.ic_baseline_videocam_white);
+                buttonImages.put(ButtonType.play, R.drawable.ic_baseline_play_circle_outline_white);
+                buttonImages.put(ButtonType.pause,R.drawable.ic_baseline_pause_circle_outline_white);
+                buttonImages.put(ButtonType.cancel, R.drawable.ic_baseline_cancel_24);
+                buttonImages.put(ButtonType.joke, R.drawable.cns);
+                buttonImages.put(ButtonType.poll,R.drawable.ic_baseline_poll_24);
+                buttonImages.put(ButtonType.contact, R.drawable.ic_baseline_contacts_24);
+                actionBtn.setButtonTypeImages(buttonImages);
+                actionBtn.setCurrentButtonType(ButtonType.location);
+
+                sendBtnImages.put(ButtonType.microphone, R.drawable.ic_baseline_mic_black);
+                sendMessageBtn.setButtonTypeImages(sendBtnImages);
+                sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
+
+                if (conversationType == ConversationType.group)
+                {
+                    toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
+                    toolbar.setPopupTheme(R.style.group);
+                }
+                else
+                {
+                    toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
+                    toolbar.setPopupTheme(R.style.single);
+                }
+                break;
+            default:
+                Log.e(CONVERSATION_ACTIVITY, "unsupported conversation type");
+        }
+        invalidateOptionsMenu();
     }
 
     private void saveUser(User user)

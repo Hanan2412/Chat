@@ -159,8 +159,8 @@ public interface ChatDao {
     @Query("SELECT * FROM conversations WHERE pinned = 1")
     LiveData<List<Conversation>>getPinnedConversations();
 
-    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName WHERE conversationID = :conversationID")
-    void updateConversation(String message,long id,int type,long time,String groupName,String conversationID);
+    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName, messageType = :lastMessageType WHERE conversationID = :conversationID")
+    void updateConversation(String message,long id,int type,long time,String groupName,String conversationID, int lastMessageType);
 
     @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
     LiveData<Boolean> isConversationExists(String conversationID);

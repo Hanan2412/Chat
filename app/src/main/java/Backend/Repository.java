@@ -159,7 +159,7 @@ public class Repository {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                chatDao.updateConversation(message.getContent(),message.getMessageID(),message.getMessageType(),message.getSendingTime(),message.getConversationName(),message.getConversationID());
+                chatDao.updateConversation(message.getContent(),message.getMessageID(),message.getMessageType(),message.getSendingTime(),message.getConversationName(),message.getConversationID(), message.getMessageType());
             }
         };
         pool.execute(runnable);

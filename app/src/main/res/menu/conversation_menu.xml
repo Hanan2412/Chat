@@ -2,14 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group
-        android:id="@+id/allConversationsOptions"
-        android:visible="true">
+        android:id="@+id/allConversationsOptions">
         <item
             android:id="@+id/searchMessage"
             android:icon="@drawable/ic_baseline_search_black"
             android:title="@string/search"
-            android:visible="true"
-            app:showAsAction="always" />
+            app:showAsAction="ifRoom" />
 
         <item
             android:id="@+id/blockConversation"
@@ -25,14 +23,12 @@
             android:id="@+id/copy"
             android:icon="@drawable/ic_baseline_file_copy_black"
             android:title="@string/copy_message"
-            android:visible="true"
             app:showAsAction="never" />
         <item
             android:id="@+id/edit"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_edit_24"
             android:title="@string/edit"
-            android:visible="true"
             app:showAsAction="ifRoom" />
         <item
             android:id="@+id/delete"
@@ -46,7 +42,6 @@
             android:enabled="true"
             android:icon="@drawable/ic_baseline_info_white"
             android:title="@string/info"
-            android:visible="true"
             app:showAsAction="ifRoom" />
         <item
             android:id="@+id/share"
@@ -63,39 +58,33 @@
             android:id="@+id/addNewMember"
             android:icon="@drawable/ic_baseline_group_add_24"
             android:title="@string/add_new_member"
-            android:visible="true"
             app:showAsAction="ifRoom" />
 
         <item
             android:id="@+id/leaveGroup"
             android:icon="@drawable/ic_baseline_exit_to_app_24"
             android:title="@string/leave"
-            android:visible="true"
             app:showAsAction="never" />
     </group>
     <group
-        android:id="@+id/singlePersonConversation"
-        android:visible="true">
+        android:id="@+id/singlePersonConversation">
         <item
             android:id="@+id/addPhoneNumber"
             android:enabled="true"
             android:icon="@drawable/common_full_open_on_phone"
             android:title="@string/add_phone"
-            android:visible="true"
             app:showAsAction="never" />
         <item
             android:id="@+id/addAsContact"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_contacts_24"
             android:title="@string/add_contact"
-            android:visible="true"
             app:showAsAction="never" />
         <item
             android:id="@+id/callBtn"
             android:enabled="true"
             android:icon="@drawable/ic_baseline_call_24"
             android:title="@string/call"
-            android:visible="true"
             app:showAsAction="never" />
     </group>
 </menu>

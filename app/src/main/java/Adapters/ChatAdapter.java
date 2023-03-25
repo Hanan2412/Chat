@@ -15,6 +15,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -54,6 +55,7 @@ import Audio.AudioManager2;
 import Consts.MessageStatus;
 import Consts.MessageType;
 import Consts.Messaging;
+import Fragments.ImageFragment;
 import NormalObjects.ImageButtonState;
 import NormalObjects.Message;
 import NormalObjects.Web;
@@ -197,7 +199,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.imageLayout.setVisibility(View.GONE);
         }
         else if (message.getMessageType() == MessageType.gpsMessage.ordinal()) {
-            {
                 holder.playRecordingLayout.setVisibility(View.GONE);
                 holder.messageTextLayout.setVisibility(View.VISIBLE);
                 holder.specialMsgIndicator.setVisibility(View.VISIBLE);
@@ -206,7 +207,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 holder.linkMessageLayout.setVisibility(View.GONE);
                 holder.imageLayout.setVisibility(View.GONE);
                 holder.message.setText(message.getAddress());
-            }
         } else if (message.getMessageType() == MessageType.contact.ordinal()) {
             holder.contactLayout.setVisibility(View.VISIBLE);
             holder.contactName.setText(message.getContactName());
@@ -217,6 +217,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.linkMessageLayout.setVisibility(View.GONE);
             holder.imageLayout.setVisibility(View.GONE);
         } else if (message.getMessageType() == MessageType.photoMessage.ordinal() || message.getMessageType() == MessageType.imageMessage.ordinal()) {
+            Log.i("imageMessage", "path: " + message.getFilePath());
             holder.imageLayout.setVisibility(View.VISIBLE);
             holder.previewImage.setVisibility(View.VISIBLE);
             holder.contactLayout.setVisibility(View.GONE);
@@ -229,7 +230,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 holder.message.setVisibility(View.VISIBLE);
                 holder.messageTextLayout.setVisibility(View.VISIBLE);
             }
-            Log.i("imageMessage", "path: " + message.getFilePath());
+
             if (message.getFilePath() != null) {
                 holder.imageStatusLayout.setVisibility(View.GONE);
                 if (message.getFilePath().startsWith("content")) {
@@ -471,7 +472,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         Button saveContactBtn;//, hidePoll;
         ConstraintLayout rootLayout;
 //        RadioGroup pollGroup;
-        @SuppressLint("SetJavaScriptEnabled")
+        @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);
             recordingTime = itemView.findViewById(R.id.recordingTime);
@@ -567,6 +568,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     return true;
                 }
             });
+            previewImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
+                }
+            });
             List<Integer>statusStates = new ArrayList<>();
             statusStates.add(MessageStatus.WAITING.ordinal());
             statusStates.add(MessageStatus.SENT.ordinal());
@@ -579,7 +586,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             statusImages.add(R.drawable.ic_baseline_done_all_24);
             statusTv.setImages(statusImages);
             statusTv.setBtnStates(statusStates);
-
+            statusTv.setOnTouchListener(new View.OnTouchListener() {
+                @SuppressLint("ClickableViewAccessibility")
+                @Override
+                public boolean onTouch(View view, MotionEvent motionEvent) {
+                    return true;
+                }
+            });
 
 
 //            playPauseBtn.setListener(new PlayAudioButton.onPlayAudio() {

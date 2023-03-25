@@ -136,6 +136,7 @@ public class NewConversationActivity extends AppCompatActivity {
                 if (newConversationAdapter.getItemCount() == 1)
                 {
                     startConversation(newConversationAdapter.getItem(0).getName(), newConversationAdapter.getUsers());
+                    finish();
                 }
                 else
                 {
@@ -143,20 +144,16 @@ public class NewConversationActivity extends AppCompatActivity {
                     fragment.setListener(new SingleFieldFragment.onText() {
                         @Override
                         public void onTextChange(String name) {
+                            Log.d(NEW_CONVERSATION_ACTIVITY, "starting group conversation");
                             startConversation(name, newConversationAdapter.getUsers());
-                            FragmentManager fragmentManager = getSupportFragmentManager();
-                            FragmentTransaction transaction = fragmentManager.beginTransaction();
-                            transaction.remove(fragment).commit();
+                            fragment.dismiss();
                             finish();
                         }
                     });
-                    FragmentManager fragmentManager = getSupportFragmentManager();
-                    FragmentTransaction transaction = fragmentManager.beginTransaction();
-                    transaction.add(R.id.mainLayout, fragment, "conversationName");
-                    transaction.addToBackStack(null);
-                    transaction.commit();
+                    fragment.setHint(getResources().getString(R.string.conversation_name));
+                    fragment.show(getSupportFragmentManager(), "group name");
+
                 }
-                finish();
 //                else
 //                {
 //                    Intent startConversation = new Intent(NewConversationActivity.this, ConversationActivity2.class);

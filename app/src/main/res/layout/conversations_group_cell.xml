@@ -93,7 +93,8 @@
             android:text="daasdasdasdasdadasd"
             android:textColor="@android:color/white"
             android:visibility="visible"
-            android:maxLines="2"/>
+            android:maxLines="2"
+            android:textSize="14sp"/>
 
 
     </LinearLayout>

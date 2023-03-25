@@ -26,12 +26,6 @@ import NormalObjects.User;
 
 @SuppressWarnings("Convert2Lambda")
 public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapter.GroupViewHolder>{
-    public interface onUserInteraction{
-        void onMute(String userID);
-        void onBlock(String userID);
-    }
-    public onUserInteraction callback;
-    public void setListener(onUserInteraction listener){callback = listener;}
     private List<User>recipients;
 
     public GroupProfileAdapter()
@@ -62,18 +56,6 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
             ditsList.add(user.getPhoneNumber());
         ArrayAdapter<String> adapter = new ArrayAdapter<>(holder.itemView.getContext(), android.R.layout.simple_list_item_1, ditsList);
         holder.listView.setAdapter(adapter);
-        holder.muteBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callback.onMute(user.getUserUID());
-            }
-        });
-        holder.blockBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callback.onBlock(user.getUserUID());
-            }
-        });
         FileManager fm = FileManager.getInstance();
         Bitmap bitmap = fm.readImage(holder.itemView.getContext(),FileManager.user_profile_images,user.getUserUID());
         if (bitmap!=null)
@@ -92,14 +74,12 @@ public class GroupProfileAdapter extends RecyclerView.Adapter<GroupProfileAdapte
     {
         ListView listView;
         ImageView profilePic;
-        ImageButton muteBtn,blockBtn;
+
         AppBarLayout appBarLayout;
         public GroupViewHolder(@NonNull View itemView) {
             super(itemView);
             listView = itemView.findViewById(R.id.userDetails);
             profilePic = itemView.findViewById(R.id.profileImage);
-//            muteBtn = itemView.findViewById(R.id.mute);
-            blockBtn = itemView.findViewById(R.id.block);
             appBarLayout = itemView.findViewById(R.id.appbarLayout);
             appBarLayout.setVisibility(View.GONE);
         }

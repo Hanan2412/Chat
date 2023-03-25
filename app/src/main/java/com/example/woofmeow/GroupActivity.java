@@ -29,7 +29,7 @@ import Backend.UserVM;
 //import DataBase.DBActive;
 import NormalObjects.User;
 
-@SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef"})
+@SuppressWarnings({"Convert2Lambda", "unchecked"})
 public class GroupActivity extends AppCompatActivity {
 
     private UserVM userVM;
@@ -59,66 +59,20 @@ public class GroupActivity extends AppCompatActivity {
         groupMembers.setLayoutManager(layoutManager);
         userVM = new ViewModelProvider(this).get(UserVM.class);
         ConversationVM conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
-        LiveData<List<User>> recipients = conversationVM.getRecipients(conversationID);
+        List<User>recipients = (List<User>)getIntent().getSerializableExtra("recipients");
         GroupProfileAdapter adapter = new GroupProfileAdapter();
-        recipients.observe(this, new Observer<List<User>>() {
-            @Override
-            public void onChanged(List<User> users) {
-                if (users == null)
-                    Log.e("GroupActivityError","recipients are null");
-                adapter.setRecipients(users);
-            }
-        });
-        adapter.setListener(new GroupProfileAdapter.onUserInteraction() {
-            @Override
-            public void onMute(String userID) {
-                mute(userID);
-            }
-
-            @Override
-            public void onBlock(String userID) {
-                block(userID);
-            }
-        });
+        adapter.setRecipients(recipients);
+//        LiveData<List<User>> recipients = conversationVM.getRecipients(conversationID);
+//        GroupProfileAdapter adapter = new GroupProfileAdapter();
+//        recipients.observe(this, new Observer<List<User>>() {
+//            @Override
+//            public void onChanged(List<User> users) {
+//                if (users == null)
+//                    Log.e("GroupActivityError","recipients are null");
+//                adapter.setRecipients(users);
+//            }
+//        });
         groupMembers.setAdapter(adapter);
-    }
-
-    private void mute(String uid)
-    {
-        LiveData<Boolean>muteUser = userVM.isUserMuted(uid);
-        muteUser.observe(GroupActivity.this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean aBoolean) {
-                if (aBoolean)
-                {
-                    userVM.unMuteUser(uid);
-
-                }
-                else
-                {
-                    userVM.muteUser(uid);
-
-                }
-            }
-        });
-    }
-
-    private void block(String uid)
-    {
-        LiveData<Boolean>blockUser = userVM.isUserBlocked(uid);
-        blockUser.observe(GroupActivity.this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean aBoolean) {
-                if (aBoolean)
-                {
-                    userVM.unBlockUser(uid);
-                }
-                else
-                {
-                    userVM.blockUser(uid);
-                }
-            }
-        });
     }
 
 }

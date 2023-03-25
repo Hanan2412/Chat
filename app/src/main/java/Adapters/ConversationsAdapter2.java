@@ -213,9 +213,16 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         else
             holder.pinLayout.setVisibility(View.GONE);
         if (conversation.getMessageType() == MessageType.voiceMessage.ordinal())
+        {
             holder.lastMessage.setText(R.string.voice_message);
+            holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_mic_black, 0 ,0,0);
+        }
         else
             holder.lastMessage.setText(conversation.getLastMessage());
+        if (conversation.getMessageType() == MessageType.imageMessage.ordinal() || conversation.getMessageType() == MessageType.photoMessage.ordinal())
+        {
+            holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0,0,0);
+        }
         String lastMessageTime = conversation.getLastMessageTimeParse();
         holder.lastMessageTime.setText(lastMessageTime);
         holder.recipientName.setText(conversation.getConversationName());

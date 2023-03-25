@@ -64,4 +64,5 @@
     <string name="confirm">אישור פעולה</string>
     <string name="nothing_delete">שום דבר לא ימחק</string>
     <string name="select_convirsation_delete">השיחות שניבחרו ימקחו</string>
+    <string name="error">בעייה</string>
 </resources>

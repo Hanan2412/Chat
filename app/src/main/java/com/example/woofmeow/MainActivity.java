@@ -96,10 +96,6 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private Toolbar toolbar;
     private ViewPager viewPager;
     private String currentUser = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-    public static final String ONLINE_S = "online";
-    public static final String STANDBY_S = "standby";
-    public static final String OFFLINE_S = "offline";
-    private String currentStatus = ONLINE_S;
     private final String MISSED_MESSAGES = "missed messages";
     private PagerAdapter pagerAdapter;
     private boolean isRotate = false;

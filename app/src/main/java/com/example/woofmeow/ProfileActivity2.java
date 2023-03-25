@@ -486,7 +486,7 @@ public class ProfileActivity2 extends AppCompatActivity {
             File image = File.createTempFile(imageFileName, ".jpg", storageDir);
             setPhotoPath(image.getAbsolutePath());
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//            if (takePictureIntent.resolveActivity(ProfileActivity2.this.getPackageManager()) != null) {
+            if (takePictureIntent.resolveActivity(ProfileActivity2.this.getPackageManager()) != null) {
             File photoFile;
             photoFile = image;
             Uri photoURI = FileProvider.getUriForFile(ProfileActivity2.this,
@@ -496,7 +496,7 @@ public class ProfileActivity2 extends AppCompatActivity {
             imageUri = photoURI;
             takePicture.launch(takePictureIntent);
             //startActivityForResult(takePictureIntent, CAMERA_REQUEST);
-//            }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
