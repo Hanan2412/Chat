@@ -76,7 +76,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     public interface MessageInfoListener {
         void onMessageClick(Message message, View view, int viewType);
-        void onMessageLongClick(Message message, View view, int viewType);
+        void onMessageLongClick(Message message);
         void onPreviewMessageClick(Message message);
         void onRadioBtnClick(RadioGroup group, int radioBtnPosition);
         String onImageDownloaded(Bitmap bitmap, Message message);
@@ -470,7 +470,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         ProgressBar showImageProgress, linkProgressBar;
         ShapeableImageView contactImage;
         Button saveContactBtn;//, hidePoll;
-        ConstraintLayout rootLayout;
+        ConstraintLayout rootLayout, mainConstraintLayout;
 //        RadioGroup pollGroup;
         @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
         public ChatViewHolder(@NonNull View itemView) {
@@ -509,6 +509,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             timeReceived = itemView.findViewById(R.id.messageTime);
             innerPaneLayout = itemView.findViewById(R.id.innerPaneLayout);
             rootLayout = itemView.findViewById(R.id.rootLayout);
+            mainConstraintLayout = itemView.findViewById(R.id.mainConstraintLayout);
 //            hidePoll = itemView.findViewById(R.id.hidePoll);
 //            pollLayout = itemView.findViewById(R.id.pollLayout);
 //            pollVotes = itemView.findViewById(R.id.pollVotes);
@@ -530,50 +531,50 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 //                }
 //            });
             message.setTextSize(textSize);
-            message.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (messages.get(getAdapterPosition()).getMessageType() == MessageType.gpsMessage.ordinal())
-                        callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
-                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
-                }
-            });
-            message.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    messageTextLayout.setSelected(!messageTextLayout.isSelected());
-                    callback.onMessageLongClick(messages.get(getAdapterPosition()), messageTextLayout, getItemViewType());
-                    return true;
-                }
-            });
+//            message.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    if (messages.get(getAdapterPosition()).getMessageType() == MessageType.gpsMessage.ordinal())
+//                        callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
+//                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
+//                }
+//            });
+//            message.setOnLongClickListener(new View.OnLongClickListener() {
+//                @Override
+//                public boolean onLongClick(View v) {
+//                    messageTextLayout.setSelected(!messageTextLayout.isSelected());
+//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
+//                    return true;
+//                }
+//            });
 
-            innerPaneLayout.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    v.setSelected(!v.isSelected());
-                    callback.onMessageLongClick(messages.get(getAdapterPosition()), v, getItemViewType());
-                    return true;
-                }
-            });
-            linkMessageLayout.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
-                }
-            });
-            linkMessageLayout.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    callback.onMessageLongClick(messages.get(getAdapterPosition()), v, getItemViewType());
-                    return true;
-                }
-            });
-            previewImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
-                }
-            });
+//            innerPaneLayout.setOnLongClickListener(new View.OnLongClickListener() {
+//                @Override
+//                public boolean onLongClick(View v) {
+//                    v.setSelected(!v.isSelected());
+//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
+//                    return true;
+//                }
+//            });
+//            linkMessageLayout.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
+//                }
+//            });
+//            linkMessageLayout.setOnLongClickListener(new View.OnLongClickListener() {
+//                @Override
+//                public boolean onLongClick(View v) {
+//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
+//                    return true;
+//                }
+//            });
+//            previewImage.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View view) {
+//                    callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
+//                }
+//            });
             List<Integer>statusStates = new ArrayList<>();
             statusStates.add(MessageStatus.WAITING.ordinal());
             statusStates.add(MessageStatus.SENT.ordinal());
@@ -593,59 +594,39 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     return true;
                 }
             });
-
-
-//            playPauseBtn.setListener(new PlayAudioButton.onPlayAudio() {
-//                @Override
-//                public void playAudio() {
-//                    AudioManager2 manager = AudioManager2.getInstance();
-//                    Message audioMessage = messages.get(getAdapterPosition());
-//                    if (audioMessage.getRecordingPath() != null) {
-//                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
-//                        if (voiceSeek.getMax() != player.getDuration() / 1000) {
-//                            voiceSeek.setMax(player.getDuration() / 1000);
-//                            voiceSeek.setMin(0);
-//                        }
-//                        TimeFormat format = new TimeFormat();
-//                        player.setAudioListener(new AudioHelper() {
-//                            @Override
-//                            public void onProgressChange(String formattedProgress, int progress) {
-//                                String time = formattedProgress + "/" + format.getFormattedTime(player.getDuration());
-//                                new Handler(Looper.getMainLooper()).post(new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        recordingTime.setText(time);
-//                                        voiceSeek.setProgress(progress, true);
-//                                        if (progress == player.getDuration() / 1000)
-//                                            playPauseBtn.resetClicks();
-//                                    }
-//                                });
-//                                manager.updateProgress(audioMessage.getRecordingPath(), progress);
-//                            }
-//
-//                            @Override
-//                            public void onPlayingStatusChange(boolean isPlaying) {
-//
-//                            }
-//                        });
-//                        int progress = manager.getProgress(audioMessage.getRecordingPath());
-//                        player.seekTo(progress * 1000);
-//                        voiceSeek.setProgress(progress);
-//                        player.playPauseAudio();
-//                    }
-//                }
-//
-//                @Override
-//                public void pauseAudio() {
-//                    AudioManager2 manager = AudioManager2.getInstance();
-//                    Message audioMessage = messages.get(getAdapterPosition());
-//                    if (audioMessage.getRecordingPath() != null) {
-//                        AudioPlayer2 player = manager.getAudioPlayer(audioMessage.getRecordingPath());
-//                        player.playPauseAudio();
-//                    }
-//                }
-//            });
         }
+        public void bind(Message message)
+        {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (callback!=null)
+                    {
+                        callback.onMessageClick(message, view, getItemViewType());
+                    }
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    if (callback!=null)
+                    {
+                        callback.onMessageLongClick(message);
+                    }
+                    innerPaneLayout.setSelected(!innerPaneLayout.isSelected());
+//                    mainConstraintLayout.setSelected(!mainConstraintLayout.isSelected());
+                    return true;
+                }
+            });
+        }
+
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ChatViewHolder holder, int position, @NonNull List<Object> payloads) {
+        super.onBindViewHolder(holder, position, payloads);
+        holder.bind(messages.get(position));
     }
 
     @Override
@@ -654,6 +635,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             return Messaging.outgoing.ordinal();
         else
             return Messaging.incoming.ordinal();
+    }
+
+    public int findMessageIndex(long msgID)
+    {
+        Log.d("CHAT_ADAPTER", "find message index");
+        return findMessage(this.messages, 0, this.messages.size(), msgID);
     }
 
     public int findMessageLocation(List<Message> messages, int min, int max, long key) {

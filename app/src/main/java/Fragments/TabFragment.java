@@ -80,7 +80,7 @@ public class TabFragment extends Fragment {
     private UserVM userModel;
     private ConversationVM conversationVM;
     private final String TAB_FRAGMENT = "TAB_FRAGMENT";
-    private List<Conversation>selectedConversations;
+    private List<Conversation> selectedConversations;
     private final int online = 0, standby = 1, offline = 2;
     private int currentStatus = online;
     private EditText searchQuery;
@@ -137,7 +137,7 @@ public class TabFragment extends Fragment {
         currentUser = getArguments().getString("currentUser");
         setHasOptionsMenu(true);
         Tabs tab = Tabs.values()[getArguments().getInt(tabNumber)];
-        if ( selectedConversations == null)
+        if (selectedConversations == null)
             selectedConversations = new ArrayList<>();
         initGeneral();
         switch (tab) {
@@ -186,15 +186,14 @@ public class TabFragment extends Fragment {
                                         public void onClick(DialogInterface dialog, int which) {
                                             Conversation conversation = conversationsAdapter2.getConversation(viewHolder.getAdapterPosition());
                                             deleteConversation(conversation.getConversationID());
-                                            displayMessageToast(getResources().getString(R.string.select_convirsation_delete));
+                                            displayMessageToast(getResources().getString(R.string.select_conversation_delete));
                                         }
                                     }).setNegativeButton(getResources().getString(R.string.cancel), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    conversationsAdapter2.notifyItemChanged(viewHolder.getAdapterPosition());
-                                    displayMessageToast(getResources().getString(R.string.nothing_delete));
-                                }
-                            }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //doesn't do anything since this button also dismisses the dialog - on dismiss runs and restores the conversation view
+                                        }
+                                    }).setOnDismissListener(new DialogInterface.OnDismissListener() {
                                         @Override
                                         public void onDismiss(DialogInterface dialogInterface) {
                                             conversationsAdapter2.notifyItemChanged(viewHolder.getAdapterPosition());
@@ -220,8 +219,7 @@ public class TabFragment extends Fragment {
                 recyclerView.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View view, MotionEvent motionEvent) {
-                        if (motionEvent.getAction() == MotionEvent.ACTION_UP)
-                        {
+                        if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
                             Log.d(TAB_FRAGMENT, "click on recyclerview");
                             if (!selectedConversations.isEmpty())
                                 unselectConversations();
@@ -270,13 +268,11 @@ public class TabFragment extends Fragment {
         return view;
     }
 
-    private void displayMessageToast(String msg)
-    {
+    private void displayMessageToast(String msg) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
     }
 
-    private void unselectConversations()
-    {
+    private void unselectConversations() {
         for (int i = 0; i < selectedConversations.size(); i++) {
             Conversation conversation = selectedConversations.get(i);
             int selectedConversationIndex = conversationsAdapter2.findCorrectConversationIndex(conversation.getConversationID());
@@ -292,10 +288,8 @@ public class TabFragment extends Fragment {
         requireActivity().invalidateOptionsMenu();
     }
 
-    private void pinConversations()
-    {
-        for (Conversation conversation: selectedConversations)
-        {
+    private void pinConversations() {
+        for (Conversation conversation : selectedConversations) {
             conversationsAdapter2.pinConversation(conversation, true);
             conversation.setPinned(true);
             updateConversation(conversation);
@@ -303,18 +297,15 @@ public class TabFragment extends Fragment {
         restoreBaseMenu();
     }
 
-    private void unPinConversation()
-    {
-        for (Conversation conversation: selectedConversations)
-        {
+    private void unPinConversation() {
+        for (Conversation conversation : selectedConversations) {
             conversationsAdapter2.pinConversation(conversation, false);
             updateConversation(conversation);
         }
-       restoreBaseMenu();
+        restoreBaseMenu();
     }
 
-    private void restoreBaseMenu()
-    {
+    private void restoreBaseMenu() {
         unselectConversations();
         requireActivity().invalidateOptionsMenu();
     }
@@ -324,12 +315,9 @@ public class TabFragment extends Fragment {
 
         if (item.getItemId() == R.id.pinConversation) {
             pinConversations();
-        }
-        else if (item.getItemId() == R.id.unpin) {
+        } else if (item.getItemId() == R.id.unpin) {
             unPinConversation();
-        }
-        else if (item.getItemId() == R.id.info)
-        {
+        } else if (item.getItemId() == R.id.info) {
             ConversationInfo conversationInfo = ConversationInfo.getInstance();
             Bundle backDropBundle = new Bundle();
             backDropBundle.putSerializable("conversation", selectedConversations.get(0));
@@ -342,21 +330,19 @@ public class TabFragment extends Fragment {
                 }
             });
             conversationInfo.show(requireActivity().getSupportFragmentManager(), "CONVERSATION_INFO");
-        }
-        else if (item.getItemId() == R.id.callBtn) {
+        } else if (item.getItemId() == R.id.callBtn) {
             callPhone();
         } else if (item.getItemId() == R.id.block) {
             blockConversation();
             unselectConversations();
-        }
-        else if (item.getItemId() == R.id.searchConversation) {
+        } else if (item.getItemId() == R.id.searchConversation) {
             Animation in = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_down);
             Animation out = AnimationUtils.loadAnimation(requireContext(), R.anim.slide_up);
             if (searchLayout.getVisibility() == View.GONE) {
                 searchLayout.setVisibility(View.VISIBLE);
                 searchLayout.startAnimation(in);
                 recyclerView.startAnimation(in);
-                if (searchQuery!=null)
+                if (searchQuery != null)
                     searchQuery.setText("");
 
             } else {
@@ -371,10 +357,9 @@ public class TabFragment extends Fragment {
                 loadConversations();
             }
         } else if (item.getItemId() == R.id.status) {
-            user.setStatus((user.getStatus() + 1)%3);
+            user.setStatus((user.getStatus() + 1) % 3);
             updateUser(user);
-        }else if (item.getItemId() == R.id.addPhoneNumber)
-        {
+        } else if (item.getItemId() == R.id.addPhoneNumber) {
             SingleFieldFragment phoneFragment = new SingleFieldFragment();
             phoneFragment.setHint(getResources().getString(R.string.phone_number));
             phoneFragment.setInputType(InputType.TYPE_CLASS_PHONE);
@@ -391,7 +376,7 @@ public class TabFragment extends Fragment {
                     unselectConversations();
                 }
             });
-            phoneFragment.show(requireActivity().getSupportFragmentManager(),"PhoneFragment");
+            phoneFragment.show(requireActivity().getSupportFragmentManager(), "PhoneFragment");
         }
         return super.onOptionsItemSelected(item);
     }
@@ -401,26 +386,19 @@ public class TabFragment extends Fragment {
         super.onPrepareOptionsMenu(menu);
         menu.setGroupVisible(R.id.normal, selectedConversations.isEmpty());
         menu.setGroupVisible(R.id.extraOptions, !selectedConversations.isEmpty());
-        if (user!=null)
-        {
+        if (user != null) {
             onChangeStatus(menu.findItem(R.id.status), user.getStatus());
         }
-        if (selectedConversations.size()>1)
-        {
+        if (selectedConversations.size() > 1) {
             menu.setGroupVisible(R.id.pin, false);
             menu.setGroupVisible(R.id.singleConversationOptions, false);
-        }
-        else if (selectedConversations.size() == 1)
-        {
+        } else if (selectedConversations.size() == 1) {
 
             menu.setGroupVisible(R.id.pin, true);
-            if(conversationsAdapter2.getConversation(0).isPinned() && !selectedConversations.get(0).isPinned())
-            {
+            if (conversationsAdapter2.getConversation(0).isPinned() && !selectedConversations.get(0).isPinned()) {
                 menu.findItem(R.id.pinConversation).setVisible(false);
                 menu.findItem(R.id.unpin).setVisible(false);
-            }
-            else
-            {
+            } else {
                 menu.findItem(R.id.pinConversation).setVisible(!selectedConversations.get(0).isPinned());
                 menu.findItem(R.id.unpin).setVisible(selectedConversations.get(0).isPinned());
             }
@@ -439,31 +417,25 @@ public class TabFragment extends Fragment {
         conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
     }
 
-    private void onUserUpdate()
-    {
+    private void onUserUpdate() {
         userModel.getCurrentUser().observe(requireActivity(), new Observer<User>() {
             @Override
             public void onChanged(User user) {
                 Log.d(TAB_FRAGMENT, "loaded current user: " + user);
-                if (user != null)
-                {
+                if (user != null) {
                     setCurrentUser(user);
-                }
-                else
-                {
+                } else {
                     Log.d(TAB_FRAGMENT, "loaded null user");
                 }
             }
         });
     }
 
-    private void onDownloadUser()
-    {
+    private void onDownloadUser() {
         userModel.setOnUserDownloadedListener(new Server.onUserDownload() {
             @Override
             public void downloadedUser(User user) {
-                if (user != null)
-                {
+                if (user != null) {
                     setCurrentUser(user);
                     updateUser(user);
                 }
@@ -472,23 +444,21 @@ public class TabFragment extends Fragment {
         userModel.downloadUser(currentUser);
     }
 
-    private void setCurrentUser(User user)
-    {
-        if (this.user!=null)
-        {
+    private void setCurrentUser(User user) {
+        if (this.user != null) {
             if (user.getLastUpdateTime() > this.user.getLastUpdateTime()) {
                 Log.d(TAB_FRAGMENT, "setting updated user");
                 this.user = user;
             } else {
                 Log.e(TAB_FRAGMENT, "loaded older version of user, ignoring it");
             }
-        }
-        else {
+        } else {
             this.user = user;
         }
         callback.onUserUpdate(user);
         requireActivity().invalidateOptionsMenu();
     }
+
     private void tokenUpdate() {
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
@@ -518,8 +488,7 @@ public class TabFragment extends Fragment {
         onNewOrUpdatedConversation();
     }
 
-    private void initGeneral()
-    {
+    private void initGeneral() {
         dataBaseSetUp();
         onUserUpdate();
         onDownloadUser();
@@ -550,33 +519,29 @@ public class TabFragment extends Fragment {
         conversationVM.getNewOrUpdatedConversation().observe(requireActivity(), new Observer<Conversation>() {
             @Override
             public void onChanged(Conversation conversation) {
-                if (conversation!=null)
-                {
+                if (conversation != null) {
                     conversationsAdapter2.updateConversation(conversation);
                 }
             }
         });
     }
 
-    private void muteConversation(Conversation conversation)
-    {
+    private void muteConversation(Conversation conversation) {
         conversation.setMuted(!conversation.isMuted());
         updateConversation(conversation);
         conversationsAdapter2.muteConversation(conversation);
     }
 
-    private void blockConversation()
-    {
-        for (Conversation conversation: selectedConversations) {
+    private void blockConversation() {
+        for (Conversation conversation : selectedConversations) {
             conversation.setBlocked(!conversation.isBlocked());
             updateConversation(conversation);
             conversationsAdapter2.blockConversation(conversation);
         }
     }
 
-    private void callPhone()
-    {
-        Log.d(TAB_FRAGMENT,"callPhone");
+    private void callPhone() {
+        Log.d(TAB_FRAGMENT, "callPhone");
         String phoneNumber = selectedConversations.get(0).getRecipientPhoneNumber();
         Intent callRecipientIntent = new Intent(Intent.ACTION_DIAL);
         callRecipientIntent.setData(Uri.parse("tel:" + phoneNumber));
@@ -585,8 +550,7 @@ public class TabFragment extends Fragment {
         if (callRecipientIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             Log.d(TAB_FRAGMENT, "starting dial");
             startActivity(callRecipientIntent);
-        }
-        else{
+        } else {
             Log.e(TAB_FRAGMENT, "can't start dial");
         }
     }
@@ -597,14 +561,12 @@ public class TabFragment extends Fragment {
         conversationVM.deleteConversation(conversationID);
     }
 
-    private void updateConversation(Conversation conversation)
-    {
+    private void updateConversation(Conversation conversation) {
         Log.d(TAB_FRAGMENT, "update conversation: " + conversation.getConversationID());
         conversationVM.updateConversation(conversation);
     }
 
-    private void onChangeStatus(MenuItem item, int newStatus)
-    {
+    private void onChangeStatus(MenuItem item, int newStatus) {
         switch (newStatus) {
             case online:
                 item.setIcon(R.drawable.circle_green);
@@ -622,8 +584,7 @@ public class TabFragment extends Fragment {
         Log.d(TAB_FRAGMENT, "changed status: " + currentStatus);
     }
 
-    public void updateUser(User user)
-    {
+    public void updateUser(User user) {
         Log.d(TAB_FRAGMENT, "update user: " + user.getUserUID());
         user.setLastUpdateTime(System.currentTimeMillis());
         userModel.updateUser(user);

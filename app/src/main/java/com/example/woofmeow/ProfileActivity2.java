@@ -417,8 +417,8 @@ public class ProfileActivity2 extends AppCompatActivity {
         if (!user.getUserUID().equals(currentUserID))
         {
           editProfileImageBtn.setVisibility(View.GONE);
-          navigationView.getMenu().getItem(R.id.muted).setVisible(false);
-          navigationView.getMenu().getItem(R.id.block).setVisible(false);
+          navigationView.getMenu().findItem(R.id.muted).setVisible(false);
+          navigationView.getMenu().findItem(R.id.block).setVisible(false);
         }
         conversationVM.getMediaMessage().observe(this, new Observer<List<Message>>() {
             @Override

@@ -1,10 +1,7 @@
 package Adapters;
 
 
-import static android.content.Context.MODE_PRIVATE;
-
 import android.annotation.SuppressLint;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -24,14 +21,12 @@ import com.vanniktech.emoji.EmojiTextView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 
 import Consts.ConversationType;
 import Consts.MessageType;
 import NormalObjects.Conversation;
 import NormalObjects.FileManager;
-import Time.TimeFormat;
 
 @SuppressWarnings("Convert2Lambda")
 public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAdapter2.ConversationsViewHolder> {
@@ -225,7 +220,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         }
         String lastMessageTime = conversation.getLastMessageTimeParse();
         holder.lastMessageTime.setText(lastMessageTime);
-        holder.recipientName.setText(conversation.getConversationName());
+        holder.conversationName.setText(conversation.getConversationName());
         if (conversation.isMuted())
             holder.conversationStatus.setVisibility(View.VISIBLE);
         else
@@ -291,7 +286,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     public class ConversationsViewHolder extends RecyclerView.ViewHolder {
         ShapeableImageView profileImage;
         EmojiTextView lastMessage;
-        TextView lastMessageTime, recipientName, unreadMessages;
+        TextView lastMessageTime, conversationName, unreadMessages;
         ImageView conversationStatus;
         RelativeLayout rootLayout, pinLayout;
 
@@ -300,7 +295,7 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             profileImage = itemView.findViewById(R.id.conversationImage);
             lastMessage = itemView.findViewById(R.id.lastMessageSent);
             lastMessageTime = itemView.findViewById(R.id.timeLastMessage);
-            recipientName = itemView.findViewById(R.id.recipientName);
+            conversationName = itemView.findViewById(R.id.recipientName);
             conversationStatus = itemView.findViewById(R.id.conversationStatus);
             unreadMessages = itemView.findViewById(R.id.unreadMessages);
             rootLayout = itemView.findViewById(R.id.conversationCell);

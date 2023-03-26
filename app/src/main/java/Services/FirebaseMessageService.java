@@ -924,7 +924,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             public void run() {
                 dao.insertNewMessage(message);
                 MessageType type = MessageType.values()[message.getMessageType()];
-                dao.updateConversation(message.getContent(), message.getMessageID(), type.ordinal(), System.currentTimeMillis(), message.getConversationName(), message.getConversationID(), message.getMessageType());
+                dao.updateConversation(message.getContent(), message.getMessageID(), type.ordinal(), System.currentTimeMillis(),System.currentTimeMillis(), message.getConversationName(), message.getConversationID(), message.getMessageType());
             }
         };
         thread.setName("saveMessage");

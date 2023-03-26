@@ -302,7 +302,12 @@ public class Conversation implements Serializable {
                 minutes = "0" + minute;
             else
                 minutes = minute + "";
-            this.lastMessageTimeParse = day + "/" + month + "/" + year + "  " + hour + ":" + minutes;
+            String hour1;
+            if (hour<10)
+                hour1 = "0" + hour;
+            else
+                hour1 = hour + "";
+            this.lastMessageTimeParse = day + "/" + month + "/" + year + "  " + hour1 + ":" + minutes;
 
     }
 
@@ -325,6 +330,7 @@ public class Conversation implements Serializable {
 
     public void setLastMessageTimeParse(String lastMessageTimeParse) {
         this.lastMessageTimeParse = lastMessageTimeParse;
+        parseTime(lastMessageTime);
     }
 
     public void setLastUpdate(long lastUpdate) {

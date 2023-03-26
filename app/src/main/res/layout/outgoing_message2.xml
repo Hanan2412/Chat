@@ -27,12 +27,12 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:orientation="vertical"
             android:id="@+id/contentLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            android:gravity="start">
+            android:gravity="start"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:id="@+id/topPaneLayout"
@@ -70,6 +70,7 @@
             </LinearLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/mainConstraintLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/outgoing_message_look">
@@ -86,10 +87,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/indicatorGuideline"
-                    >
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                     <LinearLayout
                         android:id="@+id/linkMessage"
@@ -162,17 +162,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/rounded_rectangle"
-                        android:visibility="visible">
+                        android:visibility="gone">
 
                         <ImageView
                             android:id="@+id/previewImage"
                             android:layout_width="match_parent"
                             android:layout_height="300dp"
+                            android:background="@color/blue"
                             android:contentDescription="the preview of an active message"
                             android:elevation="8dp"
                             android:padding="3dp"
                             android:src="@drawable/ic_baseline_photo_24"
-                            android:background="@color/blue"
                             android:visibility="visible" />
 
                         <LinearLayout
@@ -425,16 +425,17 @@
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/messageStatusLayout"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:gravity="center"
                     android:orientation="vertical"
-                    app:layout_constraintStart_toEndOf="@+id/indicatorGuideline"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    android:gravity="center"
-                    >
+                    app:layout_constraintStart_toEndOf="@+id/indicatorGuideline">
+
                     <ImageView
                         android:id="@+id/specialMessageIndicator"
                         android:layout_width="wrap_content"
@@ -448,10 +449,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="2dp"
+                        android:background="@drawable/circle_blue_no_border"
                         android:contentDescription="@string/userStatus"
                         android:src="@drawable/message_sent"
-                        android:visibility="visible"
-                        android:background="@drawable/circle_blue_no_border"/>
+                        android:visibility="visible" />
 
                 </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
