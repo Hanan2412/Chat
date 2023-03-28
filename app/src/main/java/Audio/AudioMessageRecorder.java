@@ -127,4 +127,9 @@ public class AudioMessageRecorder extends Thread{
     public boolean isRecording() {
         return recording;
     }
+
+    public String getFileName()
+    {
+        return fileName;
+    }
 }

@@ -64,6 +64,7 @@ import NormalObjects.TouchListener;
 import NormalObjects.User;
 import NormalObjects.onDismissFragment;
 import Retrofit.Server;
+import Time.StandardTime;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -84,6 +85,7 @@ public class TabFragment extends Fragment {
     private final int online = 0, standby = 1, offline = 2;
     private int currentStatus = online;
     private EditText searchQuery;
+    private LiveData<Conversation> activeConversation;
 
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
@@ -257,7 +259,7 @@ public class TabFragment extends Fragment {
                         }
                         callback.onOpenedConversation(conversation.getConversationID());
                         requireActivity().startActivity(startConversationIntent);
-
+//                        onCreateActiveConversationLV(conversation.getConversationID());
                     }
                 });
                 break;
@@ -288,6 +290,17 @@ public class TabFragment extends Fragment {
         requireActivity().invalidateOptionsMenu();
     }
 
+    private void onConversationPin()
+    {
+        if (selectedConversations.size() == 1)
+        {
+            Conversation conversation = selectedConversations.get(0);
+            conversation.setPinned(!conversation.isPinned());
+            updateConversation(conversation);
+        }
+        restoreBaseMenu();
+    }
+
     private void pinConversations() {
         for (Conversation conversation : selectedConversations) {
             conversationsAdapter2.pinConversation(conversation, true);
@@ -314,9 +327,11 @@ public class TabFragment extends Fragment {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.pinConversation) {
-            pinConversations();
+//            pinConversations();
+            onConversationPin();
         } else if (item.getItemId() == R.id.unpin) {
-            unPinConversation();
+//            unPinConversation();
+            onConversationPin();
         } else if (item.getItemId() == R.id.info) {
             ConversationInfo conversationInfo = ConversationInfo.getInstance();
             Bundle backDropBundle = new Bundle();
@@ -485,7 +500,8 @@ public class TabFragment extends Fragment {
     private void initChatTab() {
         NullifyData();
         loadConversations();
-        onNewOrUpdatedConversation();
+        onConversationsUpdate();
+//        onNewOrUpdatedConversation();
     }
 
     private void initGeneral() {
@@ -536,8 +552,43 @@ public class TabFragment extends Fragment {
         for (Conversation conversation : selectedConversations) {
             conversation.setBlocked(!conversation.isBlocked());
             updateConversation(conversation);
+//            conversationVM.updateBlockConversation(conversation.getConversationID());
             conversationsAdapter2.blockConversation(conversation);
         }
+    }
+
+    private void onConversationsUpdate()
+    {
+        LiveData<Conversation>conversationsLV = conversationVM.getLastUpdateConversation();
+        conversationsLV.observe(requireActivity(), new Observer<Conversation>() {
+            @Override
+            public void onChanged(Conversation conversation) {
+                conversationsAdapter2.updateConversation2(conversation);
+            }
+        });
+
+    }
+
+    private void onCreateActiveConversationLV(String conversationID)
+    {
+        if (activeConversation!=null)
+            activeConversation.removeObservers(requireActivity());
+        activeConversation = conversationVM.getConversation(conversationID);
+        activeConversation.observe(requireActivity(), new Observer<Conversation>() {
+            @Override
+            public void onChanged(Conversation conversation) {
+                conversationsAdapter2.updateConversationSimple(conversation);
+                Log.d(TAB_FRAGMENT, "block conversation");
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (activeConversation!=null)
+            activeConversation.removeObservers(requireActivity());
+        Log.d(TAB_FRAGMENT, "destroy fragment");
     }
 
     private void callPhone() {
@@ -563,6 +614,7 @@ public class TabFragment extends Fragment {
 
     private void updateConversation(Conversation conversation) {
         Log.d(TAB_FRAGMENT, "update conversation: " + conversation.getConversationID());
+        conversation.setLastUpdate(StandardTime.getInstance().getStandardTime());
         conversationVM.updateConversation(conversation);
     }
 

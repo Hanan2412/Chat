@@ -88,6 +88,7 @@ public class Conversation implements Serializable {
 
     public void setConversationType(int conversationType) {
         this.conversationType = conversationType;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getConversationName() {
@@ -96,6 +97,7 @@ public class Conversation implements Serializable {
 
     public void setConversationName(String conversationName) {
         this.conversationName = conversationName;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getConversationID() {
@@ -104,6 +106,7 @@ public class Conversation implements Serializable {
 
     public void setConversationID(String conversationID) {
         this.conversationID = conversationID;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getRecipient() {
@@ -125,6 +128,7 @@ public class Conversation implements Serializable {
 
     public void setLastMessage(String lastMessage) {
         this.lastMessage = lastMessage;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public long getLastMessageTime() {
@@ -133,9 +137,8 @@ public class Conversation implements Serializable {
 
     public void setLastMessageTime(long lastMessageTime) {
         this.lastMessageTime = lastMessageTime;
-        setLastUpdate(lastMessageTime);
         setLastMessageTimeParse(timeFormat.getFormattedDate(lastMessageTime));
-
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
     public void setLastMessageTimeFormatted(String lastMessageTime)
     {
@@ -176,6 +179,7 @@ public class Conversation implements Serializable {
 
     public void setLastMessageRecipient(String lastMessageRecipient) {
         this.lastMessageRecipient = lastMessageRecipient;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getRecipientImagePath() {
@@ -184,6 +188,7 @@ public class Conversation implements Serializable {
 
     public void setRecipientImagePath(String recipientImagePath) {
        this.recipientImagePath = recipientImagePath;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public ArrayList<Message> getMessages() {
@@ -209,7 +214,7 @@ public class Conversation implements Serializable {
         lastMessageRecipient = lastMessage.getSenderID();
         this.lastMessage = lastMessage.getContent();
         lastMessageTime = lastMessage.getSendingTime();
-
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getSenderName() {
@@ -228,6 +233,7 @@ public class Conversation implements Serializable {
 
     public void setRecipientPhoneNumber(String recipientPhoneNumber) {
         this.recipientPhoneNumber = recipientPhoneNumber;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public boolean isMuted() {
@@ -236,7 +242,7 @@ public class Conversation implements Serializable {
 
     public void setMuted(boolean muted) {
         this.muted = muted;
-
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public int getMessageType() {
@@ -253,6 +259,7 @@ public class Conversation implements Serializable {
 
     public void setLastMessageID(long lastMessageID) {
         this.lastMessageID = lastMessageID;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
 //        setLastUpdate(lastMessageID);
     }
 
@@ -262,6 +269,7 @@ public class Conversation implements Serializable {
 
     public void setTyping(boolean typing) {
         this.typing = typing;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getRecipientName() {
@@ -270,6 +278,7 @@ public class Conversation implements Serializable {
 
     public void setRecipientName(String recipientName) {
         this.recipientName = recipientName;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public boolean isBlocked() {
@@ -278,6 +287,7 @@ public class Conversation implements Serializable {
 
     public void setBlocked(boolean blocked) {
         this.blocked = blocked;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 
     public String getRecipientToken() {
@@ -335,6 +345,7 @@ public class Conversation implements Serializable {
 
     public void setLastUpdate(long lastUpdate) {
         this.lastUpdate = lastUpdate;
+        Log.d("CONVERSATION_OBJECT", "last update time: " + lastUpdate);
     }
 
     public int getUnreadMessages() {
@@ -343,5 +354,6 @@ public class Conversation implements Serializable {
 
     public void setUnreadMessages(int unreadMessages) {
         this.unreadMessages = unreadMessages;
+        setLastUpdate(StandardTime.getInstance().getStandardTime());
     }
 }

@@ -199,4 +199,8 @@ public class UserVM extends AndroidViewModel {
         repository.deleteUser(user);
     }
 
+    public void updateBlockUser(String userID)
+    {
+        repository.updateUserBlock(userID);
+    }
 }

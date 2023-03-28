@@ -50,10 +50,12 @@ public class PlayAudioButton extends AppCompatImageButton {
             clicks++;
             if (clicks % 2 == 1) {
                 setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
-                listener.playAudio();
+                if (listener!=null)
+                    listener.playAudio();
             } else {
                 setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
-                listener.pauseAudio();
+                if (listener!=null)
+                    listener.pauseAudio();
             }
         }
         performClick();

@@ -159,8 +159,8 @@ public interface ChatDao {
     @Query("SELECT * FROM conversations WHERE pinned = 1")
     LiveData<List<Conversation>>getPinnedConversations();
 
-    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName, messageType = :lastMessageType, lastMessageTimeParse = :timeParse WHERE conversationID = :conversationID")
-    void updateConversation(String message,long id,int type,long time,long timeParse,String groupName,String conversationID, int lastMessageType);
+    @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName, messageType = :lastMessageType, lastMessageTimeParse = :timeParse, lastUpdate = :lastConversationUpdate WHERE conversationID = :conversationID")
+    void updateConversation(String message,long id,int type,long time,long timeParse,String groupName,String conversationID, int lastMessageType, long lastConversationUpdate);
 
     @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
     LiveData<Boolean> isConversationExists(String conversationID);
@@ -173,6 +173,12 @@ public interface ChatDao {
 
     @Query("SELECT blocked from conversations where conversationID = :conversationID")
     Boolean isConversationBlocked1(String conversationID);
+
+    @Query("UPDATE conversations SET blocked = not (SELECT blocked FROM conversations WHERE conversationID = :conversationID), lastUpdate = :time WHERE conversationID = :conversationID")
+    void blockOrUnblockConversation(String conversationID, long time);
+
+    @Query("UPDATE users SET blocked = not (SELECT blocked FROM users WHERE userUID = :userID) WHERE userUID = :userID")
+    void blockOrUnblockUsers(String userID);
 
     @Query("UPDATE messages SET content = :content,arrivingTime = :time WHERE messageID = :id")
     void updateMessage(long id, String content,String time);

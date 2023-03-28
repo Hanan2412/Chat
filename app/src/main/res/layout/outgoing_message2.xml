@@ -227,15 +227,26 @@
                             android:layout_height="wrap_content"
                             android:padding="3dp">
 
-                            <NormalObjects.PlayAudioButton
+
+                            <NormalObjects.ImageButtonState
                                 android:id="@+id/play_pause_btn"
                                 android:layout_width="64dp"
                                 android:layout_height="64dp"
                                 android:layout_gravity="center"
-                                android:background="@drawable/circle_blue"
+                                android:background="@drawable/circle_blue_no_border"
                                 android:contentDescription="play recording"
                                 android:scaleType="fitXY"
-                                android:src="@drawable/ic_baseline_play_circle_outline_white" />
+                                android:src="@drawable/ic_baseline_play_circle_outline_white"/>
+
+<!--                            <NormalObjects.PlayAudioButton-->
+<!--                                android:id="@+id/play_pause_btn"-->
+<!--                                android:layout_width="64dp"-->
+<!--                                android:layout_height="64dp"-->
+<!--                                android:layout_gravity="center"-->
+<!--                                android:background="@drawable/circle_blue"-->
+<!--                                android:contentDescription="play recording"-->
+<!--                                android:scaleType="fitXY"-->
+<!--                                android:src="@drawable/ic_baseline_play_circle_outline_white" />-->
                         </LinearLayout>
 
                         <LinearLayout

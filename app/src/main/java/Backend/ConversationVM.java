@@ -78,6 +78,11 @@ public class ConversationVM extends AndroidViewModel {
         return repository.getNewOrUpdatedConversation();
     }
 
+    public void updateBlockConversation(String conversationID)
+    {
+        repository.updateConversationBlock(conversationID);
+    }
+
     public LiveData<Conversation>getLastUpdateConversation()
     {
         return repository.getLastUpdateConversation();

@@ -73,6 +73,7 @@ import NormalObjects.Message;
 import NormalObjects.User;
 
 import Retrofit.Server;
+import Time.StandardTime;
 
 
 @SuppressWarnings({"Convert2Lambda", "AnonymousHasLambdaAlternative"})
@@ -924,7 +925,7 @@ public class FirebaseMessageService extends com.google.firebase.messaging.Fireba
             public void run() {
                 dao.insertNewMessage(message);
                 MessageType type = MessageType.values()[message.getMessageType()];
-                dao.updateConversation(message.getContent(), message.getMessageID(), type.ordinal(), System.currentTimeMillis(),System.currentTimeMillis(), message.getConversationName(), message.getConversationID(), message.getMessageType());
+                dao.updateConversation(message.getContent(), message.getMessageID(), type.ordinal(), System.currentTimeMillis(),System.currentTimeMillis(), message.getConversationName(), message.getConversationID(), message.getMessageType(), StandardTime.getInstance().getCurrentTime());
             }
         };
         thread.setName("saveMessage");

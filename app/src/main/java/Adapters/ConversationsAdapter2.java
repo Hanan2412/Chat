@@ -84,6 +84,44 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             conversations = new ArrayList<>();
     }
 
+    public void updateConversationSimple(Conversation conversation)
+    {
+        int index = findCorrectConversationIndex(conversation.getConversationID());
+        conversations.set(index, conversation);
+        notifyItemChanged(index);
+    }
+
+    public void updateConversation2(Conversation conversation)
+    {
+        Log.d(CONVERSATIONS_ADAPTER, "update conversation2");
+        int index = findCorrectConversationIndex(conversation.getConversationID());
+        if (index > -1)
+        {
+            if (conversation.isPinned())
+            {
+                moveToTop(conversation, index);
+            }
+            else if (conversation.getLastMessageID() != getConversation(index).getLastMessageID())
+            {
+                moveToTop(conversation, index);
+            }
+            else
+            {
+                conversations.set(index, conversation);
+                notifyItemChanged(index);
+            }
+        }
+        else if (conversations.isEmpty())
+        {
+            addConversation(conversation);
+        }
+        else {
+            conversations.add(0,conversation);
+            notifyItemRangeChanged(0, conversations.size());
+            notifyItemInserted(0);
+        }
+    }
+
     public synchronized void updateConversation(Conversation conversation) {
         Log.d(CONVERSATIONS_ADAPTER, "update conversation: " + conversation.getConversationName());
         int index = findCorrectConversationIndex(conversation.getConversationID());
@@ -108,7 +146,10 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
     private void moveToTop(Conversation conversation, int index)
     {
         if (conversation.isPinned() && index == 0)
+        {
+            conversations.set(0, conversation);
             notifyItemChanged(0);
+        }
         else {
             int startIndex = 0;
             if (getConversation(0).isPinned())

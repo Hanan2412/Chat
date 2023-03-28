@@ -19,6 +19,7 @@ import NormalObjects.Message;
 import NormalObjects.MessageHistory;
 import NormalObjects.User;
 import Retrofit.Server;
+import Time.StandardTime;
 
 @SuppressWarnings("Convert2Lambda")
 public class Repository {
@@ -154,12 +155,34 @@ public class Repository {
         pool.execute(runnable);
     }
 
+    public void updateConversationBlock(String conversationID)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.blockOrUnblockConversation(conversationID, StandardTime.getInstance().getStandardTime());
+            }
+        };
+        pool.execute(runnable);
+    }
+
+    public void updateUserBlock(String userID)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.blockOrUnblockUsers(userID);
+            }
+        };
+        pool.execute(runnable);
+    }
+
     public void updateConversation(Message message)
     {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                chatDao.updateConversation(message.getContent(),message.getMessageID(),message.getMessageType(),message.getSendingTime(),message.getSendingTime(),message.getConversationName(),message.getConversationID(), message.getMessageType());
+                chatDao.updateConversation(message.getContent(),message.getMessageID(),message.getMessageType(),message.getSendingTime(),message.getSendingTime(),message.getConversationName(),message.getConversationID(), message.getMessageType(), StandardTime.getInstance().getCurrentTime());
             }
         };
         pool.execute(runnable);

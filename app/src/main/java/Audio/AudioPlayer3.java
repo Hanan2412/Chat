@@ -182,7 +182,7 @@ public class AudioPlayer3 extends Thread {
                 listener.onUnLoad();
                 Log.d(AUDIO_PLAYER3, "onUnLoad was called");
             }
-            setDataSource(null);
+            dataSource = null;
         }
         else Log.d(AUDIO_PLAYER3, "player was null in releasePlayer");
     }
@@ -212,7 +212,7 @@ public class AudioPlayer3 extends Thread {
                         player.seekTo(0);
                         if (listener != null) {
                             {
-                                listener.onFinished(getDuration());
+//                                listener.onFinished(getDuration());
                                 Log.d(AUDIO_PLAYER3, "onFinished was called");
                             }
                         }
@@ -247,5 +247,9 @@ public class AudioPlayer3 extends Thread {
             }
         });
         player.start();
+    }
+
+    public String getDataSource() {
+        return dataSource;
     }
 }

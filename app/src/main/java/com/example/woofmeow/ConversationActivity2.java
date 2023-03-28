@@ -369,7 +369,9 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 voiceSeek.setEnabled(true);
                 voiceSeek.setMax(((int) duration) / 1000);
                 voiceLayout.setVisibility(View.VISIBLE);
-                actionBtn.setCurrentButtonType(ButtonType.cancel);
+                changeToSendMessageLayout();
+//                actionBtn.setCurrentButtonType(ButtonType.cancel);
+//                sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
             }
 
             @Override
@@ -491,6 +493,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             @Override
             public void onFinished(long duration) {
                 onInteractionMessage(-1, MessageAction.not_recording);
+                createFileUri(audioMessageRecorder.getFileName());
             }
 
             @Override
@@ -602,6 +605,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onRelease() {
                 if (sendMessageBtn.getCurrentButtonType() == ButtonType.microphone) {
                     recordOrStop(RECORD);
+                    previewMessageType = MessageType.voiceMessage;
                 } else if (sendMessageBtn.getCurrentButtonType() == ButtonType.sendMessage) {
                     if (editMessage != null)
                         onInteractionMessage(editMessage.getMessageID(), MessageAction.edit_message);
@@ -626,21 +630,18 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.toString().length() == 1 && before == 0)//start typing
                 {
-                    sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
-                    actionBtn.setCurrentButtonType(ButtonType.cancel);
+                    changeToSendMessageLayout();
                     if (chatAdapter.getItemCount() > 0) {
                         onInteractionMessage(-1, MessageAction.typing);
                     }
                     Log.d(CONVERSATION_ACTIVITY, "new text starting from 0 was entered");
                 } else if (s.toString().length() == 0)//no typing
                 {
-                    sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
                     onInteractionMessage(-1, MessageAction.not_typing);
-                    actionBtn.setCurrentButtonType(actionBtn.getPreviousButtonType());
+                    changeToBaseLayout();
                     Log.d(CONVERSATION_ACTIVITY, "no more text in text area");
                 } else if (s.toString().length() > 0) {
-                    sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
-                    actionBtn.setCurrentButtonType(ButtonType.cancel);
+                    changeToSendMessageLayout();
                     Log.d(CONVERSATION_ACTIVITY, "changed actionBtn to cancel after a chunk of text was inserted");
                 }
 
@@ -1013,6 +1014,20 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
         onDelayedMessageBroadcast();
         onInteractionMessageReceived();
+    }
+
+    private void changeToSendMessageLayout()
+    {
+        Log.d(CONVERSATION_ACTIVITY, "changed layout to send msg");
+        actionBtn.setCurrentButtonType(ButtonType.cancel);
+        sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
+    }
+
+    private void changeToBaseLayout()
+    {
+        Log.d(CONVERSATION_ACTIVITY, "changed layout to base layout");
+        sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
+        actionBtn.setCurrentButtonType(actionBtn.getPreviousButtonType());
     }
 
     private void sendSMS(Message message) {
@@ -1538,25 +1553,37 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     @Override
-    public void onMessageClick(Message message, View view, int viewType) {
-        if (message.getMessageType() == MessageType.contact.ordinal()) {
+    public void onMessageClick(Message message) {
+        int messageType = message.getMessageType();
+        if (!selectedMessages.isEmpty())
+            onUnSelectMessages();
+        else if (messageType == MessageType.contact.ordinal()) {
             Intent createNewContact = new Intent(ContactsContract.Intents.Insert.ACTION);
             createNewContact.setType(ContactsContract.RawContacts.CONTENT_TYPE);
             createNewContact.putExtra(ContactsContract.Intents.Insert.NAME, message.getContactName());
             createNewContact.putExtra(ContactsContract.Intents.Insert.PHONE, message.getContactNumber());
             startActivity(createNewContact);
-        }
-        if (messageLongPress) {
-            messageLongPress = false;
-            invalidateOptionsMenu();
-            Drawable drawable;
-            if (message.getSenderID().equals(currentUserID)) {
-                drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.outgoing_message_look, getTheme());
-            } else {
-                drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.incoming_message_look, getTheme());
+        } else if (messageType == MessageType.quote.ordinal()) {
+            String quotedMessageID = message.getQuoteID();
+            int index = chatAdapter.findMessageLocation(null, 0, chatAdapter.getItemCount() - 1, Long.parseLong(quotedMessageID));
+            if (index != -1) {
+                recyclerView.smoothScrollToPosition(index);
+                recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                        super.onScrollStateChanged(recyclerView, newState);
+                        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                            RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
+                            if (manager != null) {
+                                View view = manager.findViewByPosition(index);
+                                if (view != null)
+                                    view.setSelected(true);
+                            }
+                            recyclerView.removeOnScrollListener(this);
+                        }
+                    }
+                });
             }
-            view.setBackground(drawable);
-
         } else if (message.getQuoteMessage() != null) {
             //this is a quoted message
             String quotedMessageID = message.getQuoteID();
@@ -1578,7 +1605,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             }
                         }
                     });
-                    //recyclerView.scrollToPosition(index);
                 } else
                     Toast.makeText(this, "couldn't fine this quoted message", Toast.LENGTH_SHORT).show();
             }
@@ -1586,6 +1612,29 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             Intent openWebSite = new Intent(Intent.ACTION_VIEW);
             openWebSite.setData(Uri.parse(message.getContent()));
             startActivity(openWebSite);
+        } else if (messageType == MessageType.imageMessage.ordinal() || messageType == MessageType.photoMessage.ordinal()) {
+            ImageFragment imageFragment = new ImageFragment();
+            Bundle bundle = new Bundle();
+            bundle.putString("image", message.getFilePath());
+            imageFragment.setArguments(bundle);
+            imageFragment.show(getSupportFragmentManager(), "imageFragment");
+        } else if (messageType == MessageType.gpsMessage.ordinal()) {
+            String geoString = String.format(Locale.ENGLISH, "geo:%S,%S", message.getLatitude(), message.getLongitude());
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(geoString));
+            startActivity(intent);
+        } else if (messageType == MessageType.videoMessage.ordinal()) {
+            Uri uri = Uri.parse(message.getFilePath());
+            VideoFragment videoFragment = VideoFragment.getInstance(uri, false);
+            FragmentManager manager = getSupportFragmentManager();
+            FragmentTransaction transaction = manager.beginTransaction();
+            transaction.addToBackStack(null);
+            String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
+            if (manager.findFragmentByTag(VIDEO_FRAGMENT_TAG) == null) {
+                transaction.add(R.id.contentContainer, videoFragment, VIDEO_FRAGMENT_TAG);
+            } else {
+                transaction.replace(R.id.contentContainer, videoFragment, VIDEO_FRAGMENT_TAG);
+            }
+            transaction.commit();
         }
     }
 
@@ -1610,53 +1659,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             selectedMessages.add(message);
         invalidateOptionsMenu();
     }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        if (!selectedMessages.isEmpty()) {
-            menu.setGroupVisible(R.id.selectedMessageOptions, true);
-            menu.setGroupVisible(R.id.singlePersonConversation, false);
-            menu.setGroupVisible(R.id.groupConversationOptions, false);
-            menu.setGroupVisible(R.id.allConversationsOptions, false);
-            Log.d(CONVERSATION_ACTIVITY, "option menu - on selected message options were set");
-        } else {
-            menu.setGroupVisible(R.id.allConversationsOptions, true);
-            menu.setGroupVisible(R.id.selectedMessageOptions, false);
-            if (conversationType == ConversationType.single) {
-                menu.setGroupVisible(R.id.singlePersonConversation, true);
-                menu.findItem(R.id.addPhoneNumber).setVisible(true);
-                menu.setGroupVisible(R.id.groupConversationOptions, false);
-            } else if (conversationType == ConversationType.group) {
-                menu.setGroupVisible(R.id.groupConversationOptions, true);
-                menu.setGroupVisible(R.id.singlePersonConversation, false);
-            } else if (conversationType == ConversationType.sms) {
-                menu.setGroupVisible(R.id.singlePersonConversation, true);
-                menu.setGroupVisible(R.id.groupConversationOptions, false);
-                menu.findItem(R.id.addPhoneNumber).setVisible(false);
-            }
-        }
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
-    public void onPreviewMessageClick(Message message) {
-        if (message.getMessageType() == MessageType.gpsMessage.ordinal()) {
-            String geoString = String.format(Locale.ENGLISH, "geo:%S,%S", message.getLatitude(), message.getLongitude());
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(geoString));
-            startActivity(intent);
-        } else if (message.getMessageType() == MessageType.photoMessage.ordinal() || message.getMessageType() == MessageType.imageMessage.ordinal()) {
-            ImageFragment imageFragment = new ImageFragment();
-            Bundle bundle = new Bundle();
-            bundle.putString("image", message.getFilePath());
-            imageFragment.setArguments(bundle);
-            imageFragment.show(getSupportFragmentManager(), "imageFragment");
-        }
-    }
-
-    @Override
-    public void onRadioBtnClick(RadioGroup group, int radioBtnPosition) {
-    }
-
 
     //saves image to local storage
     @Override
@@ -1736,32 +1738,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
 
         return path;
-    }
-
-    @Override
-    public void onVideoClicked(Uri uri) {
-        VideoFragment videoFragment = VideoFragment.getInstance(uri, false);
-        FragmentManager manager = getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        transaction.addToBackStack(null);
-        String VIDEO_FRAGMENT_TAG = "VIDEO_FRAGMENT";
-        if (manager.findFragmentByTag(VIDEO_FRAGMENT_TAG) == null) {
-            transaction.add(R.id.contentContainer, videoFragment, VIDEO_FRAGMENT_TAG);
-        } else {
-            transaction.replace(R.id.contentContainer, videoFragment, VIDEO_FRAGMENT_TAG);
-        }
-        transaction.commit();
-    }
-
-    @Override
-    public void onRetrySending(String messageID, String imagePath) {
-        int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, Long.parseLong(messageID));
-        if (index != -1) {
-            Message message = chatAdapter.getMessage(index);
-            messageSender.sendMessage(message, getRecipientsTokens());
-            chatAdapter.notifyItemChanged(index);
-        }
-
     }
 
     @Override
@@ -2035,14 +2011,17 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         switch (buttonType) {
             case attachFile: {
                 onFileAction();
+                changeToSendMessageLayout();
                 break;
             }
             case camera: {
                 onCameraAction();
+                changeToSendMessageLayout();
                 break;
             }
             case gallery: {
                 onGalleryAction();
+                changeToSendMessageLayout();
                 break;
             }
             case location: {
@@ -2055,6 +2034,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
             case video: {
                 onVideoAction();
+                changeToSendMessageLayout();
                 break;
             }
             case contact: {
@@ -2063,6 +2043,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
             case document: {
                 onDocumentAction();
+                changeToSendMessageLayout();
                 break;
             }
             case joke: {
@@ -2093,8 +2074,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             default:
                 Log.e(ERROR_CASE, "onActionMessageSelected error " + new Throwable().getStackTrace()[0].getLineNumber());
         }
-        if (buttonType != ButtonType.location && buttonType != ButtonType.delay)
-            sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
     }
 
     private void setPreviewMessageType(MessageType messageType) {
@@ -2324,8 +2303,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.conversation_menu, menu);
+    public boolean onPrepareOptionsMenu(Menu menu) {
         menu.setGroupVisible(R.id.allConversationsOptions, true);
         menu.setGroupVisible(R.id.selectedMessageOptions, false);
         switch (conversationType) {
@@ -2344,137 +2322,153 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 menu.findItem(R.id.addPhoneNumber).setVisible(false);
                 break;
         }
+        if (!selectedMessages.isEmpty()) {
+            menu.setGroupVisible(R.id.selectedMessageOptions, true);
+            menu.setGroupVisible(R.id.singlePersonConversation, false);
+            menu.setGroupVisible(R.id.groupConversationOptions, false);
+            menu.setGroupVisible(R.id.allConversationsOptions, false);
+            Log.d(CONVERSATION_ACTIVITY, "option menu - on selected message options were set");
+        }
+        if (conversation != null) {
+            if (conversation.isBlocked())
+                menu.findItem(R.id.blockConversation).setTitle(getResources().getString(R.string.unblock));
+            else
+                menu.findItem(R.id.blockConversation).setTitle(getResources().getString(R.string.block));
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.conversation_menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     //extra options
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        Message selectedMessage = selectedMessages.get(0);
-        if (item.getItemId() == R.id.callBtn) {
-            callPhone();
-            //opening dialer to call the recipient number if exists
-        } else if (item.getItemId() == R.id.addAsContact) {
-            //adds current recipient as a contact to contacts list
-            Intent addContactIntent = new Intent(Intent.ACTION_INSERT);
-            addContactIntent.setType(ContactsContract.Contacts.CONTENT_TYPE);
-            addContactIntent.putExtra(ContactsContract.Intents.Insert.NAME, recipients.get(0).getName() + " " + recipients.get(0).getLastName());//first name ---- space ---- lastName
-            addContactIntent.putExtra(ContactsContract.Intents.Insert.PHONE, recipients.get(0).getPhoneNumber());
-            //addContactIntent.putExtra(ContactsContract.Intents.Insert.EMAIL, "example@wxample.com");
-            if (addContactIntent.resolveActivity(getPackageManager()) != null)
-                startActivity(addContactIntent);
-        } else if (item.getItemId() == R.id.addPhoneNumber) {
-            //opens contact and gets selected contact number
-            View builderView = getLayoutInflater().inflate(R.layout.edit_text_dialog, null);
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            Button saveBtn = builderView.findViewById(R.id.saveBtn);
-            Button cancelBtn = builderView.findViewById(R.id.cancelBtn);
-            Button fromContacts = builderView.findViewById(R.id.add);
-            EditText text = builderView.findViewById(R.id.editTextDialog);
-            AlertDialog alert = builder.setTitle("Add a phone number to this contact")
-                    .setMessage("choose a phone number from contacts or type one")
-                    .setCancelable(true)
-                    .setView(builderView).create();
-            alert.show();
-            cancelBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    alert.dismiss();
+        if (!selectedMessages.isEmpty()) {
+            Message selectedMessage = selectedMessages.get(0);
+            if (item.getItemId() == R.id.share) {
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_SEND);
+                sendIntent.putExtra(Intent.EXTRA_TEXT, selectedMessage.getContent());
+                sendIntent.setType("text/plain");
+                Intent shareIntent = Intent.createChooser(sendIntent, null);
+                startActivity(shareIntent);
+            } else if (item.getItemId() == R.id.messageInfo) {
+                BackdropFragment backdropFragment = BackdropFragment.newInstance();
+                Bundle backDropBundle = new Bundle();
+                final String conversationType = "conversationType";
+                backDropBundle.putSerializable("message", selectedMessage);
+                backDropBundle.putInt(conversationType, this.conversationType.ordinal());
+                backdropFragment.setArguments(backDropBundle);
+                backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
+            } else if (item.getItemId() == R.id.copy) {
+                ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                ClipData clipData = ClipData.newPlainText("message", selectedMessage.getContent());
+                if (clipboardManager != null) {
+                    clipboardManager.setPrimaryClip(clipData);
+                    onShowToastMessage("Copied message");
                 }
-            });
-            saveBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    String phoneNumber = text.getText().toString();
-                    if (phoneNumber.isEmpty())
-                        Toast.makeText(ConversationActivity2.this, "phone number is missing", Toast.LENGTH_SHORT).show();
-                    else {
-                        recipients.get(0).setPhoneNumber(phoneNumber);
-                        updateUser(recipients.get(0));
-//                        userModel.updateUser(recipients.get(0));
-                    }
-                }
-            });
-            fromContacts.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent addPhoneNumberIntent = new Intent(Intent.ACTION_PICK);
-                    addPhoneNumberIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
-                    if (addPhoneNumberIntent.resolveActivity(getPackageManager()) != null)
-                        addPhoneNumber.launch(addPhoneNumberIntent);
-                    alert.dismiss();
-                }
-            });
-        } else if (item.getItemId() == R.id.blockConversation) {
-            model.isConversationBlocked(conversationID).observe(this, new Observer<Boolean>() {
-                @Override
-                public void onChanged(Boolean aBoolean) {
-                    if (aBoolean) {
-                        model.blockConversation(conversationID);
-                        Toast.makeText(ConversationActivity2.this, "conversation was blocked!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        model.unBlockConversation(conversationID);
-                        Toast.makeText(ConversationActivity2.this, "conversation was un-blocked!", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-
-        } else if (item.getItemId() == R.id.share) {
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, selectedMessage.getContent());
-            sendIntent.setType("text/plain");
-            Intent shareIntent = Intent.createChooser(sendIntent, null);
-            startActivity(shareIntent);
-        } else if (item.getItemId() == R.id.messageInfo) {
-            BackdropFragment backdropFragment = BackdropFragment.newInstance();
-            Bundle backDropBundle = new Bundle();
-            final String conversationType = "conversationType";
-            backDropBundle.putSerializable("message", selectedMessage);
-            backDropBundle.putInt(conversationType, this.conversationType.ordinal());
-            backdropFragment.setArguments(backDropBundle);
-            backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
-        } else if (item.getItemId() == R.id.searchMessage) {
-            Animation in = AnimationUtils.loadAnimation(this, R.anim.slide_down);
-            Animation out = AnimationUtils.loadAnimation(this, R.anim.slide_up);
-            if (searchLayout.getVisibility() == View.GONE) {
-                searchText.setText("");
-                searchLayout.setVisibility(View.VISIBLE);
-                searchLayout.startAnimation(in);
-                recyclerView.startAnimation(in);
-            } else {
-                new Handler().postDelayed(new Runnable() {
+            } else if (item.getItemId() == R.id.edit) {
+                messageText.setText(selectedMessage.getContent());
+                editMessage = selectedMessage;
+                Log.d(CONVERSATION_ACTIVITY, "edit msg");
+            } else if (item.getItemId() == R.id.delete) {
+                onInteractionMessage(selectedMessage.getMessageID(), MessageAction.delete_message);
+                Log.d(CONVERSATION_ACTIVITY, "delete msg");
+            }
+        }
+        else {
+            if (item.getItemId() == R.id.callBtn) {
+                callPhone();
+                //opening dialer to call the recipient number if exists
+            } else if (item.getItemId() == R.id.addAsContact) {
+                //adds current recipient as a contact to contacts list
+                Intent addContactIntent = new Intent(Intent.ACTION_INSERT);
+                addContactIntent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+                addContactIntent.putExtra(ContactsContract.Intents.Insert.NAME, recipients.get(0).getName() + " " + recipients.get(0).getLastName());//first name ---- space ---- lastName
+                addContactIntent.putExtra(ContactsContract.Intents.Insert.PHONE, recipients.get(0).getPhoneNumber());
+                //addContactIntent.putExtra(ContactsContract.Intents.Insert.EMAIL, "example@wxample.com");
+                if (addContactIntent.resolveActivity(getPackageManager()) != null)
+                    startActivity(addContactIntent);
+            } else if (item.getItemId() == R.id.addPhoneNumber) {
+                //opens contact and gets selected contact number
+                View builderView = getLayoutInflater().inflate(R.layout.edit_text_dialog, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                Button saveBtn = builderView.findViewById(R.id.saveBtn);
+                Button cancelBtn = builderView.findViewById(R.id.cancelBtn);
+                Button fromContacts = builderView.findViewById(R.id.add);
+                EditText text = builderView.findViewById(R.id.editTextDialog);
+                AlertDialog alert = builder.setTitle("Add a phone number to this contact")
+                        .setMessage("choose a phone number from contacts or type one")
+                        .setCancelable(true)
+                        .setView(builderView).create();
+                alert.show();
+                cancelBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
-                    public void run() {
-                        searchLayout.setVisibility(View.GONE);
+                    public void onClick(View v) {
+                        alert.dismiss();
                     }
-                }, out.getDuration());
-                searchLayout.startAnimation(out);
-                recyclerView.startAnimation(out);
-            }
-        } else if (item.getItemId() == R.id.copy) {
-            ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            ClipData clipData = ClipData.newPlainText("message", selectedMessage.getContent());
-            if (clipboardManager != null) {
-                clipboardManager.setPrimaryClip(clipData);
-                onShowToastMessage("Copied message");
-            }
-        } else if (item.getItemId() == R.id.addNewMember) {
-            Intent intent = new Intent(ConversationActivity2.this, NewConversationActivity.class);
-            intent.putExtra("recipients", (ArrayList<User>) recipients);
-            newRecipients.launch(intent);
-        } else if (item.getItemId() == R.id.leaveGroup) {
-            onInteractionMessage(-1, MessageAction.leave_group);
-            Log.d(CONVERSATION_ACTIVITY, "leave group");
-        } else if (item.getItemId() == R.id.edit) {
-            messageText.setText(selectedMessage.getContent());
-            editMessage = selectedMessage;
-            Log.d(CONVERSATION_ACTIVITY, "edit msg");
-        } else if (item.getItemId() == R.id.delete) {
-            onInteractionMessage(selectedMessage.getMessageID(), MessageAction.delete_message);
-            Log.d(CONVERSATION_ACTIVITY, "delete msg");
-        } else
-            Log.e(ERROR_CASE, "menu error");
+                });
+                saveBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String phoneNumber = text.getText().toString();
+                        if (phoneNumber.isEmpty())
+                            Toast.makeText(ConversationActivity2.this, "phone number is missing", Toast.LENGTH_SHORT).show();
+                        else {
+                            recipients.get(0).setPhoneNumber(phoneNumber);
+                            updateUser(recipients.get(0));
+//                        userModel.updateUser(recipients.get(0));
+                        }
+                    }
+                });
+                fromContacts.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent addPhoneNumberIntent = new Intent(Intent.ACTION_PICK);
+                        addPhoneNumberIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
+                        if (addPhoneNumberIntent.resolveActivity(getPackageManager()) != null)
+                            addPhoneNumber.launch(addPhoneNumberIntent);
+                        alert.dismiss();
+                    }
+                });
+            } else if (item.getItemId() == R.id.blockConversation) {
+                conversation.setBlocked(!conversation.isBlocked());
+                updateConversation(conversation);
+                if (conversationType == ConversationType.single)
+                    userModel.updateBlockUser(recipients.get(0).getUserUID());
+                Log.d(CONVERSATION_ACTIVITY, "BLOCK");
+            } else if (item.getItemId() == R.id.searchMessage) {
+                Animation in = AnimationUtils.loadAnimation(this, R.anim.slide_down);
+                Animation out = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+                if (searchLayout.getVisibility() == View.GONE) {
+                    searchText.setText("");
+                    searchLayout.setVisibility(View.VISIBLE);
+                    searchLayout.startAnimation(in);
+                    recyclerView.startAnimation(in);
+                } else {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            searchLayout.setVisibility(View.GONE);
+                        }
+                    }, out.getDuration());
+                    searchLayout.startAnimation(out);
+                    recyclerView.startAnimation(out);
+                }
+            } else if (item.getItemId() == R.id.addNewMember) {
+                Intent intent = new Intent(ConversationActivity2.this, NewConversationActivity.class);
+                intent.putExtra("recipients", (ArrayList<User>) recipients);
+                newRecipients.launch(intent);
+            } else if (item.getItemId() == R.id.leaveGroup) {
+                onInteractionMessage(-1, MessageAction.leave_group);
+                Log.d(CONVERSATION_ACTIVITY, "leave group");
+            } else
+                Log.e(ERROR_CASE, "menu error");
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -2655,7 +2649,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 } else {
                     Log.e(CONVERSATION_ACTIVITY, "conversation object from db is null");
                 }
-                cld.removeObservers(ConversationActivity2.this);
+//                cld.removeObservers(ConversationActivity2.this);
             }
         });
 //        if (conversationType != ConversationType.sms)
@@ -2835,33 +2829,14 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
     private void updateConversation(Conversation conversation) {
         Log.d(CONVERSATION_ACTIVITY, "update conversation - conversation object");
+        conversation.setLastUpdate(StandardTime.getInstance().getCurrentTime());
         model.updateConversation(conversation);
     }
 
-    private void updateMessage(@NonNull Message message)
-    {
+    private void updateMessage(@NonNull Message message) {
         Log.d(CONVERSATION_ACTIVITY, "update message: " + message.getMessageID());
         model.updateMessage(message);
     }
-
-//    private void updateMessage(@NonNull Message message) {
-//        Log.d(CONVERSATION_ACTIVITY, "update message id: " + message.getMessageID());
-//        LiveData<Message> messageLiveData = model.getMessage(message.getMessageID());
-//        messageLiveData.observe(ConversationActivity2.this, new Observer<Message>() {
-//            @Override
-//            public void onChanged(Message message1) {
-//                Log.d(CONVERSATION_ACTIVITY, "update msg, check if update is needed id: " + message.getMessageID());
-//                if (message1 != message) {
-//                    Log.d(CONVERSATION_ACTIVITY, "msg update is needed");
-//                    if (chatAdapter.getMessage(chatAdapter.getItemCount() - 1).getMessageID() == message.getMessageID())
-//                        updateConversation(message);
-//                    model.updateMessage(message);
-//                    chatAdapter.updateMessage(message);
-//                } else
-//                    Log.d(CONVERSATION_ACTIVITY, "msg update was not needed");
-//            }
-//        });
-//    }
 
     private void saveMessage(@NonNull Message message) {
         Log.d(CONVERSATION_ACTIVITY, "save message id: " + message.getMessageID());
