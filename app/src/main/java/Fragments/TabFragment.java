@@ -532,7 +532,8 @@ public class TabFragment extends Fragment {
         conversationsLV.observe(requireActivity(), new Observer<Conversation>() {
             @Override
             public void onChanged(Conversation conversation) {
-                conversationsAdapter2.updateConversation2(conversation);
+                if (conversation!=null)
+                    conversationsAdapter2.updateConversation2(conversation);
             }
         });
 

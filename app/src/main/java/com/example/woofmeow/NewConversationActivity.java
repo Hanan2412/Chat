@@ -133,7 +133,14 @@ public class NewConversationActivity extends AppCompatActivity {
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (newConversationAdapter.getItemCount() == 1)
+                if (getIntent().hasExtra("additional_recipients"))
+                {
+                    Intent startConversation = new Intent(NewConversationActivity.this, ConversationActivity2.class);
+                    startConversation.putExtra("group", (ArrayList<User>) newConversationAdapter.getUsers());
+                    setResult(RESULT_OK,startConversation);
+                    finish();
+                }
+                else if (newConversationAdapter.getItemCount() == 1)
                 {
                     startConversation(newConversationAdapter.getItem(0).getName(), newConversationAdapter.getUsers());
                     finish();

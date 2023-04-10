@@ -109,6 +109,7 @@ import Consts.ConversationType;
 import Audio.AudioPlayer3;
 import Consts.MessageStatus;
 import Controller.NotificationsController;
+import Fragments.BinaryFragment;
 import Fragments.GifBackdropFragment;
 import Fragments.ImageFragment;
 import Fragments.SingleFieldFragment;
@@ -719,21 +720,26 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onActivityResult(ActivityResult result) {
                 if (result.getResultCode() == RESULT_OK) {
                     if (result.getData() != null) {
-                        List<User> recipients = (ArrayList<User>) result.getData().getSerializableExtra("group");
-                        if (recipients != null) {
-                            List<String> newRecipients = new ArrayList<>();
-                            int index = ConversationActivity2.this.recipients.size();
-                            for (int i = index; i < recipients.size(); i++) {
+                        List<User> newRecipients = (ArrayList<User>) result.getData().getSerializableExtra("group");
+                        if (newRecipients != null) {
+                            int oldRecipientAmount = recipients.size();
+                            recipients.addAll(newRecipients);
+                            List<String>newRecipientsIds = new ArrayList<>();
+                            for (int i = oldRecipientAmount; i < recipients.size(); i++)
+                            {
                                 User user = recipients.get(i);
-                                getRecipientToken(user.getUserUID());
                                 userModel.saveUser(user);
-                                newRecipients.add(user.getUserUID());
+                                newRecipientsIds.add(user.getUserUID());
                             }
-                            model.createNewGroup(conversationID, newRecipients);
+                            model.createNewGroup(conversationID, newRecipientsIds);
                             setRecipients(recipients);
                         } else
                             Log.e(NULL_ERROR, "new recipients are NULL");
                     }
+                }
+                else
+                {
+                    Toast.makeText(ConversationActivity2.this, "can't add new recipients to conversation", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -741,7 +747,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             @Override
             public void onActivityResult(ActivityResult result) {
                 if (result.getResultCode() == RESULT_OK) {
+                    Log.d(CONVERSATION_ACTIVITY, "taking a picture");
                     onShowPreview(MessageType.photoMessage, photoPath);
+                }
+                else if (result.getResultCode() == RESULT_CANCELED)
+                {
+                    Log.d(CONVERSATION_ACTIVITY, "cancelled taking image");
+                    onReset();
                 }
             }
         });
@@ -759,6 +771,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         }
                     }
                 }
+                else if (result.getResultCode() == RESULT_CANCELED)
+                {
+                    Log.d(CONVERSATION_ACTIVITY, "cancelled gallery image");
+                    onReset();
+                }
             }
         });
         addPhoneNumber = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -775,11 +792,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                 int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
                                 String number = cursor.getString(numberIndex);
                                 cursor.close();
-                                recipients.get(0).setPhoneNumber(number);
-                                updateUser(recipients.get(0));
+                                updatePhoneNumber(number);
+//                                recipients.get(0).setPhoneNumber(number);
+//                                updateUser(recipients.get(0));
 //                                userModel.updateUser(recipients.get(0));
                                 //dbActive.updateUser(recipients.get(0));
-                                Toast.makeText(ConversationActivity2.this, "number saved ", Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -2396,46 +2413,37 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     startActivity(addContactIntent);
             } else if (item.getItemId() == R.id.addPhoneNumber) {
                 //opens contact and gets selected contact number
-                View builderView = getLayoutInflater().inflate(R.layout.edit_text_dialog, null);
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                Button saveBtn = builderView.findViewById(R.id.saveBtn);
-                Button cancelBtn = builderView.findViewById(R.id.cancelBtn);
-                Button fromContacts = builderView.findViewById(R.id.add);
-                EditText text = builderView.findViewById(R.id.editTextDialog);
-                AlertDialog alert = builder.setTitle("Add a phone number to this contact")
-                        .setMessage("choose a phone number from contacts or type one")
-                        .setCancelable(true)
-                        .setView(builderView).create();
-                alert.show();
-                cancelBtn.setOnClickListener(new View.OnClickListener() {
+                BinaryFragment binaryFragment = new BinaryFragment();
+                binaryFragment.setListener(new BinaryFragment.BinaryClickListener() {
                     @Override
-                    public void onClick(View v) {
-                        alert.dismiss();
-                    }
-                });
-                saveBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String phoneNumber = text.getText().toString();
-                        if (phoneNumber.isEmpty())
-                            Toast.makeText(ConversationActivity2.this, "phone number is missing", Toast.LENGTH_SHORT).show();
-                        else {
-                            recipients.get(0).setPhoneNumber(phoneNumber);
-                            updateUser(recipients.get(0));
-//                        userModel.updateUser(recipients.get(0));
-                        }
-                    }
-                });
-                fromContacts.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
+                    public void onFirstBtnClick() {
+                        binaryFragment.dismiss();
                         Intent addPhoneNumberIntent = new Intent(Intent.ACTION_PICK);
                         addPhoneNumberIntent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
                         if (addPhoneNumberIntent.resolveActivity(getPackageManager()) != null)
                             addPhoneNumber.launch(addPhoneNumberIntent);
-                        alert.dismiss();
+                    }
+
+                    @Override
+                    public void onSecondBtnClick() {
+                        binaryFragment.dismiss();
+                        SingleFieldFragment singleFieldFragment = new SingleFieldFragment();
+                        singleFieldFragment.setListener(new SingleFieldFragment.onText() {
+                            @Override
+                            public void onTextChange(String name) {
+                                Log.d(CONVERSATION_ACTIVITY, "phone number added");
+                                updatePhoneNumber(name);
+                                singleFieldFragment.dismiss();
+                            }
+                        });
+                        singleFieldFragment.setHint(getResources().getString(R.string.phone_number));
+                        singleFieldFragment.show(getSupportFragmentManager(), "phoneNumberFragment");
                     }
                 });
+                binaryFragment.setFirstBtnText("choose from contacts");
+                binaryFragment.setSecondBtnText("type phone number");
+                binaryFragment.show(getSupportFragmentManager(), "binaryFragmentNumber");
+
             } else if (item.getItemId() == R.id.blockConversation) {
                 conversation.setBlocked(!conversation.isBlocked());
                 updateConversation(conversation);
@@ -2462,7 +2470,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 }
             } else if (item.getItemId() == R.id.addNewMember) {
                 Intent intent = new Intent(ConversationActivity2.this, NewConversationActivity.class);
-                intent.putExtra("recipients", (ArrayList<User>) recipients);
+                intent.putExtra("additional_recipients", "true");
                 newRecipients.launch(intent);
             } else if (item.getItemId() == R.id.leaveGroup) {
                 onInteractionMessage(-1, MessageAction.leave_group);
@@ -3042,4 +3050,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         invalidateOptionsMenu();
     }
 
+    private void updatePhoneNumber(String phoneNumber)
+    {
+        recipients.get(0).setPhoneNumber(phoneNumber);
+        conversation.setRecipientPhoneNumber(phoneNumber);
+        updateUser(recipients.get(0));
+        updateConversation(conversation);
+        Toast.makeText(ConversationActivity2.this, "number added to conversation ", Toast.LENGTH_SHORT).show();
+    }
 }

@@ -3,16 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/blue">
+    android:background="@color/lightBlue2">
 
     <Button
-        android:id="@+id/openGalleryBtn"
+        android:id="@+id/firstBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/gallery" />
 
     <Button
-        android:id="@+id/openCameraBtn"
+        android:id="@+id/secondBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/camera" />

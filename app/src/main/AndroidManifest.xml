@@ -42,6 +42,14 @@
         <intent>
             <action android:name="android.intent.action.OPEN_DOCUMENT" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+            <data android:mimeType="vnd.android.cursor.item/contact"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <data android:mimeType="vnd.android.cursor.item/contact"/>
+        </intent>
     </queries>
 
     <application
