@@ -84,13 +84,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             conversations = new ArrayList<>();
     }
 
-    public void updateConversationSimple(Conversation conversation)
-    {
-        int index = findCorrectConversationIndex(conversation.getConversationID());
-        conversations.set(index, conversation);
-        notifyItemChanged(index);
-    }
-
     public void updateConversation2(Conversation conversation)
     {
         Log.d(CONVERSATIONS_ADAPTER, "update conversation2");
@@ -161,34 +154,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         }
     }
 
-    public void muteConversation(String conversationID, boolean mute) {
-        Log.d(CONVERSATIONS_ADAPTER, "mute conversation: " + conversationID + " mute: " + mute);
-        int index = findCorrectConversationIndex(conversationID);
-        Conversation conversation = conversations.get(index);
-        conversation.setMuted(mute);
-        notifyItemChanged(index);
-    }
-
-    public void muteConversation(Conversation conversation)
-    {
-        int index = findCorrectConversationIndex(conversation.getConversationID());
-        notifyItemChanged(index);
-    }
-
-    public void blockConversation(Conversation conversation)
-    {
-        int index = findCorrectConversationIndex(conversation.getConversationID());
-        notifyItemChanged(index);
-    }
-
-    public void blockConversation(boolean blocked, String conversationID) {
-        Log.d(CONVERSATIONS_ADAPTER, "block conversation: " + conversationID + " block: " + blocked);
-        int index = findCorrectConversationIndex(conversationID);
-        Conversation conversation = conversations.get(index);
-        conversation.setBlocked(blocked);
-        notifyItemChanged(index);
-    }
-
     public void deleteConversation(String conversationID) {
         Log.d(CONVERSATIONS_ADAPTER, "delete conversation: " + conversationID);
         int index = findCorrectConversationIndex(conversationID);
@@ -254,7 +219,10 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_mic_black, 0 ,0,0);
         }
         else
+        {
             holder.lastMessage.setText(conversation.getLastMessage());
+            holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0 ,0,0);
+        }
         if (conversation.getMessageType() == MessageType.imageMessage.ordinal() || conversation.getMessageType() == MessageType.photoMessage.ordinal())
         {
             holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0,0,0);
@@ -293,20 +261,6 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
             holder.unreadMessages.setText(String.valueOf(conversation.getUnreadMessages()));
             Log.e("unread", "unread should be visible");
         }
-    }
-
-    public void pinConversation(Conversation conversation, boolean pin) {
-        conversation.setPinned(pin);
-        int conversationIndex = findCorrectConversationIndex(conversation.getConversationID());
-        if (pin)
-        {
-            moveToTop(conversation, conversationIndex);
-        }
-        else
-        {
-            notifyItemChanged(conversationIndex);
-        }
-
     }
 
     public Conversation getConversation(int position) {

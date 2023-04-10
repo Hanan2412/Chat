@@ -301,23 +301,6 @@ public class TabFragment extends Fragment {
         restoreBaseMenu();
     }
 
-    private void pinConversations() {
-        for (Conversation conversation : selectedConversations) {
-            conversationsAdapter2.pinConversation(conversation, true);
-            conversation.setPinned(true);
-            updateConversation(conversation);
-        }
-        restoreBaseMenu();
-    }
-
-    private void unPinConversation() {
-        for (Conversation conversation : selectedConversations) {
-            conversationsAdapter2.pinConversation(conversation, false);
-            updateConversation(conversation);
-        }
-        restoreBaseMenu();
-    }
-
     private void restoreBaseMenu() {
         unselectConversations();
         requireActivity().invalidateOptionsMenu();
@@ -531,29 +514,15 @@ public class TabFragment extends Fragment {
         });
     }
 
-    private void onNewOrUpdatedConversation() {
-        conversationVM.getNewOrUpdatedConversation().observe(requireActivity(), new Observer<Conversation>() {
-            @Override
-            public void onChanged(Conversation conversation) {
-                if (conversation != null) {
-                    conversationsAdapter2.updateConversation(conversation);
-                }
-            }
-        });
-    }
-
     private void muteConversation(Conversation conversation) {
         conversation.setMuted(!conversation.isMuted());
         updateConversation(conversation);
-        conversationsAdapter2.muteConversation(conversation);
     }
 
     private void blockConversation() {
         for (Conversation conversation : selectedConversations) {
             conversation.setBlocked(!conversation.isBlocked());
             updateConversation(conversation);
-//            conversationVM.updateBlockConversation(conversation.getConversationID());
-            conversationsAdapter2.blockConversation(conversation);
         }
     }
 
@@ -567,20 +536,6 @@ public class TabFragment extends Fragment {
             }
         });
 
-    }
-
-    private void onCreateActiveConversationLV(String conversationID)
-    {
-        if (activeConversation!=null)
-            activeConversation.removeObservers(requireActivity());
-        activeConversation = conversationVM.getConversation(conversationID);
-        activeConversation.observe(requireActivity(), new Observer<Conversation>() {
-            @Override
-            public void onChanged(Conversation conversation) {
-                conversationsAdapter2.updateConversationSimple(conversation);
-                Log.d(TAB_FRAGMENT, "block conversation");
-            }
-        });
     }
 
     @Override

@@ -940,6 +940,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onClick(View view) {
                 imagePreviewLayout.setVisibility(View.GONE);
                 setPreviewMessageType(MessageType.undefined);
+                onReset();
             }
         });
         conversationImage.setOnClickListener(new View.OnClickListener() {
