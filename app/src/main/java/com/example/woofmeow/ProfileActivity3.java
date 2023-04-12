@@ -41,6 +41,8 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -56,6 +58,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import Adapters.GroupProfileAdapter;
 import Adapters.ImageAdapterRV;
 import Adapters.ListAdapter2;
 import Backend.ConversationVM;
@@ -70,8 +73,8 @@ import NormalObjects.FileManager;
 import NormalObjects.Message;
 import NormalObjects.User;
 
-@SuppressWarnings("Convert2Lambda")
-public class ProfileActivity2 extends AppCompatActivity {
+@SuppressWarnings({"Convert2Lambda", "unchecked"})
+public class ProfileActivity3 extends AppCompatActivity {
 
     private User user;
     private final String currentUserID = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
@@ -84,7 +87,7 @@ public class ProfileActivity2 extends AppCompatActivity {
     private final String blockedConversationAmount = "Blocked Conversations";
     private final String mutedConversationsAmount = "Muted Conversations";
     private final String blockedUserAmount = "Blocked Recipients";
-    private final String mutedUsers = "Muted Recipients";
+    private final String mutedUsersTitle = "Muted Recipients";
     private final String filesReceivedAmount = "Files Received";
     private final String imagesReceivedAmount = "Images Received";
     private final String recordingsReceivedAmount = "Recordings Received";
@@ -110,38 +113,54 @@ public class ProfileActivity2 extends AppCompatActivity {
     private List<User>blockedUsers;
     private List<Conversation>mutedConversations;
     private List<Conversation>blockedConversations;
-    private ShapeableImageView profileImage;
-    private FileManager fileManager;
-
+    private ListFragment blockedFragment;
     private List<Message>mediaMessages;
-
+    private List<User>recipients;
+    private BottomNavigationView navigationView;
+    private ListFragment mutedUsers;
+    private GroupProfileAdapter adapter;
+    private TextView userName;
+    private RecyclerView groupMembers;
+    private LinearLayoutManager manager;
+    private List<String> titles;
+    private List<String> information;
+    private ListFragment infoFragment;
+    private ListFragment profileFragment;
+    private List<String> profileInfoTitles;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.profile_activity2);
-        user = (User) getIntent().getSerializableExtra("user");
-        TextView userName = findViewById(R.id.userName);
-        userName.setText(user.getName());
+        setContentView(R.layout.profile_activity3);
+        if (getIntent().hasExtra("user"))
+        {
+            User user = (User) getIntent().getSerializableExtra("user");
+            recipients = new ArrayList<>();
+            recipients.add(user);
+        }
+        else if (getIntent().hasExtra("recipients"))
+        {
+            recipients =  (List<User>)getIntent().getSerializableExtra("recipients");
+        }
+        userName = findViewById(R.id.userName);
+
         userVM = new ViewModelProvider(this).get(UserVM.class);
         conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
-        profileImage = findViewById(R.id.profileImage);
 
-        ImageButton editProfileImageBtn = findViewById(R.id.edit);
-        Toolbar toolbar = findViewById(R.id.toolbar1);
-        setSupportActionBar(toolbar);
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null)
-            actionBar.setDisplayShowTitleEnabled(false);
-        fileManager = FileManager.getInstance();
-        Bitmap profileBitmap = fileManager.readImage(this, FileManager.user_profile_images, user.getUserUID());
-        if (profileBitmap != null)
-        {
-            profileImage.setImageBitmap(profileBitmap);
-            profileImage.setBackground(ContextCompat.getDrawable(this, android.R.color.transparent));
-        }
-        profileImage.setOnClickListener(new View.OnClickListener() {
+        groupMembers = findViewById(R.id.previewImages);
+        groupMembers.setHasFixedSize(true);
+        groupMembers.setItemViewCacheSize(20);
+        groupMembers.setDrawingCacheEnabled(true);
+        groupMembers.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        groupMembers.setLayoutManager(layoutManager);
+        adapter = new GroupProfileAdapter();
+        adapter.setRecipients(recipients);
+        adapter.setCurrentUID(currentUserID);
+        groupMembers.setAdapter(adapter);
+
+        adapter.setListener(new GroupProfileAdapter.onUserClick() {
             @Override
-            public void onClick(View view) {
+            public void onImageClick(User user) {
                 Log.d(PROFILE_ACTIVITY,"clicked on image");
                 String path = user.getPictureLink();
                 if (path!=null && !path.equals("")) {
@@ -154,10 +173,9 @@ public class ProfileActivity2 extends AppCompatActivity {
                 else
                     Log.e(PROFILE_ACTIVITY, "user picture link is null");
             }
-        });
-        editProfileImageBtn.setOnClickListener(new View.OnClickListener() {
+
             @Override
-            public void onClick(View view) {
+            public void onEditBtnClick(User user) {
                 BinaryFragment binaryFragment = new BinaryFragment();
                 binaryFragment.setListener(new BinaryFragment.BinaryClickListener() {
                     @Override
@@ -181,9 +199,14 @@ public class ProfileActivity2 extends AppCompatActivity {
                     }
                 });
                 binaryFragment.show(getSupportFragmentManager(), "Binary fragment");
-
             }
         });
+        Toolbar toolbar = findViewById(R.id.toolbar1);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null)
+            actionBar.setDisplayShowTitleEnabled(false);
+
         ImageButton goBack = findViewById(R.id.goBack);
         goBack.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -191,12 +214,100 @@ public class ProfileActivity2 extends AppCompatActivity {
                 finish();
             }
         });
-        List<String> userImages = new ArrayList<>();
-        userImages.add(user.getPictureLink());
-        ImageAdapterRV adapter = new ImageAdapterRV();
-        adapter.setImagesPaths(userImages);
-        ListFragment infoFragment = new ListFragment();
-        List<String> information = new ArrayList<>();
+        manager = (LinearLayoutManager) groupMembers.getLayoutManager();
+        groupMembers.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == RecyclerView.SCROLL_STATE_IDLE)
+                {
+                    if (manager!=null)
+                    {
+                        onScrollUsers();
+                    }
+
+                }
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (manager!=null) {
+                    onScrollUsers();
+
+                }
+            }
+        });
+
+        navigationView = findViewById(R.id.bottomNavigationView);
+        openGallery = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+                if (result.getResultCode() == RESULT_OK) {
+                    Intent resultIntent = result.getData();
+                    if (resultIntent != null) {
+                        Uri uri = resultIntent.getData();
+                        if (uri != null) {
+                            imageUri = uri;
+                            saveAndSetImage();
+                        }
+                    }
+                }
+            }
+        });
+
+        takePicture = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+                if (result.getResultCode() == RESULT_OK) {
+                    saveAndSetImage();
+                }
+            }
+        });
+        titles = new ArrayList<>();
+        titles.add(messagesSent);
+        titles.add(messagesReceived);
+        titles.add(timeSpent);
+        titles.add(timeSpentLast24);
+        titles.add(registrationTime);
+        titles.add(blockedConversationAmount);
+        titles.add(mutedConversationsAmount);
+        titles.add(blockedUserAmount);
+        titles.add(mutedUsersTitle);
+        titles.add(filesReceivedAmount);
+        titles.add(filesSentAmount);
+        titles.add(imagesReceivedAmount);
+        titles.add(imagesSentAmount);
+        titles.add(recordingsReceivedAmount);
+        titles.add(recordingSentAmount);
+        infoFragment = new ListFragment();
+        profileFragment = new ListFragment();
+        profileInfoTitles = new ArrayList<>();
+        profileInfoTitles.add(name);
+        profileInfoTitles.add(lastName);
+        profileInfoTitles.add(about);
+        profileInfoTitles.add(phoneNumber);
+        profileInfoTitles.add(token);
+    }
+
+    private void onScrollUsers()
+    {
+        int userOnScreenPosition = manager.findFirstVisibleItemPosition();
+        user = recipients.get(userOnScreenPosition);
+        if (!user.getUserUID().equals(currentUserID))
+        {
+            navigationView.getMenu().findItem(R.id.muted).setVisible(false);
+            navigationView.getMenu().findItem(R.id.block).setVisible(false);
+        }
+        onLoadUserInfo(user);
+        navigationView.setSelectedItemId(R.id.profile);
+    }
+
+    private void onLoadUserInfo(User user)
+    {
+        userName.setText(user.getName());
+
+        information = new ArrayList<>();
         information.add(String.valueOf(user.getMsgSentAmount()));
         information.add(String.valueOf(user.getMsgReceivedAmount()));
         information.add(String.valueOf((int) user.getTimeSpentTotalAmount()));
@@ -212,37 +323,14 @@ public class ProfileActivity2 extends AppCompatActivity {
         information.add(String.valueOf(user.getImagesSentAmount()));
         information.add(String.valueOf(user.getRecordingsReceivedAmount()));
         information.add(String.valueOf(user.getRecordingsSentAmount()));
-        List<String> titles = new ArrayList<>();
-        titles.add(messagesSent);
-        titles.add(messagesReceived);
-        titles.add(timeSpent);
-        titles.add(timeSpentLast24);
-        titles.add(registrationTime);
-        titles.add(blockedConversationAmount);
-        titles.add(mutedConversationsAmount);
-        titles.add(blockedUserAmount);
-        titles.add(mutedUsers);
-        titles.add(filesReceivedAmount);
-        titles.add(filesSentAmount);
-        titles.add(imagesReceivedAmount);
-        titles.add(imagesSentAmount);
-        titles.add(recordingsReceivedAmount);
-        titles.add(recordingSentAmount);
 
-
-        ListFragment profileFragment = new ListFragment();
-        List<String> profileInfoTitles = new ArrayList<>();
-        profileInfoTitles.add(name);
-        profileInfoTitles.add(lastName);
-        profileInfoTitles.add(about);
-        profileInfoTitles.add(phoneNumber);
-        profileInfoTitles.add(token);
         List<String> dits = new ArrayList<>();
         dits.add(user.getName());
         dits.add(user.getLastName());
         dits.add(user.getAbout());
         dits.add(user.getPhoneNumber());
         dits.add(user.getToken());
+
         profileFragment.setListener(new ListFragment.ItemClickListener() {
             @Override
             public void onClickItem(int position) {
@@ -254,13 +342,14 @@ public class ProfileActivity2 extends AppCompatActivity {
                         profileFragment.getAdapter().updateItem(name, position);
                         singleFieldFragment.dismiss();
                         String title = profileInfoTitles.get(position);
-                        if (title.equals(ProfileActivity2.this.name)) {
+                        if (title.equals(ProfileActivity3.this.name)) {
                             user.setName(name);
-                        } else if (title.equals(ProfileActivity2.this.lastName)) {
+                            userName.setText(user.getName());
+                        } else if (title.equals(ProfileActivity3.this.lastName)) {
                             user.setLastName(name);
-                        } else if (title.equals(ProfileActivity2.this.about)) {
+                        } else if (title.equals(ProfileActivity3.this.about)) {
                             user.setAbout(name);
-                        } else if (title.equals(ProfileActivity2.this.phoneNumber)) {
+                        } else if (title.equals(ProfileActivity3.this.phoneNumber)) {
                             user.setPhoneNumber(name);
                         }
                         updateDB();
@@ -272,10 +361,10 @@ public class ProfileActivity2 extends AppCompatActivity {
                     ClipData clipData = ClipData.newPlainText("message", user.getToken());
                     if (clipboardManager != null) {
                         clipboardManager.setPrimaryClip(clipData);
-                        Toast.makeText(ProfileActivity2.this, "copied", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ProfileActivity3.this, "copied", Toast.LENGTH_SHORT).show();
                     }
                     else
-                        Toast.makeText(ProfileActivity2.this, "oops, an error has happened", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ProfileActivity3.this, "oops, an error has happened", Toast.LENGTH_SHORT).show();
                 }
                 else {
                     singleFieldFragment.setHint(profileInfoTitles.get(position));
@@ -287,69 +376,69 @@ public class ProfileActivity2 extends AppCompatActivity {
         });
 
 
-        mutedTitles = new ArrayList<>();
-        mutedDetails = new ArrayList<>();
-        ListFragment mutedUsers = new ListFragment();
-        mutedUsers.setListener(new ListFragment.ItemClickListener() {
-            @Override
-            public void onClickItem(int position) {
+        if (user.getUserUID().equals(currentUserID)) {
+            mutedTitles = new ArrayList<>();
+            mutedDetails = new ArrayList<>();
+            ListFragment mutedUsers = new ListFragment();
+            mutedUsers.setListener(new ListFragment.ItemClickListener() {
+                @Override
+                public void onClickItem(int position) {
 //                User user = mutedUsers1.get(position);
 //                createConfirmWindow("unmute this conversation?", "Unmute",true, true, user.getUserUID());
-            }
-        });
-        userVM.getAllMutedOrBlockedUsers(false).observe(ProfileActivity2.this, new Observer<List<User>>() {
-            @Override
-            public void onChanged(List<User> users) {
-                for (User user : users) {
-                    setMuted(user.getName() + " " + user.getLastName());
                 }
-                mutedUsers1 = users;
-                userVM.getAllMutedOrBlockedUsers(false).removeObservers(ProfileActivity2.this);
-            }
-        });
-        blockedTitles = new ArrayList<>();
-        blockedDetails = new ArrayList<>();
-        ListFragment blockedFragment = new ListFragment();
-        blockedFragment.setListener(new ListFragment.ItemClickListener() {
-            @Override
-            public void onClickItem(int position) {
+            });
+
+            blockedTitles = new ArrayList<>();
+            blockedDetails = new ArrayList<>();
+            blockedFragment = new ListFragment();
+            blockedFragment.setListener(new ListFragment.ItemClickListener() {
+                @Override
+                public void onClickItem(int position) {
 //                User user = mutedUsers1.get(position);
 //                createConfirmWindow("unmute this conversation?", "Unmute",true, false, user.getUserUID());
-            }
-        });
-        userVM.getAllMutedOrBlockedUsers(true).observe(ProfileActivity2.this, new Observer<List<User>>() {
-            @Override
-            public void onChanged(List<User> users) {
-                for (User user : users) {
-                    setBlocked(user.getName() + " " + user.getLastName());
                 }
-                blockedUsers = users;
-                userVM.getAllMutedOrBlockedUsers(true).removeObservers(ProfileActivity2.this);
-            }
-        });
-        conversationVM.getAllMutedOrBlockedConversations(true).observe(this, new Observer<List<Conversation>>() {
-            @Override
-            public void onChanged(List<Conversation> conversations) {
-                for (Conversation conversation: conversations)
-                {
-                    setBlocked(conversation.getConversationName());
+            });
+            userVM.getAllMutedOrBlockedUsers(true).observe(ProfileActivity3.this, new Observer<List<User>>() {
+                @Override
+                public void onChanged(List<User> users) {
+                    for (User user : users) {
+                        setBlocked(user.getName() + " " + user.getLastName());
+                    }
+                    blockedUsers = users;
+                    userVM.getAllMutedOrBlockedUsers(true).removeObservers(ProfileActivity3.this);
                 }
-                blockedConversations = conversations;
-                conversationVM.getAllMutedOrBlockedConversations(true).removeObservers(ProfileActivity2.this);
-            }
-        });
-        conversationVM.getAllMutedOrBlockedConversations(false).observe(this, new Observer<List<Conversation>>() {
-            @Override
-            public void onChanged(List<Conversation> conversations) {
-                for(Conversation conversation: conversations)
-                {
-                    setMuted(conversation.getConversationName());
+            });
+            userVM.getAllMutedOrBlockedUsers(false).observe(ProfileActivity3.this, new Observer<List<User>>() {
+                @Override
+                public void onChanged(List<User> users) {
+                    for (User user : users) {
+                        setMuted(user.getName() + " " + user.getLastName());
+                    }
+                    mutedUsers1 = users;
+                    userVM.getAllMutedOrBlockedUsers(false).removeObservers(ProfileActivity3.this);
                 }
-                mutedConversations = conversations;
-                conversationVM.getAllMutedOrBlockedConversations(false).removeObservers(ProfileActivity2.this);
-            }
-        });
-        BottomNavigationView navigationView = findViewById(R.id.bottomNavigationView);
+            });
+            conversationVM.getAllMutedOrBlockedConversations(true).observe(this, new Observer<List<Conversation>>() {
+                @Override
+                public void onChanged(List<Conversation> conversations) {
+                    for (Conversation conversation : conversations) {
+                        setBlocked(conversation.getConversationName());
+                    }
+                    blockedConversations = conversations;
+                    conversationVM.getAllMutedOrBlockedConversations(true).removeObservers(ProfileActivity3.this);
+                }
+            });
+            conversationVM.getAllMutedOrBlockedConversations(false).observe(this, new Observer<List<Conversation>>() {
+                @Override
+                public void onChanged(List<Conversation> conversations) {
+                    for (Conversation conversation : conversations) {
+                        setMuted(conversation.getConversationName());
+                    }
+                    mutedConversations = conversations;
+                    conversationVM.getAllMutedOrBlockedConversations(false).removeObservers(ProfileActivity3.this);
+                }
+            });
+        }
         navigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -389,37 +478,6 @@ public class ProfileActivity2 extends AppCompatActivity {
                 return true;
             }
         });
-        navigationView.setSelectedItemId(R.id.profile);
-        openGallery = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-            @Override
-            public void onActivityResult(ActivityResult result) {
-                if (result.getResultCode() == RESULT_OK) {
-                    Intent resultIntent = result.getData();
-                    if (resultIntent != null) {
-                        Uri uri = resultIntent.getData();
-                        if (uri != null) {
-                            imageUri = uri;
-                            saveAndSetImage();
-                        }
-                    }
-                }
-            }
-        });
-        takePicture = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-            @Override
-            public void onActivityResult(ActivityResult result) {
-                if (result.getResultCode() == RESULT_OK) {
-                    saveAndSetImage();
-                }
-            }
-        });
-
-        if (!user.getUserUID().equals(currentUserID))
-        {
-          editProfileImageBtn.setVisibility(View.GONE);
-          navigationView.getMenu().findItem(R.id.muted).setVisible(false);
-          navigationView.getMenu().findItem(R.id.block).setVisible(false);
-        }
         conversationVM.getMediaMessage().observe(this, new Observer<List<Message>>() {
             @Override
             public void onChanged(List<Message> messages) {
@@ -431,10 +489,10 @@ public class ProfileActivity2 extends AppCompatActivity {
 
     private void saveAndSetImage() {
         Log.d(PROFILE_ACTIVITY, "save and set message");
-        Picasso.get().load(imageUri).into(profileImage);
         Bitmap imageBitmap = getImageBitmap(imageUri);
-        fileManager.saveProfileImage(imageBitmap, user.getUserUID(), ProfileActivity2.this, false);
+        FileManager.getInstance().saveProfileImage(imageBitmap, user.getUserUID(), ProfileActivity3.this, false);
         user.setPictureLink(imageUri.toString());
+        adapter.updateUser(user);
         updateDB();
     }
 
@@ -442,10 +500,10 @@ public class ProfileActivity2 extends AppCompatActivity {
         Bitmap image = null;
         try {
             if (Build.VERSION.SDK_INT > 27) {
-                ImageDecoder.Source source = ImageDecoder.createSource(ProfileActivity2.this.getContentResolver(), uri);
+                ImageDecoder.Source source = ImageDecoder.createSource(ProfileActivity3.this.getContentResolver(), uri);
                 image = ImageDecoder.decodeBitmap(source);
             } else {
-                image = MediaStore.Images.Media.getBitmap(ProfileActivity2.this.getContentResolver(), uri);
+                image = MediaStore.Images.Media.getBitmap(ProfileActivity3.this.getContentResolver(), uri);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -455,7 +513,7 @@ public class ProfileActivity2 extends AppCompatActivity {
 
     private boolean askPermission(MessageType type) {
         if (type == MessageType.photoMessage || type == MessageType.imageMessage) {
-            int hasWritePermission = ProfileActivity2.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int hasWritePermission = ProfileActivity3.this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             if (hasWritePermission != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION);
                 return false;
@@ -484,21 +542,21 @@ public class ProfileActivity2 extends AppCompatActivity {
     private void takePicture() {
         @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = ProfileActivity2.this.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = ProfileActivity3.this.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         try {
             File image = File.createTempFile(imageFileName, ".jpg", storageDir);
             setPhotoPath(image.getAbsolutePath());
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(ProfileActivity2.this.getPackageManager()) != null) {
-            File photoFile;
-            photoFile = image;
-            Uri photoURI = FileProvider.getUriForFile(ProfileActivity2.this,
-                    "com.example.woofmeow.provider", photoFile);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+            if (takePictureIntent.resolveActivity(ProfileActivity3.this.getPackageManager()) != null) {
+                File photoFile;
+                photoFile = image;
+                Uri photoURI = FileProvider.getUriForFile(ProfileActivity3.this,
+                        "com.example.woofmeow.provider", photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
 
-            imageUri = photoURI;
-            takePicture.launch(takePictureIntent);
-            //startActivityForResult(takePictureIntent, CAMERA_REQUEST);
+                imageUri = photoURI;
+                takePicture.launch(takePictureIntent);
+                //startActivityForResult(takePictureIntent, CAMERA_REQUEST);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -511,10 +569,11 @@ public class ProfileActivity2 extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user.getUserUID().equals(currentUserID))
-        {
-            getMenuInflater().inflate(R.menu.profile_menu, menu);
-        }
+        if (user!=null)
+            if (user.getUserUID().equals(currentUserID))
+            {
+                getMenuInflater().inflate(R.menu.profile_menu, menu);
+            }
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -524,12 +583,12 @@ public class ProfileActivity2 extends AppCompatActivity {
         {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setPositiveButton(getResources().getString(R.string.delete), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    userVM.deleteUser(user);
-                    finish();
-                }
-            }).setMessage("Are you sure you want to delete this account")
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            userVM.deleteUser(user);
+                            finish();
+                        }
+                    }).setMessage("Are you sure you want to delete this account")
                     .setTitle("Confirm deletion")
                     .setCancelable(true)
                     .create()

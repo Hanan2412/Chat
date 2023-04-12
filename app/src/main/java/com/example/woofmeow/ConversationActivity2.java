@@ -964,11 +964,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             @Override
             public void onClick(View v) {
                 if (conversationType == ConversationType.single) {
-                    Intent profileIntent = new Intent(ConversationActivity2.this, ProfileActivity2.class);
+                    Intent profileIntent = new Intent(ConversationActivity2.this, ProfileActivity3.class);
                     profileIntent.putExtra("user", recipients.get(0));
                     startActivity(profileIntent);
                 } else if (conversationType == ConversationType.group) {
-                    Intent openGroupIntent = new Intent(ConversationActivity2.this, GroupActivity.class);
+                    Intent openGroupIntent = new Intent(ConversationActivity2.this, ProfileActivity3.class);
                     openGroupIntent.putExtra("conversationID", conversationID);
                     openGroupIntent.putExtra("recipients", (ArrayList<User>) recipients);
                     startActivity(openGroupIntent);//opens group profile

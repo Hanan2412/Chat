@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ProfileActivity2">
+    tools:context=".ProfileActivity3">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbarLayout"
@@ -36,49 +36,17 @@
                 android:gravity="center"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
-                android:text="@string/userStatus"
+                android:text="@string/contact_name"
                 android:textSize="20sp" />
 
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
 
-    <RelativeLayout
-        android:id="@+id/pictureLayout"
+    <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="vertical">
-
-        <RelativeLayout
-            style="@style/circleImageView"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_centerInParent="true">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/profileImage"
-                style="@style/circleImageView"
-                android:layout_width="150dp"
-                android:layout_height="150dp"
-                android:layout_gravity="center"
-                android:background="@android:color/darker_gray"
-                android:contentDescription="show user profile image"
-                android:src="@drawable/ic_baseline_account_circle_black"
-                app:shapeAppearanceOverlay="@style/circleImageView" />
-
-            <ImageButton
-                android:id="@+id/edit"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentBottom="true"
-                android:background="@drawable/circle_blue_no_border"
-                android:contentDescription="@string/edit"
-                android:src="@drawable/ic_baseline_edit_24"
-                android:text="@string/edit" />
-        </RelativeLayout>
-    </RelativeLayout>
+        android:id="@+id/previewImages"/>
 
     <RelativeLayout
         android:layout_width="match_parent"

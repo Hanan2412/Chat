@@ -33,10 +33,15 @@ import NormalObjects.User;
 public class GroupActivity extends AppCompatActivity {
 
     private UserVM userVM;
+    private ConversationVM conversationVM;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.group_activity);
+//        setContentView(R.layout.group_activity);
+        setContentView(R.layout.profile_activity3);
+        userVM = new ViewModelProvider(this).get(UserVM.class);
+        conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
+
         Toolbar toolbar = findViewById(R.id.toolbar1);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -50,28 +55,16 @@ public class GroupActivity extends AppCompatActivity {
             }
         });
         String conversationID = getIntent().getStringExtra("conversationID");
-        RecyclerView groupMembers = findViewById(R.id.groupMembers);
+        RecyclerView groupMembers = findViewById(R.id.previewImages);
         groupMembers.setHasFixedSize(true);
         groupMembers.setItemViewCacheSize(20);
         groupMembers.setDrawingCacheEnabled(true);
         groupMembers.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         groupMembers.setLayoutManager(layoutManager);
-        userVM = new ViewModelProvider(this).get(UserVM.class);
-        ConversationVM conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
         List<User>recipients = (List<User>)getIntent().getSerializableExtra("recipients");
         GroupProfileAdapter adapter = new GroupProfileAdapter();
         adapter.setRecipients(recipients);
-//        LiveData<List<User>> recipients = conversationVM.getRecipients(conversationID);
-//        GroupProfileAdapter adapter = new GroupProfileAdapter();
-//        recipients.observe(this, new Observer<List<User>>() {
-//            @Override
-//            public void onChanged(List<User> users) {
-//                if (users == null)
-//                    Log.e("GroupActivityError","recipients are null");
-//                adapter.setRecipients(users);
-//            }
-//        });
         groupMembers.setAdapter(adapter);
     }
 

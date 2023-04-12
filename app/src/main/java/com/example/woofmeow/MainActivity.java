@@ -292,7 +292,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
     private void openProfile()
     {
         Log.d(MAIN_ACTIVITY, "openProfile");
-        Intent intent = new Intent(MainActivity.this, ProfileActivity2.class);
+        Intent intent = new Intent(MainActivity.this, ProfileActivity3.class);
         intent.putExtra("user", user);
         startActivity(intent);
     }

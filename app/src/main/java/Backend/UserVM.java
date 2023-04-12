@@ -75,6 +75,16 @@ public class UserVM extends AndroidViewModel {
         repository.updateUserInServer(user);
     }
 
+    public void updateUserLocal(User user)
+    {
+        repository.updateUser(user);
+    }
+
+    public void updateUserRemote(User user)
+    {
+        repository.updateUserInServer(user);
+    }
+
     public LiveData<Boolean> isUserExists(User user)
     {
         return repository.isUserExists(user);

@@ -101,6 +101,7 @@
           />
         <activity android:name=".NewSMS"/>
         <activity android:name=".ProfileActivity2"/>
+        <activity android:name=".ProfileActivity3"/>
         <activity android:name=".BackgroundImageActivity"/>
         <activity android:name=".ConversationActivity2"
             android:launchMode="standard"

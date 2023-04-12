@@ -1,0 +1,38 @@
+<RelativeLayout
+    android:id="@+id/pictureLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:orientation="vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <RelativeLayout
+        style="@style/circleImageView"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_centerInParent="true">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/profileImage"
+            style="@style/circleImageView"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:background="@android:color/darker_gray"
+            android:contentDescription="show user profile image"
+            android:src="@drawable/ic_baseline_account_circle_black"
+            app:shapeAppearanceOverlay="@style/circleImageView" />
+
+        <ImageButton
+            android:id="@+id/editBtn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/circle_blue_no_border"
+            android:contentDescription="@string/edit"
+            android:src="@drawable/ic_baseline_edit_24"
+            android:text="@string/edit" />
+    </RelativeLayout>
+</RelativeLayout>

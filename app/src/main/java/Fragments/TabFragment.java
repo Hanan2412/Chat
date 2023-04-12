@@ -356,7 +356,8 @@ public class TabFragment extends Fragment {
             }
         } else if (item.getItemId() == R.id.status) {
             user.setStatus((user.getStatus() + 1) % 3);
-            updateUser(user);
+            updateUserLocally(user);
+            updateUserRemotely(user);
         } else if (item.getItemId() == R.id.addPhoneNumber) {
             SingleFieldFragment phoneFragment = new SingleFieldFragment();
             phoneFragment.setHint(getResources().getString(R.string.phone_number));
@@ -435,7 +436,7 @@ public class TabFragment extends Fragment {
             public void downloadedUser(User user) {
                 if (user != null) {
                     setCurrentUser(user);
-                    updateUser(user);
+                    updateUserLocally(user);
                 }
             }
         });
@@ -592,9 +593,16 @@ public class TabFragment extends Fragment {
         Log.d(TAB_FRAGMENT, "changed status: " + currentStatus);
     }
 
-    public void updateUser(User user) {
-        Log.d(TAB_FRAGMENT, "update user: " + user.getUserUID());
+    public void updateUserLocally(User user) {
+        Log.d(TAB_FRAGMENT, "update user locally: " + user.getUserUID());
         user.setLastUpdateTime(System.currentTimeMillis());
-        userModel.updateUser(user);
+        userModel.updateUserLocal(user);
+    }
+
+    private void updateUserRemotely(User user)
+    {
+        Log.d(TAB_FRAGMENT, "update user remotely: " + user.getUserUID());
+        user.setLastUpdateTime(System.currentTimeMillis());
+        userModel.updateUserRemote(user);
     }
 }

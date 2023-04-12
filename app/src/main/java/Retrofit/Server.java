@@ -152,8 +152,10 @@ public class Server {
     }
 
     private Server() {
-        api = ServerClient.getRetrofitClientServer("http://192.168.1.11:8081").create(ServerConnect.class);
-        fileTransmissionApi = UploadFilesClient.getRetrofitClientServer("http://192.168.1.11:8081").create(FileTransmission.class);
+        String link = "http://192.168.1.83:8081/";
+        String link_ip = "http://192.168.1.11:8081";
+        api = ServerClient.getRetrofitClientServer(link).create(ServerConnect.class);
+        fileTransmissionApi = UploadFilesClient.getRetrofitClientServer(link).create(FileTransmission.class);
     }
 
     public void createNewUser(User user) {
@@ -362,13 +364,15 @@ public class Server {
             @Override
             public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
                 handleMessage(response);
-                onBackupListener.onBackupCompleted(response.message());
+                if (onBackupListener!=null)
+                    onBackupListener.onBackupCompleted(response.message());
             }
 
             @Override
             public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
                 t.printStackTrace();
-                onBackupListener.onBackupFailed(t.getMessage());
+                if (onBackupListener!=null)
+                    onBackupListener.onBackupFailed(t.getMessage());
             }
         });
     }
