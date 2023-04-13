@@ -206,7 +206,7 @@
                     android:orientation="horizontal"
                     android:visibility="gone">
 
-                    <ImageButton
+                    <NormalObjects.ImageButtonState
                         android:id="@+id/play_pause_btn"
                         style="?android:attr/buttonBarButtonStyle"
                         android:layout_width="wrap_content"

@@ -118,35 +118,38 @@ public class SMSBroadcast extends BroadcastReceiver {
                 }
                 else
                 {
-                    LiveData<String>conversationID = dao.getConversationIdByPhone(phone);
-                    Observer<String>conversationIDObserver = new Observer<String>() {
+                    LiveData<Conversation>conversationLV = dao.getConversationByPhone(phone);
+                    Observer<Conversation>conversationObserver = new Observer<Conversation>() {
                         @Override
-                        public void onChanged(String s) {
-                            Log.d(SMS_RECEIVER, "phone conversationID: " + s);
-                            if (s!=null) {
-                                msg.setConversationID(s);
+                        public void onChanged(Conversation conversation) {
+                            if (conversation!=null) {
+                                Log.d(SMS_RECEIVER, "phone conversationID: " + conversation.getConversationID());
+                                msg.setConversationID(conversation.getConversationID());
                                 Thread thread = new Thread()
                                 {
                                     @Override
                                     public void run() {
 
                                         dao.insertNewMessage(msg);
-                                        dao.updateConversationLastMessage(s, msg.getContent(), msg.getMessageID());
+                                        conversation.setLastMessage(msg.getContent());
+                                        conversation.setLastMessageID(msg.getMessageID());
+                                        conversation.setLastUpdate(StandardTime.getInstance().getStandardTime());
+                                        dao.updateConversation(conversation);
 
                                     }
                                 };
                                 thread.setName("update sms conversation");
                                 thread.start();
-                                sendNotification(s,msg);
+                                sendNotification(conversation.getConversationID(),msg);
                             }
                             else
                             {
                                 Log.e(SMS_RECEIVER, "conversation id is null");
                             }
-                            conversationID.removeObserver(this);
+                            conversationLV.removeObserver(this);
                         }
                     };
-                    conversationID.observeForever(conversationIDObserver);
+                    conversationLV.observeForever(conversationObserver);
                 }
                 isConversationExists.removeObserver(this);
             }
@@ -299,6 +302,7 @@ public class SMSBroadcast extends BroadcastReceiver {
         conversation.setBlocked(false);
         conversation.setConversationType(ConversationType.sms.ordinal());
         conversation.setRecipientPhoneNumber(message.getContactNumber());
+        conversation.setLastUpdate(StandardTime.getInstance().getStandardTime());
         dao.insertNewConversation(conversation);
     }
 

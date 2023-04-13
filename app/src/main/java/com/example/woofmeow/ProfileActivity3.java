@@ -109,13 +109,13 @@ public class ProfileActivity3 extends AppCompatActivity {
     private ConversationVM conversationVM;
     private String photoPath;
     private Uri imageUri;
-    private List<User>mutedUsers1;
-    private List<User>blockedUsers;
-    private List<Conversation>mutedConversations;
-    private List<Conversation>blockedConversations;
+    private List<User> mutedUsers1;
+    private List<User> blockedUsers;
+    private List<Conversation> mutedConversations;
+    private List<Conversation> blockedConversations;
     private ListFragment blockedFragment;
-    private List<Message>mediaMessages;
-    private List<User>recipients;
+    private List<Message> mediaMessages;
+    private List<User> recipients;
     private BottomNavigationView navigationView;
     private ListFragment mutedUsers;
     private GroupProfileAdapter adapter;
@@ -127,19 +127,17 @@ public class ProfileActivity3 extends AppCompatActivity {
     private ListFragment infoFragment;
     private ListFragment profileFragment;
     private List<String> profileInfoTitles;
+    private List<String> dits;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.profile_activity3);
-        if (getIntent().hasExtra("user"))
-        {
+        if (getIntent().hasExtra("user")) {
             User user = (User) getIntent().getSerializableExtra("user");
             recipients = new ArrayList<>();
             recipients.add(user);
-        }
-        else if (getIntent().hasExtra("recipients"))
-        {
-            recipients =  (List<User>)getIntent().getSerializableExtra("recipients");
+        } else if (getIntent().hasExtra("recipients")) {
+            recipients = (List<User>) getIntent().getSerializableExtra("recipients");
         }
         userName = findViewById(R.id.userName);
 
@@ -161,16 +159,15 @@ public class ProfileActivity3 extends AppCompatActivity {
         adapter.setListener(new GroupProfileAdapter.onUserClick() {
             @Override
             public void onImageClick(User user) {
-                Log.d(PROFILE_ACTIVITY,"clicked on image");
+                Log.d(PROFILE_ACTIVITY, "clicked on image");
                 String path = user.getPictureLink();
-                if (path!=null && !path.equals("")) {
+                if (path != null && !path.equals("")) {
                     Bundle bundle = new Bundle();
                     bundle.putString("image", path);
                     ImageFragment imageFragment = new ImageFragment();
                     imageFragment.setArguments(bundle);
                     imageFragment.show(getSupportFragmentManager(), "IMAGE_FRAGMENT");
-                }
-                else
+                } else
                     Log.e(PROFILE_ACTIVITY, "user picture link is null");
             }
 
@@ -219,10 +216,8 @@ public class ProfileActivity3 extends AppCompatActivity {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
-                if (newState == RecyclerView.SCROLL_STATE_IDLE)
-                {
-                    if (manager!=null)
-                    {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    if (manager != null) {
                         onScrollUsers();
                     }
 
@@ -232,7 +227,7 @@ public class ProfileActivity3 extends AppCompatActivity {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (manager!=null) {
+                if (manager != null) {
                     onScrollUsers();
 
                 }
@@ -288,14 +283,53 @@ public class ProfileActivity3 extends AppCompatActivity {
         profileInfoTitles.add(about);
         profileInfoTitles.add(phoneNumber);
         profileInfoTitles.add(token);
+
+        mutedUsers = new ListFragment();
+        blockedFragment = new ListFragment();
+
+        ListAdapter2 listAdapter = new ListAdapter2();
+        navigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                int x = getSupportFragmentManager().getFragments().size();
+                Log.d(PROFILE_ACTIVITY, "amount of fragments:" + x);
+                if (item.getItemId() == R.id.info) {
+                    listAdapter.setItems(information);
+                    listAdapter.setTitles(titles);
+                    infoFragment.setAdapter(listAdapter);
+                    Log.d(PROFILE_ACTIVITY, "changed to info");
+                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, infoFragment).commit();
+                } else if (item.getItemId() == R.id.media) {
+                    Log.d(PROFILE_ACTIVITY, "changed to media");
+                } else if (item.getItemId() == R.id.profile) {
+                    listAdapter.setItems(dits);
+                    listAdapter.setTitles(profileInfoTitles);
+                    profileFragment.setAdapter(listAdapter);
+                    Log.d(PROFILE_ACTIVITY, "changed to profile");
+                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, profileFragment).commit();
+                } else if (item.getItemId() == R.id.muted) {
+                    listAdapter.setItems(mutedDetails);
+                    listAdapter.setTitles(mutedTitles);
+                    mutedUsers.setAdapter(listAdapter);
+                    Log.d(PROFILE_ACTIVITY, "changed to muted");
+                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, mutedUsers).commit();
+                } else if (item.getItemId() == R.id.block) {
+                    listAdapter.setItems(blockedDetails);
+                    listAdapter.setTitles(blockedTitles);
+                    blockedFragment.setAdapter(listAdapter);
+                    Log.d(PROFILE_ACTIVITY, "changed to blocked");
+                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, blockedFragment).commit();
+                }
+                listAdapter.notifyDataSetChanged();
+                return true;
+            }
+        });
     }
 
-    private void onScrollUsers()
-    {
+    private void onScrollUsers() {
         int userOnScreenPosition = manager.findFirstVisibleItemPosition();
         user = recipients.get(userOnScreenPosition);
-        if (!user.getUserUID().equals(currentUserID))
-        {
+        if (!user.getUserUID().equals(currentUserID)) {
             navigationView.getMenu().findItem(R.id.muted).setVisible(false);
             navigationView.getMenu().findItem(R.id.block).setVisible(false);
         }
@@ -303,8 +337,7 @@ public class ProfileActivity3 extends AppCompatActivity {
         navigationView.setSelectedItemId(R.id.profile);
     }
 
-    private void onLoadUserInfo(User user)
-    {
+    private void onLoadUserInfo(User user) {
         userName.setText(user.getName());
 
         information = new ArrayList<>();
@@ -324,7 +357,7 @@ public class ProfileActivity3 extends AppCompatActivity {
         information.add(String.valueOf(user.getRecordingsReceivedAmount()));
         information.add(String.valueOf(user.getRecordingsSentAmount()));
 
-        List<String> dits = new ArrayList<>();
+        dits = new ArrayList<>();
         dits.add(user.getName());
         dits.add(user.getLastName());
         dits.add(user.getAbout());
@@ -355,18 +388,15 @@ public class ProfileActivity3 extends AppCompatActivity {
                         updateDB();
                     }
                 });
-                if (profileInfoTitles.get(position).equals(token))
-                {
+                if (profileInfoTitles.get(position).equals(token)) {
                     ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                     ClipData clipData = ClipData.newPlainText("message", user.getToken());
                     if (clipboardManager != null) {
                         clipboardManager.setPrimaryClip(clipData);
                         Toast.makeText(ProfileActivity3.this, "copied", Toast.LENGTH_SHORT).show();
-                    }
-                    else
+                    } else
                         Toast.makeText(ProfileActivity3.this, "oops, an error has happened", Toast.LENGTH_SHORT).show();
-                }
-                else {
+                } else {
                     singleFieldFragment.setHint(profileInfoTitles.get(position));
                     Log.d(PROFILE_ACTIVITY, "info - clicked on: " + profileInfoTitles.get(position));
                     singleFieldFragment.show(getSupportFragmentManager(), "Edit_Content");
@@ -375,109 +405,69 @@ public class ProfileActivity3 extends AppCompatActivity {
             }
         });
 
+        mutedTitles = new ArrayList<>();
+        mutedDetails = new ArrayList<>();
 
-        if (user.getUserUID().equals(currentUserID)) {
-            mutedTitles = new ArrayList<>();
-            mutedDetails = new ArrayList<>();
-            ListFragment mutedUsers = new ListFragment();
-            mutedUsers.setListener(new ListFragment.ItemClickListener() {
-                @Override
-                public void onClickItem(int position) {
+        mutedUsers.setListener(new ListFragment.ItemClickListener() {
+            @Override
+            public void onClickItem(int position) {
 //                User user = mutedUsers1.get(position);
 //                createConfirmWindow("unmute this conversation?", "Unmute",true, true, user.getUserUID());
-                }
-            });
-
-            blockedTitles = new ArrayList<>();
-            blockedDetails = new ArrayList<>();
-            blockedFragment = new ListFragment();
-            blockedFragment.setListener(new ListFragment.ItemClickListener() {
-                @Override
-                public void onClickItem(int position) {
-//                User user = mutedUsers1.get(position);
-//                createConfirmWindow("unmute this conversation?", "Unmute",true, false, user.getUserUID());
-                }
-            });
-            userVM.getAllMutedOrBlockedUsers(true).observe(ProfileActivity3.this, new Observer<List<User>>() {
-                @Override
-                public void onChanged(List<User> users) {
-                    for (User user : users) {
-                        setBlocked(user.getName() + " " + user.getLastName());
-                    }
-                    blockedUsers = users;
-                    userVM.getAllMutedOrBlockedUsers(true).removeObservers(ProfileActivity3.this);
-                }
-            });
-            userVM.getAllMutedOrBlockedUsers(false).observe(ProfileActivity3.this, new Observer<List<User>>() {
-                @Override
-                public void onChanged(List<User> users) {
-                    for (User user : users) {
-                        setMuted(user.getName() + " " + user.getLastName());
-                    }
-                    mutedUsers1 = users;
-                    userVM.getAllMutedOrBlockedUsers(false).removeObservers(ProfileActivity3.this);
-                }
-            });
-            conversationVM.getAllMutedOrBlockedConversations(true).observe(this, new Observer<List<Conversation>>() {
-                @Override
-                public void onChanged(List<Conversation> conversations) {
-                    for (Conversation conversation : conversations) {
-                        setBlocked(conversation.getConversationName());
-                    }
-                    blockedConversations = conversations;
-                    conversationVM.getAllMutedOrBlockedConversations(true).removeObservers(ProfileActivity3.this);
-                }
-            });
-            conversationVM.getAllMutedOrBlockedConversations(false).observe(this, new Observer<List<Conversation>>() {
-                @Override
-                public void onChanged(List<Conversation> conversations) {
-                    for (Conversation conversation : conversations) {
-                        setMuted(conversation.getConversationName());
-                    }
-                    mutedConversations = conversations;
-                    conversationVM.getAllMutedOrBlockedConversations(false).removeObservers(ProfileActivity3.this);
-                }
-            });
-        }
-        navigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                int x = getSupportFragmentManager().getFragments().size();
-                Log.d(PROFILE_ACTIVITY, "amount of fragments:" + x);
-                if (item.getItemId() == R.id.info) {
-                    ListAdapter2 listAdapter = new ListAdapter2();
-                    listAdapter.setItems(information);
-                    listAdapter.setTitles(titles);
-                    infoFragment.setAdapter(listAdapter);
-                    Log.d(PROFILE_ACTIVITY, "changed to info");
-                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, infoFragment).commit();
-                } else if (item.getItemId() == R.id.media) {
-                    Log.d(PROFILE_ACTIVITY, "changed to media");
-                } else if (item.getItemId() == R.id.profile) {
-                    ListAdapter2 listAdapter = new ListAdapter2();
-                    listAdapter.setItems(dits);
-                    listAdapter.setTitles(profileInfoTitles);
-                    profileFragment.setAdapter(listAdapter);
-                    Log.d(PROFILE_ACTIVITY, "changed to profile");
-                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, profileFragment).commit();
-                } else if (item.getItemId() == R.id.muted) {
-                    ListAdapter2 listAdapter = new ListAdapter2();
-                    listAdapter.setItems(mutedDetails);
-                    listAdapter.setTitles(mutedTitles);
-                    mutedUsers.setAdapter(listAdapter);
-                    Log.d(PROFILE_ACTIVITY, "changed to muted");
-                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, mutedUsers).commit();
-                } else if (item.getItemId() == R.id.block) {
-                    ListAdapter2 listAdapter = new ListAdapter2();
-                    listAdapter.setItems(blockedDetails);
-                    listAdapter.setTitles(blockedTitles);
-                    blockedFragment.setAdapter(listAdapter);
-                    Log.d(PROFILE_ACTIVITY, "changed to blocked");
-                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, blockedFragment).commit();
-                }
-                return true;
             }
         });
+
+        blockedTitles = new ArrayList<>();
+        blockedDetails = new ArrayList<>();
+
+        blockedFragment.setListener(new ListFragment.ItemClickListener() {
+            @Override
+            public void onClickItem(int position) {
+//                User user = mutedUsers1.get(position);
+//                createConfirmWindow("unmute this conversation?", "Unmute",true, false, user.getUserUID());
+            }
+        });
+        userVM.getAllMutedOrBlockedUsers(true).observe(ProfileActivity3.this, new Observer<List<User>>() {
+            @Override
+            public void onChanged(List<User> users) {
+                for (User user : users) {
+                    setBlocked(user.getName() + " " + user.getLastName());
+                }
+                blockedUsers = users;
+                userVM.getAllMutedOrBlockedUsers(true).removeObservers(ProfileActivity3.this);
+            }
+        });
+        userVM.getAllMutedOrBlockedUsers(false).observe(ProfileActivity3.this, new Observer<List<User>>() {
+            @Override
+            public void onChanged(List<User> users) {
+                for (User user : users) {
+                    setMuted(user.getName() + " " + user.getLastName());
+                }
+                mutedUsers1 = users;
+                userVM.getAllMutedOrBlockedUsers(false).removeObservers(ProfileActivity3.this);
+            }
+        });
+        conversationVM.getAllMutedOrBlockedConversations(true).observe(this, new Observer<List<Conversation>>() {
+            @Override
+            public void onChanged(List<Conversation> conversations) {
+                for (Conversation conversation : conversations) {
+                    setBlocked(conversation.getConversationName());
+                }
+                blockedConversations = conversations;
+                conversationVM.getAllMutedOrBlockedConversations(true).removeObservers(ProfileActivity3.this);
+            }
+        });
+        conversationVM.getAllMutedOrBlockedConversations(false).observe(this, new Observer<List<Conversation>>() {
+            @Override
+            public void onChanged(List<Conversation> conversations) {
+                for (Conversation conversation : conversations) {
+                    setMuted(conversation.getConversationName());
+                }
+                mutedConversations = conversations;
+                conversationVM.getAllMutedOrBlockedConversations(false).removeObservers(ProfileActivity3.this);
+            }
+        });
+
+
         conversationVM.getMediaMessage().observe(this, new Observer<List<Message>>() {
             @Override
             public void onChanged(List<Message> messages) {
@@ -569,9 +559,8 @@ public class ProfileActivity3 extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user!=null)
-            if (user.getUserUID().equals(currentUserID))
-            {
+        if (user != null)
+            if (user.getUserUID().equals(currentUserID)) {
                 getMenuInflater().inflate(R.menu.profile_menu, menu);
             }
         return super.onPrepareOptionsMenu(menu);
@@ -579,8 +568,7 @@ public class ProfileActivity3 extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.delete)
-        {
+        if (item.getItemId() == R.id.delete) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setPositiveButton(getResources().getString(R.string.delete), new DialogInterface.OnClickListener() {
                         @Override
@@ -597,33 +585,27 @@ public class ProfileActivity3 extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private synchronized void setBlocked(String name)
-    {
+    private synchronized void setBlocked(String name) {
         blockedTitles.add("Name");
         blockedDetails.add(name);
     }
 
-    private synchronized void setMuted(String name)
-    {
+    private synchronized void setMuted(String name) {
         mutedTitles.add("Name");
         mutedDetails.add(name);
     }
 
-    private void createConfirmWindow(String msg, String title, boolean user, boolean mute, String id)
-    {
+    private void createConfirmWindow(String msg, String title, boolean user, boolean mute, String id) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(msg).setTitle(title).setCancelable(true).setPositiveButton("ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                if (user)
-                {
+                if (user) {
                     if (mute)
                         userVM.unMuteUser(id);
                     else
                         userVM.unBlockUser(id);
-                }
-                else
-                {
+                } else {
                     if (mute)
                         conversationVM.unMuteConversation(id);
                     else

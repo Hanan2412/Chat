@@ -135,6 +135,9 @@ public interface ChatDao {
     @Query("SELECT conversationID FROM conversations where recipientPhoneNumber = :phone and conversationType = 2")
     LiveData<String>getConversationIdByPhone(String phone);
 
+    @Query("SELECT * FROM conversations where recipientPhoneNumber = :phone and conversationType = 2")
+    LiveData<Conversation>getConversationByPhone(String phone);
+
     @Query("SELECT * FROM users WHERE userUID IN (SELECT uid From groups where groups.conversationID = :conversationID)")
     LiveData<List<User>>getRecipients(String conversationID);
 
