@@ -189,9 +189,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.messageSender.setVisibility(View.VISIBLE);
             holder.messageSender.setText(message.getSenderName());
         }
-//        if (message.isStar()) {
-//            holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
-//        }
+        if (message.isStar()) {
+            holder.starMessageIndicator.setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            holder.starMessageIndicator.setVisibility(View.GONE);
+        }
         holder.rootLayout.setSelected(message.isSelected());
         if (message.getMessageType() == MessageType.textMessage.ordinal()) {
             holder.playRecordingLayout.setVisibility(View.GONE);
@@ -484,8 +488,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         if (holder.statusTv != null) {
             holder.statusTv.changeBtnState(message.getMessageStatus());
         }
-        if (message.getContent().equals("f"))
-            System.out.println("f");
         if (message.getQuoteMessage() != null) {
             holder.messageTextLayout.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.GONE);
@@ -536,7 +538,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     public class ChatViewHolder extends RecyclerView.ViewHolder {
         com.vanniktech.emoji.EmojiTextView message;
         TextView timeReceived, messageSender, quote, quoteSenderName, linkTitle, linkContent, contactName, contactPhone, recordingTime, pollVotes, pollCreator;
-        ImageView previewImage, linkImage, specialMsgIndicator;
+        ImageView previewImage, linkImage, specialMsgIndicator, starMessageIndicator;
         LinearLayout playRecordingLayout, videoLayout, imageStatusLayout, quoteLayout, messageTextLayout, linkMessageLayout, innerPaneLayout;//, pollLayout;
         RelativeLayout imageLayout, contactLayout;
         ImageButtonState statusTv;
@@ -588,6 +590,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             innerPaneLayout = itemView.findViewById(R.id.innerPaneLayout);
             rootLayout = itemView.findViewById(R.id.messageLayout);
             mainConstraintLayout = itemView.findViewById(R.id.mainConstraintLayout);
+            starMessageIndicator = itemView.findViewById(R.id.starMessage);
             List<Integer>playAudioImages = new ArrayList<>();
             playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
             playAudioImages.add(R.drawable.ic_baseline_pause_circle_outline_white);
@@ -675,50 +678,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 //                }
 //            });
             message.setTextSize(textSize);
-//            message.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    if (messages.get(getAdapterPosition()).getMessageType() == MessageType.gpsMessage.ordinal())
-//                        callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
-//                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
-//                }
-//            });
-//            message.setOnLongClickListener(new View.OnLongClickListener() {
-//                @Override
-//                public boolean onLongClick(View v) {
-//                    messageTextLayout.setSelected(!messageTextLayout.isSelected());
-//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
-//                    return true;
-//                }
-//            });
-
-//            innerPaneLayout.setOnLongClickListener(new View.OnLongClickListener() {
-//                @Override
-//                public boolean onLongClick(View v) {
-//                    v.setSelected(!v.isSelected());
-//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
-//                    return true;
-//                }
-//            });
-//            linkMessageLayout.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    callback.onMessageClick(messages.get(getAdapterPosition()), v, getItemViewType());
-//                }
-//            });
-//            linkMessageLayout.setOnLongClickListener(new View.OnLongClickListener() {
-//                @Override
-//                public boolean onLongClick(View v) {
-//                    callback.onMessageLongClick(messages.get(getAdapterPosition()));
-//                    return true;
-//                }
-//            });
-//            previewImage.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    callback.onPreviewMessageClick(messages.get(getAdapterPosition()));
-//                }
-//            });
             List<Integer> statusStates = new ArrayList<>();
             statusStates.add(MessageStatus.WAITING.ordinal());
             statusStates.add(MessageStatus.SENT.ordinal());
@@ -756,7 +715,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     if (callback != null) {
                         callback.onMessageLongClick(message);
                     }
-                    innerPaneLayout.setSelected(!innerPaneLayout.isSelected());
+                    rootLayout.setSelected(!rootLayout.isSelected());
                     return true;
                 }
             });

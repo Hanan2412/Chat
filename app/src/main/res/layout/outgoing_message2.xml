@@ -447,6 +447,14 @@
                     app:layout_constraintStart_toEndOf="@+id/indicatorGuideline">
 
                     <ImageView
+                        android:id="@+id/starMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="msg indicator"
+                        android:src="@android:drawable/star_on"
+                        android:visibility="gone" />
+
+                    <ImageView
                         android:id="@+id/specialMessageIndicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

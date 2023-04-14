@@ -27,6 +27,7 @@ import java.util.List;
 import Adapters.NewConversationAdapter;
 import Adapters.UsersAdapter2;
 import Backend.UserVM;
+import Consts.ConversationType;
 import Fragments.SingleFieldFragment;
 import NormalObjects.User;
 import Retrofit.Server;
@@ -200,6 +201,12 @@ public class NewConversationActivity extends AppCompatActivity {
         startConversation.putExtra("recipients", (ArrayList<User>) users);
         startConversation.putExtra("conversationName", conversationName);
         startConversation.putExtra("conversationID", createGroupConversationID());
+        int conversationType = ConversationType.undefined.ordinal();
+        if (users.size() == 1)
+            conversationType = ConversationType.single.ordinal();
+        else if (users.size() > 1)
+            conversationType = ConversationType.group.ordinal();
+        startConversation.putExtra("conversationType", conversationType);
         startActivity(startConversation);
     }
 }

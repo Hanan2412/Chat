@@ -50,6 +50,15 @@
             android:title="@string/share"
             android:visible="true"
             app:showAsAction="never" />
+
+        <item android:id="@+id/favorite"
+            android:enabled="true"
+            android:icon="@android:drawable/star_on"
+            android:title="favorite"
+            app:showAsAction="never"
+            android:visible="true"
+            />
+
     </group>
     <group
         android:id="@+id/groupConversationOptions"

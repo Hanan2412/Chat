@@ -246,6 +246,7 @@ public class TabFragment extends Fragment {
                         unselectConversations();
                         Intent startConversationIntent = new Intent(requireActivity(), ConversationActivity2.class);
                         startConversationIntent.putExtra("conversationID", conversation.getConversationID());
+                        startConversationIntent.putExtra("conversationType", conversation.getConversationType());
                         SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("share", MODE_PRIVATE);
                         String title = sharedPreferences.getString("title", "noTitle");
                         String link = sharedPreferences.getString("link", "noLink");

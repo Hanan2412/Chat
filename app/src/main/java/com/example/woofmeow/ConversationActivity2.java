@@ -212,7 +212,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private String link;//,title;
     private ImageView linkedImage;
     private TextView linkTitle, linkContent;
-    private boolean messageLongPress = false;
     private final String NULL_ERROR = "something is null";
     private final String ERROR_CASE = "Error in switch case";
     private final String ERROR_WRITE = "write error";
@@ -446,6 +445,18 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
         });
         setSupportActionBar(toolbar);
+        conversationType = ConversationType.values()[getIntent().getIntExtra("conversationType",ConversationType.undefined.ordinal())];
+        if (conversationType == ConversationType.group) {
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
+            toolbar.setPopupTheme(R.style.group);
+        } else if (conversationType == ConversationType.single){
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
+            toolbar.setPopupTheme(R.style.single);
+        }else if (conversationType == ConversationType.sms)
+        {
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
+            toolbar.setPopupTheme(R.style.sms);
+        }
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null)
             actionBar.setDisplayShowTitleEnabled(false);
@@ -2359,6 +2370,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             } else if (item.getItemId() == R.id.delete) {
                 onInteractionMessage(selectedMessage.getMessageID(), MessageAction.delete_message);
                 Log.d(CONVERSATION_ACTIVITY, "delete msg");
+            } else if (item.getItemId() == R.id.favorite)
+            {
+                selectedMessage.setStar(!selectedMessage.isStar());
+                updateMessage(selectedMessage);
+                onUnSelectMessages();
             }
         } else {
             if (item.getItemId() == R.id.callBtn) {
@@ -2719,9 +2735,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                 @Override
                                 public void run() {
                                     setConversation(conversation);
+                                    initConversationLook();
                                 }
                             });
-                            initConversationLook();
+
 
                         } else
                             Log.e(CONVERSATION_ACTIVITY, "init conversation - no recipients in list");
@@ -2734,6 +2751,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     }
 
     private void initConversationLook() {
+        Log.d(CONVERSATION_ACTIVITY, "setting conversation look");
         Map<ButtonType, Integer> sendBtnImages = new HashMap<>();
         sendBtnImages.put(ButtonType.sendMessage, R.drawable.ic_baseline_send_white);
         switch (conversationType) {
@@ -2741,9 +2759,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 actionBtn.setVisibility(View.GONE);
                 sendMessageBtn.setButtonTypeImages(sendBtnImages);
                 sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
-
-                toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
-                toolbar.setPopupTheme(R.style.sms);
                 break;
             case group:
             case single:
@@ -2767,14 +2782,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 sendBtnImages.put(ButtonType.microphone, R.drawable.ic_baseline_mic_black);
                 sendMessageBtn.setButtonTypeImages(sendBtnImages);
                 sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
-
-                if (conversationType == ConversationType.group) {
-                    toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
-                    toolbar.setPopupTheme(R.style.group);
-                } else {
-                    toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
-                    toolbar.setPopupTheme(R.style.single);
-                }
                 break;
             default:
                 Log.e(CONVERSATION_ACTIVITY, "unsupported conversation type");
@@ -2810,6 +2817,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private void updateMessage(@NonNull Message message) {
         Log.d(CONVERSATION_ACTIVITY, "update message: " + message.getMessageID());
         model.updateMessage(message);
+        chatAdapter.updateMessage(message);
     }
 
     private void saveMessage(@NonNull Message message) {
@@ -2885,7 +2893,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         updateMessage(message);
                         updateConversation(message);
                         onClearEditMessage();
-                        chatAdapter.updateMessage(message);
+//                        chatAdapter.updateMessage(message);
                         Log.d(CONVERSATION_ACTIVITY, "interaction - edit msg");
                     }
                     break;
