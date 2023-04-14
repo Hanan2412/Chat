@@ -23,7 +23,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -46,7 +45,6 @@ import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PipedReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,11 +57,9 @@ import Consts.ButtonType;
 import Consts.MessageStatus;
 import Consts.MessageType;
 import Consts.Messaging;
-import Fragments.ImageFragment;
 import NormalObjects.ImageButtonPlus;
 import NormalObjects.ImageButtonState;
 import NormalObjects.Message;
-import NormalObjects.PlayAudioButton;
 import NormalObjects.Web;
 import Time.TimeFormat;
 
@@ -196,6 +192,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 //        if (message.isStar()) {
 //            holder.message.setCompoundDrawablesRelativeWithIntrinsicBounds(android.R.drawable.star_on, 0, 0, 0);
 //        }
+        holder.rootLayout.setSelected(message.isSelected());
         if (message.getMessageType() == MessageType.textMessage.ordinal()) {
             holder.playRecordingLayout.setVisibility(View.GONE);
             holder.messageTextLayout.setVisibility(View.VISIBLE);
@@ -487,7 +484,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         if (holder.statusTv != null) {
             holder.statusTv.changeBtnState(message.getMessageStatus());
         }
-        if (message.getQuoteMessage() != null && !message.getQuoteMessage().equals("")) {
+        if (message.getContent().equals("f"))
+            System.out.println("f");
+        if (message.getQuoteMessage() != null) {
             holder.messageTextLayout.setVisibility(View.VISIBLE);
             holder.playRecordingLayout.setVisibility(View.GONE);
             holder.contactLayout.setVisibility(View.GONE);
@@ -496,6 +495,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.quote.setVisibility(View.VISIBLE);
             holder.quote.setText(message.getQuoteMessage());
             holder.quoteSenderName.setText(message.getSenderName());
+            if (message.getQuoteMessageType() == MessageType.photoMessage.ordinal() || message.getQuoteMessageType() == MessageType.imageMessage.ordinal())
+            {
+                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0,0,0);
+            }
+            else
+            {
+                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,0, 0);
+            }
         } else {
             holder.quoteLayout.setVisibility(View.GONE);
         }
@@ -579,7 +586,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             specialMsgIndicator = itemView.findViewById(R.id.specialMessageIndicator);
             timeReceived = itemView.findViewById(R.id.messageTime);
             innerPaneLayout = itemView.findViewById(R.id.innerPaneLayout);
-            rootLayout = itemView.findViewById(R.id.rootLayout);
+            rootLayout = itemView.findViewById(R.id.messageLayout);
             mainConstraintLayout = itemView.findViewById(R.id.mainConstraintLayout);
             List<Integer>playAudioImages = new ArrayList<>();
             playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
@@ -782,8 +789,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return findMessage(this.messages, min, max, key);
     }
 
-    public ArrayList<Integer> SearchMessage(String searchQuery) {
-        ArrayList<Integer> searchQueryIndexes = new ArrayList<>();
+    public List<Integer> searchMessages(String searchQuery) {
+        List<Integer> searchQueryIndexes = new ArrayList<>();
         for (int i = 0; i < messages.size(); i++) {
             if (messages.get(i).getContent() != null)
                 if (messages.get(i).getContent().contains(searchQuery)) {

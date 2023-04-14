@@ -47,13 +47,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextSwitcher;
 import android.widget.TextView;
@@ -199,8 +197,9 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private ImageButtonType sendMessageBtn, actionBtn;
     private final String PICKER_FRAGMENT_TAG = "Picker_fragment";
     private final String BOTTOM_SHEET_TAG = "BottomSheet_fragment";
-    private Message editMessage;
+    private Message editMessage, quoteMessage;
     private TextView quoteText, quoteSender;
+    private boolean quote = false;
     private TextView conversationName;
     private boolean directCall;
     private String recipientPhoneNumber;
@@ -220,7 +219,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private LinearLayout searchLayout, imagePreviewLayout, linkMessageLayout, groupCountLayout, userInputLayout, voiceLayout, textLayout;
     private ConstraintLayout quoteLayout;
     private EditText searchText;
-    private ArrayList<Integer> indices;
+    private List<Integer> indices;
     private int indicesIndex = 0;
     private Uri videoUri;
     private String contactName, contactNumber;
@@ -724,9 +723,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         if (newRecipients != null) {
                             int oldRecipientAmount = recipients.size();
                             recipients.addAll(newRecipients);
-                            List<String>newRecipientsIds = new ArrayList<>();
-                            for (int i = oldRecipientAmount; i < recipients.size(); i++)
-                            {
+                            List<String> newRecipientsIds = new ArrayList<>();
+                            for (int i = oldRecipientAmount; i < recipients.size(); i++) {
                                 User user = recipients.get(i);
                                 userModel.saveUser(user);
                                 newRecipientsIds.add(user.getUserUID());
@@ -736,9 +734,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         } else
                             Log.e(NULL_ERROR, "new recipients are NULL");
                     }
-                }
-                else
-                {
+                } else {
                     Toast.makeText(ConversationActivity2.this, "can't add new recipients to conversation", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -749,9 +745,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 if (result.getResultCode() == RESULT_OK) {
                     Log.d(CONVERSATION_ACTIVITY, "taking a picture");
                     onShowPreview(MessageType.photoMessage, photoPath);
-                }
-                else if (result.getResultCode() == RESULT_CANCELED)
-                {
+                } else if (result.getResultCode() == RESULT_CANCELED) {
                     Log.d(CONVERSATION_ACTIVITY, "cancelled taking image");
                     onReset();
                 }
@@ -770,9 +764,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             onShowPreview(MessageType.imageMessage, uri.toString());
                         }
                     }
-                }
-                else if (result.getResultCode() == RESULT_CANCELED)
-                {
+                } else if (result.getResultCode() == RESULT_CANCELED) {
                     Log.d(CONVERSATION_ACTIVITY, "cancelled gallery image");
                     onReset();
                 }
@@ -883,42 +875,31 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         nextSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                showHideProgress();
                 if (indices == null) {
                     String searchQuery = searchText.getText().toString();
-                    indices = chatAdapter.SearchMessage(searchQuery);
+                    indices = chatAdapter.searchMessages(searchQuery);
                 }
-                if (indices != null) {
-                    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                        @Override
-                        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                            super.onScrolled(recyclerView, dx, dy);
-                            RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-                            if (manager != null) {
-                                View view = manager.findViewByPosition(indices.get(indicesIndex));
-                                markMessage(view);
-                            }
-                            recyclerView.removeOnScrollListener(this);
-                        }
-                    });
-                    recyclerView.scrollToPosition(indices.get(indicesIndex));
+                showHideProgress();
+                recyclerView.scrollToPosition(indices.get(indicesIndex));
+                markMessage(indices.get(indicesIndex));
+                indicesIndex++;
+                if (indicesIndex >= indices.size())
+                    indicesIndex = 0;
 
-                    indicesIndex++;
-                    if (indicesIndex >= indices.size())
-                        indicesIndex = 0;
-                }
             }
         });
-
         MessageTouch touch = new MessageTouch(ItemTouchHelper.ACTION_STATE_IDLE, ItemTouchHelper.START | ItemTouchHelper.END);
         touch.setListener(new TouchListener() {
             @Override
             public void onSwipe(@NonNull RecyclerView.ViewHolder viewHolder, int swipeDirection) {
                 viewHolder.getAdapterPosition();
 //                TextView message = viewHolder.itemView.findViewById(R.id.message);
-                Message quoteMessage = chatAdapter.getMessage(viewHolder.getAdapterPosition());
+                quoteMessage = chatAdapter.getMessage(viewHolder.getAdapterPosition());
                 quoteLayout.setVisibility(View.VISIBLE);
                 quoteText.setText(quoteMessage.getContent());
                 quoteSender.setText(quoteMessage.getSenderName());
+                quote = true;
                 //brings back just the item that was swiped away
                 if (recyclerView.getAdapter() != null)
                     recyclerView.getAdapter().notifyItemChanged(viewHolder.getAdapterPosition());
@@ -1034,15 +1015,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         onInteractionMessageReceived();
     }
 
-    private void changeToSendMessageLayout()
-    {
+    private void changeToSendMessageLayout() {
         Log.d(CONVERSATION_ACTIVITY, "changed layout to send msg");
         actionBtn.setCurrentButtonType(ButtonType.cancel);
         sendMessageBtn.setCurrentButtonType(ButtonType.sendMessage);
     }
 
-    private void changeToBaseLayout()
-    {
+    private void changeToBaseLayout() {
         Log.d(CONVERSATION_ACTIVITY, "changed layout to base layout");
         sendMessageBtn.setCurrentButtonType(ButtonType.microphone);
         actionBtn.setCurrentButtonType(actionBtn.getPreviousButtonType());
@@ -1171,6 +1150,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         textLayout.setVisibility(View.VISIBLE);
         linkMessageLayout.setVisibility(View.GONE);
         imagePreviewLayout.setVisibility(View.GONE);
+        quoteMessage = null;
+        quote = false;
         onUnSelectMessages();
     }
 
@@ -1557,6 +1538,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Log.e(ERROR_CASE, "onMessageReady: UNHANDLED CASE: " + messageType);
                 break;
         }
+        if (quote) {
+            message.setQuoteMessage(quoteMessage.getContent());
+            message.setQuoteID(quoteMessage.getMessageID());
+            message.setQuoteMessageType(quoteMessage.getMessageType());
+        }
         return message;
     }
 
@@ -1581,59 +1567,28 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             createNewContact.putExtra(ContactsContract.Intents.Insert.NAME, message.getContactName());
             createNewContact.putExtra(ContactsContract.Intents.Insert.PHONE, message.getContactNumber());
             startActivity(createNewContact);
-        } else if (messageType == MessageType.quote.ordinal()) {
-            String quotedMessageID = message.getQuoteID();
-            int index = chatAdapter.findMessageLocation(null, 0, chatAdapter.getItemCount() - 1, Long.parseLong(quotedMessageID));
-            if (index != -1) {
-                recyclerView.smoothScrollToPosition(index);
-                recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                    @Override
-                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                        super.onScrollStateChanged(recyclerView, newState);
-                        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                            RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-                            if (manager != null) {
-                                View view = manager.findViewByPosition(index);
-                                if (view != null)
-                                    view.setSelected(true);
-                            }
-                            recyclerView.removeOnScrollListener(this);
-                        }
-                    }
-                });
-            }
         } else if (message.getQuoteMessage() != null) {
             //this is a quoted message
-            String quotedMessageID = message.getQuoteID();
-            if (quotedMessageID != null) {
-                int index = chatAdapter.findMessageLocation(null, 0, chatAdapter.getItemCount() - 1, Long.parseLong(quotedMessageID));
-                if (index != -1) {
-                    recyclerView.smoothScrollToPosition(index);
-                    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                        @Override
-                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                            super.onScrollStateChanged(recyclerView, newState);
-                            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                                RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-                                if (manager != null) {
-                                    View view1 = manager.findViewByPosition(index);
-                                    markMessage(view1);
-                                }
-                                recyclerView.removeOnScrollListener(this);
-                            }
-                        }
-                    });
-                } else
-                    Toast.makeText(this, "couldn't fine this quoted message", Toast.LENGTH_SHORT).show();
+            long quotedMessageID = message.getQuoteID();
+            int index = chatAdapter.findMessageLocation(null, 0, chatAdapter.getItemCount() - 1, quotedMessageID);
+            if (index != -1) {
+                recyclerView.smoothScrollToPosition(index);
+                markMessage(index);
             }
         } else if (message.getContent() != null && Patterns.WEB_URL.matcher(message.getContent()).matches()) {
             Intent openWebSite = new Intent(Intent.ACTION_VIEW);
-            openWebSite.setData(Uri.parse(message.getContent()));
+            String link = message.getContent();
+            String prefix = "https://www.";
+            if (!link.startsWith(prefix))
+            {
+                link = prefix + link;
+            }
+            openWebSite.setData(Uri.parse(link));
             startActivity(openWebSite);
         } else if (messageType == MessageType.imageMessage.ordinal() || messageType == MessageType.photoMessage.ordinal()) {
             ImageFragment imageFragment = new ImageFragment();
             Bundle bundle = new Bundle();
-            bundle.putString("image", message.getFilePath());
+            bundle.putString("uri", message.getFilePath());
             imageFragment.setArguments(bundle);
             imageFragment.show(getSupportFragmentManager(), "imageFragment");
         } else if (messageType == MessageType.gpsMessage.ordinal()) {
@@ -1656,16 +1611,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    private void markMessage(View view) {
-        if (view != null) {
-            view.setSelected(true);
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    view.setSelected(false);
+    private void markMessage(int index) {
+        Message message = chatAdapter.getMessage(index);
+        message.setSelected(true);
+        chatAdapter.notifyItemChanged(index);
+        Thread thread = new Thread() {
+            @Override
+            public synchronized void run() {
+                try {
+                    wait(2000);
+                    message.setSelected(false);
+                    chatAdapter.notifyItemChanged(index);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            }, 2500);
-        }
+            }
+        };
+        thread.setName("wait thread");
+        thread.start();
     }
 
     @Override
@@ -2397,8 +2360,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 onInteractionMessage(selectedMessage.getMessageID(), MessageAction.delete_message);
                 Log.d(CONVERSATION_ACTIVITY, "delete msg");
             }
-        }
-        else {
+        } else {
             if (item.getItemId() == R.id.callBtn) {
                 callPhone();
                 //opening dialer to call the recipient number if exists
@@ -2451,6 +2413,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     userModel.updateBlockUser(recipients.get(0).getUserUID());
                 Log.d(CONVERSATION_ACTIVITY, "BLOCK");
             } else if (item.getItemId() == R.id.searchMessage) {
+                indicesIndex = 0;
+                indices = null;
                 Animation in = AnimationUtils.loadAnimation(this, R.anim.slide_down);
                 Animation out = AnimationUtils.loadAnimation(this, R.anim.slide_up);
                 if (searchLayout.getVisibility() == View.GONE) {
@@ -3026,6 +2990,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private void resetQuote() {
         quoteText.setText("");
         quoteSender.setText("");
+        quote = false;
+        quoteMessage = null;
         quoteLayout.setVisibility(View.GONE);
     }
 
@@ -3050,8 +3016,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         invalidateOptionsMenu();
     }
 
-    private void updatePhoneNumber(String phoneNumber)
-    {
+    private void updatePhoneNumber(String phoneNumber) {
         recipients.get(0).setPhoneNumber(phoneNumber);
         conversation.setRecipientPhoneNumber(phoneNumber);
         updateUser(recipients.get(0));

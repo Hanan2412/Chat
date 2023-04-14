@@ -5,7 +5,8 @@
     android:id="@+id/messageLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="5dp">
+    android:layout_marginTop="5dp"
+    android:background="@drawable/full_message_background">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/left_guideline"

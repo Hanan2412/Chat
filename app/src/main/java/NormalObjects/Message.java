@@ -1,6 +1,7 @@
 package NormalObjects;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
@@ -30,9 +31,10 @@ public class Message implements Serializable {
     private String address;
 
     //    quote message
-    private String quoteID;
+    private long quoteID;
     private String quoteMessage;
     private int quoteMessagePosition;
+    private int quoteMessageType;
 
     //    message enums
     private int MessageStatus;
@@ -53,6 +55,8 @@ public class Message implements Serializable {
     private String contactNumber;
     private String filePath;
 
+    @Ignore
+    private boolean selected;
 
 //    @Ignore
 //    private List<String>recipientsIds;
@@ -63,6 +67,7 @@ public class Message implements Serializable {
         readingTime = 0;
         editTime = 0;
         star = false;
+        selected = false;
 //        recipientsIds = new ArrayList<>();
     }
 
@@ -178,11 +183,11 @@ public class Message implements Serializable {
         this.address = address;
     }
 
-    public String getQuoteID() {
+    public long getQuoteID() {
         return quoteID;
     }
 
-    public void setQuoteID(String quoteID) {
+    public void setQuoteID(long quoteID) {
         this.quoteID = quoteID;
     }
 
@@ -200,6 +205,14 @@ public class Message implements Serializable {
 
     public void setQuoteMessagePosition(int quoteMessagePosition) {
         this.quoteMessagePosition = quoteMessagePosition;
+    }
+
+    public int getQuoteMessageType() {
+        return quoteMessageType;
+    }
+
+    public void setQuoteMessageType(int quoteMessageType) {
+        this.quoteMessageType = quoteMessageType;
     }
 
     public int getMessageStatus() {
@@ -314,4 +327,13 @@ public class Message implements Serializable {
 //    public void setRecipientsIds(List<String> recipientsIds) {
 //        this.recipientsIds = recipientsIds;
 //    }
+
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
 }

@@ -15,6 +15,8 @@ import androidx.fragment.app.DialogFragment;
 import com.example.woofmeow.R;
 import com.squareup.picasso.Picasso;
 
+import java.io.File;
+
 public class ImageFragment extends DialogFragment {
 
     @NonNull
@@ -25,7 +27,12 @@ public class ImageFragment extends DialogFragment {
         if (getArguments()!=null) {
             String image = getArguments().getString("image");
             ImageView imageView = view.findViewById(R.id.imagePreview);
-            Picasso.get().load(image).into(imageView);
+            if (getArguments().getString("uri")!=null)
+            {
+                Picasso.get().load(new File(getArguments().getString("uri"))).into(imageView);
+            }
+            else
+                Picasso.get().load(image).into(imageView);
         }
         return builder.setCancelable(true).setView(view).create();
     }
