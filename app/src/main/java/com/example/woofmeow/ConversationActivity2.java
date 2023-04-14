@@ -2714,6 +2714,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                             conversation.setBlocked(false);
                             conversation.setMuted(false);
                             conversation.setConversationType(type.ordinal());
+                            setConversationType(type);
                             new Handler(getMainLooper()).post(new Runnable() {
                                 @Override
                                 public void run() {
@@ -2902,20 +2903,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         editMessage = null;
         Log.d(CONVERSATION_ACTIVITY, "edit msg was cleared");
     }
-
-//    private void onDeselectMessage()
-//    {
-//        int msgIndex = chatAdapter.findMessageLocation(null, 0, -1, selectedMessage.getMessageID());
-//        if (msgIndex != -1) {
-//            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(msgIndex);
-//            if (holder != null) {
-//                holder.itemView.findViewById(R.id.messageTextLayout).setSelected(false);
-//            }
-//        }
-//        messageLongPress = false;
-//        selectedMessage = null;
-//        invalidateOptionsMenu();
-//    }
 
     private List<String> getRecipientsNames() {
         List<String> recipientsNames = new ArrayList<>();
