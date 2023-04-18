@@ -118,5 +118,7 @@
     <string name="nothing_delete">Nothing will be deleted</string>
     <string name="select_conversation_delete">Selected conversation will be deleted</string>
     <string name="error">Error</string>
+    <string name="changes_message">Changes to the Message</string>
+    <string name="views_message">Who viewed and read the Message</string>
 
 </resources>

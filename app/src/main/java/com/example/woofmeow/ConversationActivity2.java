@@ -110,16 +110,20 @@ import Controller.NotificationsController;
 import Fragments.BinaryFragment;
 import Fragments.GifBackdropFragment;
 import Fragments.ImageFragment;
+import Fragments.MessageInfoFragment;
 import Fragments.SingleFieldFragment;
 import NormalObjects.Conversation;
 import NormalObjects.ConversationMessage;
 import NormalObjects.Gif;
 import NormalObjects.ImageButtonState;
 import NormalObjects.ImageButtonType;
+import NormalObjects.MessageHistory;
+import NormalObjects.MessageViews;
 import NormalObjects.Network2;
 import NormalObjects.NetworkChange;
 import NormalObjects.Web;
 import NormalObjects.OnClick;
+import NormalObjects.onDismissFragment;
 import Retrofit.Joke;
 import Retrofit.RetrofitJoke;
 
@@ -446,17 +450,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
         setSupportActionBar(toolbar);
         conversationType = ConversationType.values()[getIntent().getIntExtra("conversationType",ConversationType.undefined.ordinal())];
-        if (conversationType == ConversationType.group) {
-            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
-            toolbar.setPopupTheme(R.style.group);
-        } else if (conversationType == ConversationType.single){
-            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
-            toolbar.setPopupTheme(R.style.single);
-        }else if (conversationType == ConversationType.sms)
-        {
-            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
-            toolbar.setPopupTheme(R.style.sms);
-        }
+        initConversationLook(conversationType);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null)
             actionBar.setDisplayShowTitleEnabled(false);
@@ -710,16 +704,19 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 updateMessage(message);
                 user.setMsgSentAmount(user.getMsgSentAmount() + 1);
                 updateUser(user);
+                saveMessageViews(message);
             }
 
             @Override
             public void onMessagePartiallySent(Message message, List<String> tokens, String error) {
                 Log.d(CONVERSATION_ACTIVITY, "message wasn't sent to all recipients");
+                saveMessageViews(message);
             }
 
             @Override
             public void onMessageNotSent(Message message, String error) {
                 Log.d(CONVERSATION_ACTIVITY, "message wasn't sent");
+                saveMessageViews(message);
             }
         });
 
@@ -2349,13 +2346,26 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Intent shareIntent = Intent.createChooser(sendIntent, null);
                 startActivity(shareIntent);
             } else if (item.getItemId() == R.id.messageInfo) {
-                BackdropFragment backdropFragment = BackdropFragment.newInstance();
-                Bundle backDropBundle = new Bundle();
-                final String conversationType = "conversationType";
-                backDropBundle.putSerializable("message", selectedMessage);
-                backDropBundle.putInt(conversationType, this.conversationType.ordinal());
-                backdropFragment.setArguments(backDropBundle);
-                backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
+//                BackdropFragment backdropFragment = BackdropFragment.newInstance();
+//                Bundle backDropBundle = new Bundle();
+//                final String conversationType = "conversationType";
+//                backDropBundle.putSerializable("message", selectedMessage);
+//                backDropBundle.putInt(conversationType, this.conversationType.ordinal());
+//                backdropFragment.setArguments(backDropBundle);
+//                backdropFragment.show(getSupportFragmentManager(), BOTTOM_SHEET_TAG);
+                MessageInfoFragment messageInfoFragment = MessageInfoFragment.getInstance();
+                messageInfoFragment.setDismissListener(new onDismissFragment() {
+                    @Override
+                    public void onDismiss() {
+                        invalidateOptionsMenu();
+                        onUnSelectMessages();
+                    }
+                });
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("message",selectedMessage);
+                bundle.putString("currentUID", currentUserID);
+                messageInfoFragment.setArguments(bundle);
+                messageInfoFragment.show(getSupportFragmentManager(), "message fragment");
             } else if (item.getItemId() == R.id.copy) {
                 ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                 ClipData clipData = ClipData.newPlainText("message", selectedMessage.getContent());
@@ -2634,7 +2644,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Log.d(CONVERSATION_ACTIVITY, "loading conversation object from db");
                 if (conversation != null) {
                     setConversation(conversation);
-                    initConversationLook();
+                    initConversationFeel();
                 } else {
                     Log.e(CONVERSATION_ACTIVITY, "conversation object from db is null");
                 }
@@ -2735,7 +2745,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                                 @Override
                                 public void run() {
                                     setConversation(conversation);
-                                    initConversationLook();
+                                    initConversationFeel();
                                 }
                             });
 
@@ -2750,7 +2760,22 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
     }
 
-    private void initConversationLook() {
+    private void initConversationLook(ConversationType conversationType)
+    {
+        if (conversationType == ConversationType.group) {
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
+            toolbar.setPopupTheme(R.style.group);
+        } else if (conversationType == ConversationType.single){
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
+            toolbar.setPopupTheme(R.style.single);
+        }else if (conversationType == ConversationType.sms)
+        {
+            toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
+            toolbar.setPopupTheme(R.style.sms);
+        }
+    }
+
+    private void initConversationFeel() {
         Log.d(CONVERSATION_ACTIVITY, "setting conversation look");
         Map<ButtonType, Integer> sendBtnImages = new HashMap<>();
         sendBtnImages.put(ButtonType.sendMessage, R.drawable.ic_baseline_send_white);
@@ -2820,6 +2845,41 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         chatAdapter.updateMessage(message);
     }
 
+    private void saveMessageViews(Message message)
+    {
+        for (User user: recipients) {
+            model.isMessageViewsExists(message.getMessageID(), user.getUserUID()).observe(ConversationActivity2.this, new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean aBoolean) {
+                    if (!aBoolean)
+                    {
+                        MessageViews messageViews = new MessageViews();
+                        messageViews.setMessageID(message.getMessageID());
+                        messageViews.setConversationID(message.getConversationID());
+                        messageViews.setMessageStatus(message.getMessageStatus());
+                        messageViews.setSendingTime(message.getSendingTime());
+                        messageViews.setUserName(user.getName() + " " + user.getLastName());
+                        messageViews.setUid(user.getUserUID());
+                        model.saveMessageViews(messageViews);
+                    }
+                    model.isMessageViewsExists(message.getMessageID(), user.getUserUID()).removeObserver(this);
+                }
+            });
+
+        }
+    }
+
+    private void saveMessageHistory(MessageHistory messageHistory)
+    {
+        Log.d(CONVERSATION_ACTIVITY, "save message history");
+        model.saveMessageHistory(messageHistory);
+    }
+
+    private void updateMessageHistory(MessageHistory messageHistory)
+    {
+        model.updateMessageHistory(messageHistory);
+    }
+
     private void saveMessage(@NonNull Message message) {
         Log.d(CONVERSATION_ACTIVITY, "save message id: " + message.getMessageID());
         LiveData<Boolean> isMessageExist = model.isMessageExists(message);
@@ -2884,16 +2944,14 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 }
                 case edit_message: {
                     if (messageText.getText() != null) {
+                        editMessage.setEditTime(StandardTime.getInstance().getStandardTime());
+                        onCreateMessageHistory(editMessage);
                         message = editMessage;
-                        message.setMessageID(messageID);
                         message.setContent(getMessage());
-                        message.setEditTime(System.currentTimeMillis());
                         message.setMessageStatus(MessageStatus.WAITING.ordinal());
-//                        model.addMessageHistory(new MessageHistory(message));
-                        updateMessage(message);
+                        updateMessage(editMessage);
                         updateConversation(message);
                         onClearEditMessage();
-//                        chatAdapter.updateMessage(message);
                         Log.d(CONVERSATION_ACTIVITY, "interaction - edit msg");
                     }
                     break;
@@ -2906,6 +2964,13 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
+    private void onCreateMessageHistory(Message message)
+    {
+        MessageHistory messageHistory = new MessageHistory();
+        messageHistory.copyMessage(message);
+        messageHistory.setCurrentMessageID(StandardTime.getInstance().getStandardTime());
+        saveMessageHistory(messageHistory);
+    }
 
     private void onClearEditMessage() {
         editMessage = null;

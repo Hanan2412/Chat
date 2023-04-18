@@ -10,9 +10,10 @@ import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.MessageHistory;
+import NormalObjects.MessageViews;
 import NormalObjects.User;
 
-@Database(entities = {Conversation.class, User.class, Message.class, Group.class, MessageHistory.class},version = 20)
+@Database(entities = {Conversation.class, User.class, Message.class, Group.class, MessageHistory.class, MessageViews.class},version = 25)
 public abstract class ChatDataBase extends RoomDatabase {
 
     private static ChatDataBase instance;

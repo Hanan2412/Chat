@@ -16,6 +16,7 @@ import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.MessageHistory;
+import NormalObjects.MessageViews;
 import NormalObjects.User;
 import Retrofit.Server;
 
@@ -35,9 +36,24 @@ public class ConversationVM extends AndroidViewModel {
         return repository.getMessage(msgID);
     }
 
-    public void addMessageHistory(MessageHistory messageHistory)
+    public void saveMessageHistory(MessageHistory messageHistory)
     {
-        repository.addMessageHistory(messageHistory);
+        repository.saveMessageHistory(messageHistory);
+    }
+
+    public void updateMessageHistory(MessageHistory messageHistory)
+    {
+        repository.updateMessageHistory(messageHistory);
+    }
+
+    public void saveMessageViews(MessageViews messageViews)
+    {
+        repository.saveMessageViews(messageViews);
+    }
+
+    public LiveData<Boolean> isMessageViewsExists(long msgID, String uid)
+    {
+        return repository.isMessageViewsExists(msgID, uid);
     }
 
     public void deleteConversation(String conversationID)
@@ -47,9 +63,14 @@ public class ConversationVM extends AndroidViewModel {
         repository.deleteGroup(conversationID);
     }
 
-    public LiveData<List<MessageHistory>>getMessageHistory(long messageID)
+    public LiveData<List<MessageHistory>> getMessageHistories(long messageID)
     {
-        return repository.getMessageHistory(messageID);
+        return repository.getMessageHistories(messageID);
+    }
+
+    public LiveData<MessageHistory>getMessageHistory(long msgHistory)
+    {
+        return repository.getMessageHistory(msgHistory);
     }
 
     public LiveData<List<Message>>getMediaMessage()
@@ -271,5 +292,10 @@ public class ConversationVM extends AndroidViewModel {
     public LiveData<Boolean> isConversationExists(String conversationID)
     {
         return repository.isConversationExists(conversationID);
+    }
+
+    public LiveData<List<MessageViews>>getMessageViews(long messageID)
+    {
+        return repository.getMessageViews(messageID);
     }
 }

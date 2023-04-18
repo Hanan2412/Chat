@@ -11,11 +11,11 @@ import androidx.room.Update;
 
 import java.util.List;
 
-import Consts.ConversationType;
 import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.MessageHistory;
+import NormalObjects.MessageViews;
 import NormalObjects.User;
 
 @Dao
@@ -33,6 +33,12 @@ public interface ChatDao {
     @Insert
     void insertNewGroup(Group group);
 
+    @Insert
+    void insertNewMessageViews(MessageViews messageViews);
+
+    @Insert
+    void insertMessageHistory(MessageHistory messageHistory);
+
     @Update
     void updateConversation(Conversation conversation);
 
@@ -41,6 +47,9 @@ public interface ChatDao {
 
     @Update
     void updateMessage(Message message);
+
+    @Update
+    void updateMessageHistory(MessageHistory messageHistory);
 
     @Delete
     void deleteConversation(Conversation conversation);
@@ -98,6 +107,9 @@ public interface ChatDao {
 
     @Query("SELECT * FROM messages where messages.conversationID = :conversationID")
     LiveData<List<Message>>getAllMessages(String conversationID);
+
+    @Query("SELECT * FROM messageViews WHERE messageViews.messageID = :messageID")
+    LiveData<List<MessageViews>>getMessageViews(long messageID);
 
     @Query("SELECT * FROM users where users.userUID = :uid")
     LiveData<User>getUser(String uid);
@@ -164,6 +176,9 @@ public interface ChatDao {
 
     @Query("UPDATE conversations SET lastMessage = :message, lastMessageID = :id, messageType = :type, lastMessageTime = :time, conversationName = :groupName, messageType = :lastMessageType, lastMessageTimeParse = :timeParse, lastUpdate = :lastConversationUpdate WHERE conversationID = :conversationID")
     void updateConversation(String message,long id,int type,long time,long timeParse,String groupName,String conversationID, int lastMessageType, long lastConversationUpdate);
+
+    @Query("SELECT EXISTS (SELECT * FROM messageViews WHERE messageID = :messageID and uid = :uid)")
+    LiveData<Boolean>isMessageViewsExists(long messageID, String uid);
 
     @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
     LiveData<Boolean> isConversationExists(String conversationID);
@@ -255,13 +270,14 @@ public interface ChatDao {
     @Query("SELECT count(conversations.unreadMessages) from conversations where unreadMessages != 0")
     LiveData<String>getUnreadConversationsCount();
 
-    @Query("SELECT * FROM messageHistory WHERE messageID = :messageID")
-    LiveData<List<MessageHistory>>getMessageHistory(long messageID);
+    @Query("SELECT * FROM messageHistory WHERE messageID = :messageID ORDER BY currentMessageID DESC")
+    LiveData<List<MessageHistory>> getMessageHistories(long messageID);
+
+    @Query("SELECT * FROM messageHistory WHERE currentMessageID = :messageID")
+    LiveData<MessageHistory> getMessageHistory(long messageID);
 
     @Query("SELECT * FROM messages WHERE messageID = :messageID")
     LiveData<Message>getMessage(long messageID);
-    @Insert
-    void saveMessageHistory(MessageHistory messageHistory);
 
     @Query("SELECT * FROM messages WHERE messageType in (4,5,10)")
     LiveData<List<Message>>mediaMessage();

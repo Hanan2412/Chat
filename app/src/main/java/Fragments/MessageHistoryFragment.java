@@ -20,10 +20,10 @@ import NormalObjects.MessageHistory;
 public class MessageHistoryFragment extends Fragment {
 
     private MessageHistoryAdapter adapter;
-
-    public MessageHistoryFragment(List<MessageHistory> messageHistory) {
-        adapter = new MessageHistoryAdapter(messageHistory);
-    }
+//
+//    public MessageHistoryFragment(List<MessageHistory> messageHistory) {
+//        adapter = new MessageHistoryAdapter(messageHistory);
+//    }
 
 
     @Nullable

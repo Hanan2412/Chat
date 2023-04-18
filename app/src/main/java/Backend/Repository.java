@@ -17,6 +17,7 @@ import NormalObjects.Conversation;
 import NormalObjects.Group;
 import NormalObjects.Message;
 import NormalObjects.MessageHistory;
+import NormalObjects.MessageViews;
 import NormalObjects.User;
 import Retrofit.Server;
 import Time.StandardTime;
@@ -48,15 +49,42 @@ public class Repository {
         server = Server.getInstance();
     }
 
-    public void addMessageHistory(MessageHistory messageHistory)
+    public void saveMessageHistory(MessageHistory messageHistory)
     {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                chatDao.saveMessageHistory(messageHistory);
+                chatDao.insertMessageHistory(messageHistory);
             }
         };
         pool.execute(runnable);
+    }
+
+    public void updateMessageHistory(MessageHistory messageHistory)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.updateMessageHistory(messageHistory);
+            }
+        };
+        pool.execute(runnable);
+    }
+
+    public void saveMessageViews(MessageViews messageViews)
+    {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                chatDao.insertNewMessageViews(messageViews);
+            }
+        };
+        pool.execute(runnable);
+    }
+
+    public LiveData<Boolean>isMessageViewsExists(long msgID, String uid)
+    {
+        return chatDao.isMessageViewsExists(msgID, uid);
     }
 
     public LiveData<String>getConversationByUserPhone(String phone)
@@ -393,7 +421,12 @@ public class Repository {
         return chatDao.getAllMessages(conversationID);
     }
 
-    public LiveData<List<MessageHistory>>getMessageHistory(long messageID)
+    public LiveData<List<MessageHistory>> getMessageHistories(long messageID)
+    {
+        return chatDao.getMessageHistories(messageID);
+    }
+
+    public LiveData<MessageHistory> getMessageHistory(long messageID)
     {
         return chatDao.getMessageHistory(messageID);
     }
@@ -407,6 +440,11 @@ public class Repository {
     public LiveData<List<Conversation>>getPinnedConversations()
     {
         return chatDao.getPinnedConversations();
+    }
+
+    public LiveData<List<MessageViews>>getMessageViews(long messageID)
+    {
+        return chatDao.getMessageViews(messageID);
     }
 
     public void clearAll()

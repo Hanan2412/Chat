@@ -65,4 +65,6 @@
     <string name="nothing_delete">שום דבר לא ימחק</string>
     <string name="select_conversation_delete">השיחות שניבחרו ימקחו</string>
     <string name="error">בעייה</string>
+    <string name="changes_message">שינויים להודעה</string>
+    <string name="views_message">מי שקיבל וקרא את ההודעה</string>
 </resources>

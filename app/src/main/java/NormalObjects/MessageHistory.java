@@ -1,72 +1,19 @@
 package NormalObjects;
 
 import androidx.room.Entity;
-import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
+// dual linked list design
 @Entity(tableName = "messageHistory")
-public class MessageHistory implements Serializable {
+public class MessageHistory extends Message implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
     int p_key;
 
-    //    message info
-    private String messageID;
-    private String conversationID;
-    private String content;
-    private String senderName;
-    private String senderID;
-    private String senderToken;
-    private String recipientID;
-    private String recipientToken;
-    private String messageKind;
-    private String recipientName;
-    private String groupName;
-
-    //    location
-    private String latitude;
-    private String longitude;
-    private String address;
-
-    //    quote message
-    private String quoteID;
-    private String quoteMessage;
-    private int quoteMessagePosition;
-
-    //    message enums
-    private int MessageStatus;
-    private int messageType;
-    private int messageAction;
-
-    //    message times
-    private long sendingTime;
-    private long arrivingTime;
-    private long readingTime;
-    private long editTime;
-
-    private boolean star;
-    private long starTime;
-
-    //    message contacts
-    private String contactName;
-    private String contactNumber;
-    private String filePath;
-
-
-    @Ignore
-    private List<String>recipientsIds;
-
     public MessageHistory() {
-        sendingTime = 0;
-        arrivingTime = 0;
-        readingTime = 0;
-        editTime = 0;
-        star = false;
-        recipientsIds = new ArrayList<>();
+        nextMessageID = 0;
     }
 
     public int getP_key() {
@@ -77,244 +24,62 @@ public class MessageHistory implements Serializable {
         this.p_key = p_key;
     }
 
-    public String getMessageID() {
-        return messageID;
+    public long getPreviousMessageID() {
+        return previousMessageID;
     }
 
-    public void setMessageID(String messageID) {
-        this.messageID = messageID;
+    public void setPreviousMessageID(long previousMessageID) {
+        this.previousMessageID = previousMessageID;
     }
 
-    public String getConversationID() {
-        return conversationID;
+    public long getCurrentMessageID() {
+        return currentMessageID;
     }
 
-    public void setConversationID(String conversationID) {
-        this.conversationID = conversationID;
+    public void setCurrentMessageID(long currentMessageID) {
+        this.currentMessageID = currentMessageID;
     }
 
-    public String getContent() {
-        return content;
+    public void setNextMessageID(long nextMessageID) {
+        this.nextMessageID = nextMessageID;
     }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+    public void copyMessage(Message message)
+    {
+        setConversationID(message.getConversationID());
+        setContent(message.getContent());
+        setSenderName(message.getSenderName());
+        setSenderID(message.getSenderID());
+        setSenderToken(message.getSenderToken());
+        setRecipientID(message.getRecipientID());
+        setRecipientToken(message.getRecipientToken());
+        setMessageKind(message.getMessageKind());
+        setRecipientName(message.getRecipientName());
+        setConversationName(message.getConversationName());
 
-    public String getSenderName() {
-        return senderName;
-    }
+        setLatitude(message.getLatitude());
+        setLongitude(message.getLongitude());
+        setAddress(message.getAddress());
 
-    public void setSenderName(String senderName) {
-        this.senderName = senderName;
-    }
+        setQuoteID(message.getQuoteID());
+        setQuoteMessage(message.getQuoteMessage());
+        setQuoteMessagePosition(message.getQuoteMessagePosition());
+        setQuoteMessageType(message.getQuoteMessageType());
 
-    public String getSenderID() {
-        return senderID;
-    }
+        setMessageStatus(message.getMessageStatus());
+        setMessageType(message.getMessageType());
+        setMessageAction(message.getMessageAction());
 
-    public void setSenderID(String senderID) {
-        this.senderID = senderID;
-    }
+        setSendingTime(message.getSendingTime());
+        setArrivingTime(message.getArrivingTime());
+        setReadingTime(message.getReadingTime());
+        setEditTime(message.getEditTime());
 
-    public String getSenderToken() {
-        return senderToken;
-    }
+        setContactName(message.getContactName());
+        setContactNumber(message.getContactNumber());
+        setFilePath(message.getFilePath());
 
-    public void setSenderToken(String senderToken) {
-        this.senderToken = senderToken;
-    }
-
-    public String getRecipientID() {
-        return recipientID;
-    }
-
-    public void setRecipientID(String recipientID) {
-        this.recipientID = recipientID;
-    }
-
-    public String getRecipientToken() {
-        return recipientToken;
-    }
-
-    public void setRecipientToken(String recipientToken) {
-        this.recipientToken = recipientToken;
-    }
-
-    public String getMessageKind() {
-        return messageKind;
-    }
-
-    public void setMessageKind(String messageKind) {
-        this.messageKind = messageKind;
-    }
-
-    public String getRecipientName() {
-        return recipientName;
-    }
-
-    public void setRecipientName(String recipientName) {
-        this.recipientName = recipientName;
-    }
-
-    public String getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(String latitude) {
-        this.latitude = latitude;
-    }
-
-    public String getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(String longitude) {
-        this.longitude = longitude;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getQuoteID() {
-        return quoteID;
-    }
-
-    public void setQuoteID(String quoteID) {
-        this.quoteID = quoteID;
-    }
-
-    public String getQuoteMessage() {
-        return quoteMessage;
-    }
-
-    public void setQuoteMessage(String quoteMessage) {
-        this.quoteMessage = quoteMessage;
-    }
-
-    public int getQuoteMessagePosition() {
-        return quoteMessagePosition;
-    }
-
-    public void setQuoteMessagePosition(int quoteMessagePosition) {
-        this.quoteMessagePosition = quoteMessagePosition;
-    }
-
-    public int getMessageStatus() {
-        return MessageStatus;
-    }
-
-    public void setMessageStatus(int messageStatus) {
-        MessageStatus = messageStatus;
-        setReadingTime(System.currentTimeMillis());
-    }
-
-    public int getMessageType() {
-        return messageType;
-    }
-
-    public void setMessageType(int messageType) {
-        this.messageType = messageType;
-    }
-
-    public int getMessageAction() {
-        return messageAction;
-    }
-
-    public void setMessageAction(int messageAction) {
-        this.messageAction = messageAction;
-    }
-
-    public long getSendingTime() {
-        return sendingTime;
-    }
-
-    public void setSendingTime(long sendingTime) {
-        this.sendingTime = sendingTime;
-    }
-
-    public long getArrivingTime() {
-        return arrivingTime;
-    }
-
-    public void setArrivingTime(long arrivingTime) {
-        this.arrivingTime = arrivingTime;
-    }
-
-    public long getReadingTime() {
-        return readingTime;
-    }
-
-    public void setReadingTime(long readingTime) {
-        this.readingTime = readingTime;
-    }
-
-    public long getEditTime() {
-        return editTime;
-    }
-
-    public void setEditTime(long editTime) {
-        this.editTime = editTime;
-    }
-
-    public boolean isStar() {
-        return star;
-    }
-
-    public void setStar(boolean star) {
-        this.star = star;
-    }
-
-    public long getStarTime() {
-        return starTime;
-    }
-
-    public void setStarTime(long starTime) {
-        this.starTime = starTime;
-    }
-
-    public String getContactName() {
-        return contactName;
-    }
-
-    public void setContactName(String contactName) {
-        this.contactName = contactName;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public String getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
-    }
-
-    public List<String> getRecipientsIds() {
-        return recipientsIds;
-    }
-
-    public void setRecipientsIds(List<String> recipientsIds) {
-        this.recipientsIds = recipientsIds;
+        setPreviousMessageID(message.getMessageID());
+        setMessageID(message.getMessageID());
     }
 }

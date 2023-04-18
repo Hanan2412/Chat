@@ -58,6 +58,10 @@ public class Message implements Serializable {
     @Ignore
     private boolean selected;
 
+    protected long previousMessageID; // the previous messageID
+    protected long currentMessageID; // the current messageID
+    protected long nextMessageID; // the next messageID
+
 //    @Ignore
 //    private List<String>recipientsIds;
 
@@ -68,6 +72,7 @@ public class Message implements Serializable {
         editTime = 0;
         star = false;
         selected = false;
+        nextMessageID = 0;
 //        recipientsIds = new ArrayList<>();
     }
 
@@ -335,5 +340,29 @@ public class Message implements Serializable {
 
     public void setSelected(boolean selected) {
         this.selected = selected;
+    }
+
+    public long getNextMessageID() {
+        return nextMessageID;
+    }
+
+    public long getPreviousMessageID() {
+        return previousMessageID;
+    }
+
+    public void setPreviousMessageID(long previousMessageID) {
+        this.previousMessageID = previousMessageID;
+    }
+
+    public long getCurrentMessageID() {
+        return currentMessageID;
+    }
+
+    public void setCurrentMessageID(long currentMessageID) {
+        this.currentMessageID = currentMessageID;
+    }
+
+    public void setNextMessageID(long nextMessageID) {
+        this.nextMessageID = nextMessageID;
     }
 }

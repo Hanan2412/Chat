@@ -7,8 +7,8 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
@@ -19,8 +19,6 @@ import com.example.woofmeow.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-
-import java.util.ArrayList;
 
 import java.util.List;
 
@@ -70,12 +68,12 @@ public class BackdropFragment extends BottomSheetDialogFragment {
                 public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                     if (item.getItemId() == R.id.messageHistory) {
                         ConversationVM model = new ViewModelProvider(requireActivity()).get(ConversationVM.class);
-                        model.getMessageHistory(message.getMessageID()).observe(requireActivity(), new Observer<List<MessageHistory>>() {
+                        model.getMessageHistories(message.getMessageID()).observe(requireActivity(), new Observer<List<MessageHistory>>() {
                             @Override
                             public void onChanged(List<MessageHistory> messageHistories) {
-                                model.getMessageHistory(message.getMessageID()).removeObserver(this);
-                                MessageHistoryFragment messageHistoryFragment = new MessageHistoryFragment(messageHistories);
-                                requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, messageHistoryFragment).commit();
+                                model.getMessageHistories(message.getMessageID()).removeObserver(this);
+//                                MessageHistoryFragment messageHistoryFragment = new MessageHistoryFragment(messageHistories);
+//                                requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, messageHistoryFragment).commit();
                             }
                         });
 
@@ -83,8 +81,8 @@ public class BackdropFragment extends BottomSheetDialogFragment {
                     }
                     else if (item.getItemId() == R.id.messageInfo)
                     {
-                        MessageInfoFragment infoFragment = new MessageInfoFragment(message);
-                        requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, infoFragment).commit();
+//                        MessageInfoFragment infoFragment = new MessageInfoFragment(message);
+//                        requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container, infoFragment).commit();
 
                     }
                     return false;
@@ -93,19 +91,20 @@ public class BackdropFragment extends BottomSheetDialogFragment {
             bottomNavigationView.setSelectedItemId(R.id.messageHistory);
 
 
-            LinearLayout contentLayout = coordinatorLayout.findViewById(R.id.contentLayout);
+            RelativeLayout contentLayout = coordinatorLayout.findViewById(R.id.contentLayout);
             BottomSheetBehavior<View> sheetBehavior = BottomSheetBehavior.from(contentLayout);
             sheetBehavior.setFitToContents(false);
             sheetBehavior.setHideable(true);
             sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             sheetBehavior.setDraggable(false);
-            ImageView imageView = coordinatorLayout.findViewById(R.id.reportMessageButton);
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    toggleFilters(sheetBehavior);
-                }
-            });
+
+//            ImageView imageView = coordinatorLayout.findViewById(R.id.reportMessageButton);
+//            imageView.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    toggleFilters(sheetBehavior);
+//                }
+//            });
 
         }
         return coordinatorLayout;
