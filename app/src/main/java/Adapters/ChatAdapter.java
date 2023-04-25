@@ -54,6 +54,7 @@ import Audio.Audio;
 import Audio.AudioManager2;
 import Audio.AudioPlayer3;
 import Consts.ButtonType;
+import Consts.ConversationType;
 import Consts.MessageStatus;
 import Consts.MessageType;
 import Consts.Messaging;
@@ -79,6 +80,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private final int PLAY = 0;
     private final int PAUSE = 1;
     private final int STOP = 2;
+    private TimeFormat timeFormat;
+
     public interface MessageInfoListener {
         void onMessageClick(Message message);
 
@@ -91,6 +94,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
     public ChatAdapter() {
+        timeFormat = new TimeFormat();
     }
 
     private MessageInfoListener callback;
@@ -184,6 +188,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, @SuppressLint("RecyclerView") int position) {
         final Message message = messages.get(position);
+        long time;
+        if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
+            time = message.getMessageID();
+        } else {
+            time = message.getArrivingTime();
+        }
+        String finalDate = timeFormat.getFormattedDate(time);
+        holder.timeReceived.setText(finalDate);
         holder.message.setText(message.getContent());
         if (!message.getSenderID().equals(currentUserUID)) {
             holder.messageSender.setVisibility(View.VISIBLE);
@@ -394,7 +406,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             });
             web.downloadWebPreview(message.getContent());
         } else if (message.getMessageType() == MessageType.videoMessage.ordinal()) {
-            callback.onMessageClick(message);
             if (message.getFilePath() != null) {
                 Uri videoUri = Uri.parse(message.getFilePath());
                 File file = new File(message.getFilePath());
@@ -455,19 +466,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
 
         // }
-        TimeFormat timeFormat = new TimeFormat();
-        long time;
-        //show the time of the messages i sent
-        if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
-            time = message.getMessageID();
-        } else {
-            time = message.getArrivingTime();
-        }
-        String finalDate = timeFormat.getFormattedDate(time);
-        if (message.getConversationID().startsWith("G")) {
-            String nameAndTime = message.getSenderName() + " " + finalDate;
-            holder.timeReceived.setText(nameAndTime);
-
+        if (message.getConversationType() == ConversationType.group.ordinal()) {
             if (!message.getSenderID().equals(currentUserUID)) {
                 if (matchedColors == null)
                     matchedColors = new HashMap<>();
@@ -739,7 +738,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     public int findMessageIndex(long msgID) {
         Log.d("CHAT_ADAPTER", "find message index");
-        return findMessage(this.messages, 0, this.messages.size(), msgID);
+        return findMessage(this.messages, 0, this.messages.size()-1, msgID);
     }
 
     public int findMessageLocation(List<Message> messages, int min, int max, long key) {
@@ -757,22 +756,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 }
         }
         return searchQueryIndexes;
-    }
-
-    public void UpdateMessageStar(long messageID, boolean star) {
-        int index = findMessage(messages, 0, messages.size() - 1, messageID);//findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(messageID));
-        Message message = messages.get(index);
-        message.setStar(star);
-        notifyItemChanged(index);
-    }
-
-    public int updateMessageEdit(long messageID, String content, long time) {
-        int index = findMessage(messages, 0, messages.size() - 1, messageID);//findCorrectMessage(messages,0,messages.size()-1,Long.parseLong(messageID));
-        Message message = messages.get(index);
-        message.setContent(content);
-        message.setEditTime(time);
-        notifyItemChanged(index);
-        return index;
     }
 
     public Message getMessage(int index) {

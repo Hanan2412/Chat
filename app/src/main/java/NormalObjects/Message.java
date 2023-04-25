@@ -1,5 +1,6 @@
 package NormalObjects;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
@@ -15,6 +16,7 @@ public class Message implements Serializable {
     //    message info
     private long messageID = -1;
     private String conversationID;
+    private int conversationType;
     private String content;
     private String senderName;
     private String senderID;
@@ -37,7 +39,7 @@ public class Message implements Serializable {
     private int quoteMessageType;
 
     //    message enums
-    private int MessageStatus;
+    private int messageStatus;
     private int messageType;
     private int messageAction;
 
@@ -62,6 +64,8 @@ public class Message implements Serializable {
     protected long currentMessageID; // the current messageID
     protected long nextMessageID; // the next messageID
 
+    private long lastUpdateTime;
+
 //    @Ignore
 //    private List<String>recipientsIds;
 
@@ -73,6 +77,7 @@ public class Message implements Serializable {
         star = false;
         selected = false;
         nextMessageID = 0;
+        lastUpdateTime = 0;
 //        recipientsIds = new ArrayList<>();
     }
 
@@ -221,11 +226,11 @@ public class Message implements Serializable {
     }
 
     public int getMessageStatus() {
-        return MessageStatus;
+        return messageStatus;
     }
 
     public void setMessageStatus(int messageStatus) {
-        MessageStatus = messageStatus;
+        this.messageStatus = messageStatus;
         setReadingTime(System.currentTimeMillis());
     }
 
@@ -364,5 +369,27 @@ public class Message implements Serializable {
 
     public void setNextMessageID(long nextMessageID) {
         this.nextMessageID = nextMessageID;
+    }
+
+    public int getConversationType() {
+        return conversationType;
+    }
+
+    public void setConversationType(int conversationType) {
+        this.conversationType = conversationType;
+    }
+
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
+    }
+
+    public void setLastUpdateTime(long lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "sent by:" + senderName + " id: " + messageID + " at time: " + sendingTime;
     }
 }

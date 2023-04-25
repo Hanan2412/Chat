@@ -4,10 +4,12 @@ package Fragments;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import android.net.Uri;
@@ -38,6 +40,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -86,6 +89,7 @@ public class TabFragment extends Fragment {
     private int currentStatus = online;
     private EditText searchQuery;
     private LiveData<Conversation> activeConversation;
+    private BroadcastReceiver interactionBR;
 
     public static TabFragment newInstance(int tabNumber, String currentUser) {
         TabFragment tabFragment = new TabFragment();
@@ -199,7 +203,7 @@ public class TabFragment extends Fragment {
                                         @Override
                                         public void onDismiss(DialogInterface dialogInterface) {
                                             conversationsAdapter2.notifyItemChanged(viewHolder.getAdapterPosition());
-                                            displayMessageToast(getResources().getString(R.string.nothing_delete));
+//                                            displayMessageToast(getResources().getString(R.string.nothing_delete));
                                         }
                                     }).create().show();
 
@@ -474,7 +478,7 @@ public class TabFragment extends Fragment {
                     if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                         String currentUserUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
                         userModel.updateToken(currentUserUID, token);
-                        Log.d("token", "updated token");
+                        Log.d(TAB_FRAGMENT, "updated token: " + token);
                     }
                 }
             }

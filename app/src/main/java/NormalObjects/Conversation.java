@@ -37,8 +37,8 @@ public class Conversation implements Serializable {
     private boolean muted = false;
     private int messageType;
     private long lastMessageID;
-    @Ignore
     private boolean typing;
+    private boolean recording;
     private String recipientName;
     private String recipientPhoneNumber;
     private boolean blocked = false;
@@ -64,6 +64,8 @@ public class Conversation implements Serializable {
         messages = new ArrayList<>();
         tokens = new ArrayList<>();
         recipients = new ArrayList<>();
+        typing = false;
+        recording = false;
     }
 
     public void setP_key(int p_key) {
@@ -355,5 +357,13 @@ public class Conversation implements Serializable {
     public void setUnreadMessages(int unreadMessages) {
         this.unreadMessages = unreadMessages;
         setLastUpdate(StandardTime.getInstance().getStandardTime());
+    }
+
+    public boolean isRecording() {
+        return recording;
+    }
+
+    public void setRecording(boolean recording) {
+        this.recording = recording;
     }
 }

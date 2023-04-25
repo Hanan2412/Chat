@@ -313,6 +313,11 @@ public class Repository {
         return chatDao.isMessageExists(messageID);
     }
 
+    public boolean isMessageExists2(long messageID)
+    {
+        return chatDao.isMessageExists2(messageID);
+    }
+
     public LiveData<Boolean> isConversationExists(String conversationID)
     {
         return chatDao.isConversationExists(conversationID);
@@ -445,6 +450,11 @@ public class Repository {
     public LiveData<List<MessageViews>>getMessageViews(long messageID)
     {
         return chatDao.getMessageViews(messageID);
+    }
+
+    public LiveData<Message>getLastUpdatedMessage(String conversationID)
+    {
+        return chatDao.getLastUpdatedMessage(conversationID);
     }
 
     public void clearAll()

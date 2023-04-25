@@ -31,8 +31,8 @@ import java.util.List;
 public class PickerFragment extends Fragment {
 
 
-    private int[] time;
-    private List<Integer>time1;
+    private SingleFieldFragment singleFieldFragment;
+    private List<Integer>time;
     private List<Integer>date;
     public static PickerFragment newInstance() {
 
@@ -43,7 +43,7 @@ public class PickerFragment extends Fragment {
     }
 
     public interface onPickerClick{
-        void onPicked(int[] time,String text);
+        void onPicked(List<Integer>time, List<Integer>date, String message);
         void onCancelPick();
     }
 
@@ -59,29 +59,43 @@ public class PickerFragment extends Fragment {
         }
     }
 
-    private PickerFragment() {
-        super();
-        time = new int[5];//number of fields
-        Arrays.fill(time, -1);
+    public PickerFragment() {
+        singleFieldFragment = new SingleFieldFragment();
+        time = new ArrayList<>();
+        date = new ArrayList<>();
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.delayed_message_fragment,container,false);
-        BottomNavigationView bottomNavigationView = view.findViewById(R.id.bottomNavigationView);
-        TimePickerFragment timePickerFragment = new TimePickerFragment();
-        timePickerFragment.setListener(new onFragmentData() {
+        singleFieldFragment.setHint(requireActivity().getResources().getString(R.string.message_hint));
+        singleFieldFragment.setListener(new SingleFieldFragment.onText() {
             @Override
-            public void onDataList(List<Integer> list) {
-                time1 = list;
+            public void onTextChange(String txt) {
+                if(!txt.isEmpty())
+                    callback.onPicked(time, date, txt);
+                singleFieldFragment.dismiss();
+                callback.onCancelPick();
             }
         });
-        DatePickerFragment datePickerFragment = new DatePickerFragment();
-        datePickerFragment.setListener(new onFragmentData() {
+        BottomNavigationView bottomNavigationView = view.findViewById(R.id.bottomNavigationView);
+        TimePickerFragment timePickerFragment = new TimePickerFragment();
+        timePickerFragment.setListener(new TimePickerFragment.onTimePicker() {
             @Override
-            public void onDataList(List<Integer> list) {
-                date = list;
+            public void onDateTimeChosen(List<Integer> time, List<Integer> date) {
+                PickerFragment.this.time = time;
+                PickerFragment.this.date = date;
+            }
+
+            @Override
+            public void onTimeChosen(List<Integer> time) {
+                PickerFragment.this.time = time;
+            }
+
+            @Override
+            public void onDateChosen(List<Integer> date) {
+                PickerFragment.this.date = date;
             }
         });
         DelayedLocationFragment delayedLocationFragment = new DelayedLocationFragment();
@@ -92,62 +106,27 @@ public class PickerFragment extends Fragment {
                 {
                     requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container123, timePickerFragment).commit();
                 }
-                else if (item.getItemId() == R.id.date)
-                {
-                    requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container123, datePickerFragment).commit();
-                }
                 else if (item.getItemId() == R.id.location)
                 {
                     requireActivity().getSupportFragmentManager().beginTransaction().replace(R.id.root_container123, delayedLocationFragment).commit();
                 }
+                else if (item.getItemId() == R.id.message)
+                {
+
+                }
                 return true;
             }
         });
-        bottomNavigationView.setSelectedItemId(R.id.location);
-        Button sendDelayMessageBtn = view.findViewById(R.id.sendDelayMessageBtn);
+        bottomNavigationView.setSelectedItemId(R.id.time);
+        Button sendDelayMessageBtn = view.findViewById(R.id.sendMessageBtn);
         Button cancelBtn = view.findViewById(R.id.cancelBtn);
-        EmojiEditText editText = view.findViewById(R.id.messageText);
+//        EmojiEditText editText = view.findViewById(R.id.messageText);
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
         sendDelayMessageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (date!=null)
-                    for (int i = 0; i < 2; i++)
-                    {
-                        time[i] = date.get(i);
-                    }
-                if (time1!=null)
-                {
-                    int j = 3;
-                    for (int i = 0; i < time1.size(); i++)
-                    {
-                        time[j] = time1.get(i);
-                        j++;
-                    }
-                }
-                //in case user didn't set one or more fields, auto set fields to current value in calendar
-                if(time[0] == -1)
-                    time[0] = Calendar.getInstance().get(Calendar.YEAR);
-                if(time[1] == -1)
-                    time[1] = Calendar.getInstance().get(Calendar.MONTH);
-                if(time[2] == -1)
-                    time[2] = Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
-                if(time[3] == -1)
-                    time[3] = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-                if(time[4] == -1)
-                    time[4] = Calendar.getInstance().get(Calendar.MINUTE);
-                if (editText.getText()!=null)
-                {
-                    String message = editText.getText().toString();
-                    if (!message.matches("")) {
-                        callback.onPicked(time, message);
-                        callback.onCancelPick();
-                    }
-                    else
-                        Toast.makeText(requireContext(), "can't send an empty message", Toast.LENGTH_SHORT).show();
-                }
-
+                singleFieldFragment.show(requireActivity().getSupportFragmentManager(),"SingleFieldFragment - Date");
             }
         });
         cancelBtn.setOnClickListener(new View.OnClickListener() {

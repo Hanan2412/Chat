@@ -22,6 +22,7 @@ import NormalObjects.Message;
 import NormalObjects.ObjectToSend;
 import Retrofit.RetrofitApi;
 import Retrofit.RetrofitClient;
+import Time.StandardTime;
 import Try.TryMyResponse;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -66,6 +67,7 @@ public class MessageSender {
                 Log.d("messageSender, sending to token: ", token);
             else
                 Log.e("null", "message sender - token is null");
+//            token = "dWeccR4ARHWp4b3SpOMGk2:APA91bEz0xOuh27haIgEaSNuFpH6k6StF3vmS_WcxYeac63j5ul2URUlcEkAikhoEEDoLk7OGxInqgbOn02pVo3OPWJzSoqVdgtrhkaDqnNdI_sGOxu3nxV_leItGS05TD9gnNtLl1oC";
 //            token = "f_wtCVbuTv-DQ9QupetiaZ:APA91bFdFmfFLW2sPcc7ixEh21WV5YPdvbKdxGrMR7olBLeiFxiMfAs4q3LecbHs7iYc_AwOaWWw1ylyigAtzyylbOptvRcv8dVYX3NbRi0_NgOexYsdCTM-I_JhsdTP-bB5mdoradX0";
             ObjectToSend toSend = new ObjectToSend(message, token);//for debug/testing reasons, change to token for regular operations
             api.sendMessage(toSend).enqueue(new Callback<TryMyResponse>() {

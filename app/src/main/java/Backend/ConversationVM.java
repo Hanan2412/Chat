@@ -298,4 +298,14 @@ public class ConversationVM extends AndroidViewModel {
     {
         return repository.getMessageViews(messageID);
     }
+
+    public LiveData<Message>getLastUpdatedMessage(String conversationID)
+    {
+        return repository.getLastUpdatedMessage(conversationID);
+    }
+
+    public boolean isMessageExists2(long messageID)
+    {
+        return repository.isMessageExists2(messageID);
+    }
 }

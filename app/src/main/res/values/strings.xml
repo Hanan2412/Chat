@@ -116,9 +116,11 @@
     <string name="delete_conversation_confirm_msg">Are you sure you would like to delete the selected conversations? this action can\'t be undone</string>
     <string name="confirm">Confirm Action!</string>
     <string name="nothing_delete">Nothing will be deleted</string>
-    <string name="select_conversation_delete">Selected conversation will be deleted</string>
+    <string name="select_conversation_delete">conversations were deleted</string>
     <string name="error">Error</string>
     <string name="changes_message">Changes to the Message</string>
     <string name="views_message">Who viewed and read the Message</string>
+    <string name="typing">Typing...</string>
+    <string name="message">Message</string>
 
 </resources>

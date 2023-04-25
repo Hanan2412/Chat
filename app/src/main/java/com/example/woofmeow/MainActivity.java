@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
@@ -128,14 +129,21 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         }
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         // demo user
-//        user = new User();
-//        user.setUserUID(currentUser);
-//        user.setName("Hanan");
-//        user.setLastName("Dorfman");
-//        user.setAbout("A development account");
-//        user.setPhoneNumber("0502071248");
-//        user.setTimeCreated("1645524540000");
-//        userVM.saveUser(user);
+        user = new User();
+        user.setUserUID(currentUser);
+        user.setName("Hanan");
+        user.setLastName("Dorfman");
+        user.setAbout("A development account");
+        user.setPhoneNumber("0502071248");
+        user.setTimeCreated("1645524540000");
+        userVM.saveUser(user);
+        userVM.isUserExists(user).observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (!aBoolean)
+                    userVM.saveUser(user);
+            }
+        });
         drawerLayout = findViewById(R.id.drawerLayout);
         toolbar = findViewById(R.id.toolbar);
         toolbar.setPopupTheme(R.style.single);

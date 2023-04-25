@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import Backend.ChatDao;
@@ -66,6 +67,8 @@ public class TimedMessageService extends Service{
                 long time = intent.getLongExtra("time",-1);
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTimeInMillis(time);
+                Date date1 = calendar.getTime();
+                Log.d("time11111", date1.toString());
                 Intent conversationIntent = new Intent(this, ConversationActivity2.class);
                 conversationIntent.putExtra("conversationID", message.getConversationID());
                 conversationIntent.putExtra("recipient", message.getConversationName());
@@ -82,7 +85,7 @@ public class TimedMessageService extends Service{
                 builder.setSmallIcon(android.R.drawable.star_on)
                         .setContentTitle("waiting to send message")
                         .setContentText("message: " + message.getContent() + " will be sent to: " + message.getConversationName())
-                        .setSubText("message will be sent at: " + calendar.getTime())
+                        .setSubText("will be sent at: " + calendar.getTime())
                         .setContentIntent(alarmPendingIntent).addAction(action);
                 alarmListener = new AlarmManager.OnAlarmListener() {
                     @Override
@@ -115,7 +118,8 @@ public class TimedMessageService extends Service{
                     }
                 };
                 if (manager != null) {
-                    manager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), "alarm manager - send delay message", alarmListener, new Handler());
+                    Log.d("time11111", time+"");
+                    manager.setExact(AlarmManager.RTC_WAKEUP, time, "alarm manager - send delay message", alarmListener, new Handler());
                 }
                 startForeground(notificationID, builder.build());
 

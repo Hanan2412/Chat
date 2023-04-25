@@ -120,6 +120,9 @@ public interface ChatDao {
     @Query("UPDATE messages SET messageStatus = :status WHERE messageID = :id")
     void updateMessageStatus(long id,int status);
 
+    @Query("UPDATE messages SET messageStatus = :status, lastUpdateTime = :lastUpdateTime WHERE messageID = :id")
+    void updateMessageStatus(long id, int status, long lastUpdateTime);
+
     @Query("UPDATE messages SET content = :content, editTime = :time WHERE messageID = :messageID")
     void updateEditMessage(long messageID,String content,String time);
 
@@ -189,8 +192,11 @@ public interface ChatDao {
     @Query("SELECT blocked from users where userUID = :id")
     Boolean isUserBlocked1(String id);
 
+    @Query("SELECT blocked from users where userUID = :id")
+    boolean isUserBlocked2(String id);
+
     @Query("SELECT blocked from conversations where conversationID = :conversationID")
-    Boolean isConversationBlocked1(String conversationID);
+    boolean isConversationBlocked1(String conversationID);
 
     @Query("UPDATE conversations SET blocked = not (SELECT blocked FROM conversations WHERE conversationID = :conversationID), lastUpdate = :time WHERE conversationID = :conversationID")
     void blockOrUnblockConversation(String conversationID, long time);
@@ -243,6 +249,9 @@ public interface ChatDao {
     @Query("SELECT muted FROM users WHERE userUID = :uid")
     LiveData<Boolean> isUserMuted(String uid);
 
+    @Query("SELECT muted FROM users WHERE userUID = :uid")
+    boolean isUserMuted2(String uid);
+
     @Query("UPDATE conversations SET muted = 1 WHERE conversationID = :conversationID")
     void muteConversation(String conversationID);
 
@@ -279,6 +288,30 @@ public interface ChatDao {
     @Query("SELECT * FROM messages WHERE messageID = :messageID")
     LiveData<Message>getMessage(long messageID);
 
+    @Query("SELECT * FROM messages WHERE messageID = :messageID")
+    Message getMessage2(long messageID);
+
     @Query("SELECT * FROM messages WHERE messageType in (4,5,10)")
     LiveData<List<Message>>mediaMessage();
+
+    @Query("SELECT EXISTS (SELECT * FROM conversations WHERE conversationID = :conversationID)")
+    boolean isConversationExists2(String conversationID);
+
+    @Query("SELECT * FROM users WHERE userUID IN (SELECT uid From groups where groups.conversationID = :conversationID)")
+    List<User>getRecipients2(String conversationID);
+
+    @Query("SELECT token FROM users WHERE userUID IN (SELECT uid From groups where groups.conversationID = :conversationID)")
+    List<String>getRecipientsTokens(String conversationID);
+
+    @Query("SELECT EXISTS (SELECT * FROM messages WHERE messageID = :messageID)")
+    boolean isMessageExists2(long messageID);
+
+    @Query("SELECT muted FROM conversations WHERE conversationID = :conversationID")
+    boolean isConversationMuted2(String conversationID);
+
+    @Query("SELECT * FROM conversations WHERE conversationID = :conversationID")
+    Conversation getConversation2(String conversationID);
+
+    @Query("SELECT * FROM messages WHERE conversationID = :conversationID ORDER BY lastUpdateTime DESC LIMIT 1")
+    LiveData<Message>getLastUpdatedMessage(String conversationID);
 }

@@ -243,12 +243,10 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
     private final String CONVERSATION_ACTIVITY = "ConversationActivity";
     private final String AUDIO_PLAYER = "Audio Player";
     private final String AUDIO_RECORDER = "Audio Recorder";
-
     private MessageType previewMessageType = MessageType.undefined;
-
     private List<Message> selectedMessages;
-
     private BroadcastReceiver delayedMsgReceiver, interactionMsgReceiver, smsReceiver;
+    private TextSwitcher typingIndicator;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -263,7 +261,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         ImageButton backButton = findViewById(R.id.goBack);
         ShapeableImageView conversationImage = findViewById(R.id.conversationImage);
         conversationName = findViewById(R.id.conversationName);
-        TextSwitcher typingIndicator = findViewById(R.id.typingIndicator);
+        typingIndicator = findViewById(R.id.typingIndicator);
 
         searchLayout = findViewById(R.id.searchLayout);
         searchText = findViewById(R.id.searchText);
@@ -449,7 +447,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             }
         });
         setSupportActionBar(toolbar);
-        conversationType = ConversationType.values()[getIntent().getIntExtra("conversationType",ConversationType.undefined.ordinal())];
+        conversationType = ConversationType.values()[getIntent().getIntExtra("conversationType", ConversationType.undefined.ordinal())];
         initConversationLook(conversationType);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null)
@@ -701,22 +699,28 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             public void onMessageSentSuccessfully(Message message) {
                 Log.d(CONVERSATION_ACTIVITY, "message sent successfully");
                 message.setMessageStatus(MessageStatus.SENT.ordinal());
-                updateMessage(message);
-                user.setMsgSentAmount(user.getMsgSentAmount() + 1);
-                updateUser(user);
+                saveOrUpdateMessage(message);
+                if (user != null) {
+                    user.setMsgSentAmount(user.getMsgSentAmount() + 1);
+                    updateUser(user);
+                }
                 saveMessageViews(message);
             }
 
             @Override
             public void onMessagePartiallySent(Message message, List<String> tokens, String error) {
                 Log.d(CONVERSATION_ACTIVITY, "message wasn't sent to all recipients");
-                saveMessageViews(message);
+//                saveMessageViews(message);
             }
 
             @Override
             public void onMessageNotSent(Message message, String error) {
                 Log.d(CONVERSATION_ACTIVITY, "message wasn't sent");
-                saveMessageViews(message);
+                message.setMessageStatus(MessageStatus.WAITING.ordinal());
+                saveOrUpdateMessage(message);
+                if (StandardTime.getInstance().getCurrentTime() - message.getSendingTime() < 4000)
+                    Toast.makeText(ConversationActivity2.this, "message wasn't sent", Toast.LENGTH_SHORT).show();
+//                saveMessageViews(message);
             }
         });
 
@@ -1104,24 +1108,27 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         interactionMsgReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.hasExtra("typing")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received typing");
-                } else if (intent.hasExtra("recording")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received recording");
-                } else if (intent.hasExtra("delete")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received delete");
-                } else if (intent.hasExtra("edit")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received edit");
-                } else if (intent.hasExtra("status")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received status");
-                } else if (intent.hasExtra("leave_conversation")) {
+                if (intent.hasExtra("delete"))
+                {
+                    String msgID = intent.getStringExtra("messageID");
+                    if (msgID!=null)
+                    {
+                        long messageID = Long.parseLong(msgID);
+                        deleteMessage(messageID);
+                    }
+                }
+                 if (intent.hasExtra("leave_conversation")) {
                     Log.d(CONVERSATION_ACTIVITY, "received leave");
-                } else if (intent.hasExtra("messageStatus")) {
-                    Log.d(CONVERSATION_ACTIVITY, "received message status");
                 }
             }
         };
         LocalBroadcastManager.getInstance(this).registerReceiver(interactionMsgReceiver, new IntentFilter(conversationID));
+    }
+
+    private void setActionStatus(String newStatus)
+    {
+        typingIndicator.setText(newStatus);
+        Log.d(CONVERSATION_ACTIVITY, "action status changed");
     }
 
     @Override
@@ -1500,19 +1507,27 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         message.setContent(messageContent);
         message.setMessageType(messageType.ordinal());
         message.setSenderID(currentUserID);
-        message.setSenderName("Hanan");
+        if (user != null)
+            message.setSenderName(user.getName());
+        else
+            message.setSenderName("Default user");
         message.setConversationName(conversation.getConversationName());
+        message.setConversationType(conversationType.ordinal());
         message.setSendingTime(System.currentTimeMillis());
         message.setMessageStatus(MessageStatus.WAITING.ordinal());
         //todo
         message.setMessageID(StandardTime.getInstance().getStandardTime());
         message.setConversationID(conversationID);
         message.setMessageAction(MessageAction.new_message.ordinal());
+        message.setLastUpdateTime(StandardTime.getInstance().getStandardTime());
         MessageType type = MessageType.values()[messageType.ordinal()];
         switch (type) {
             case textMessage:
                 if (Patterns.WEB_URL.matcher(messageContent).matches())
+                {
                     message.setContent(messageContent);
+                    message.setMessageType(MessageType.webMessage.ordinal());
+                }
                 break;
             case gpsMessage:
                 message.setLatitude(latitude);
@@ -1587,8 +1602,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             Intent openWebSite = new Intent(Intent.ACTION_VIEW);
             String link = message.getContent();
             String prefix = "https://www.";
-            if (!link.startsWith(prefix))
-            {
+            if (!link.startsWith(prefix)) {
                 link = prefix + link;
             }
             openWebSite.setData(Uri.parse(link));
@@ -1752,6 +1766,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         editor1.remove("title");
         editor1.remove("link");
         editor1.apply();
+
+        onInteractionMessage(-1, MessageAction.not_typing);
     }
 
     @Override
@@ -1960,21 +1976,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
 
 
     @Override
-    public void onPicked(int[] time, String content) {
+    public void onPicked(List<Integer>time, List<Integer>date, String content) {
         messageText.setText(content);
         Message message = prepareMessage(MessageType.textMessage);
         messageText.setText("");
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.YEAR, time[0]);
-        calendar.set(Calendar.MONTH, time[1]);
-        calendar.set(Calendar.DAY_OF_MONTH, time[2]);
-        calendar.set(Calendar.HOUR_OF_DAY, time[3]);
-        calendar.set(Calendar.MINUTE, time[4]);
+        calendar.set(Calendar.YEAR, date.get(0));
+        calendar.set(Calendar.MONTH, date.get(1));
+        calendar.set(Calendar.DAY_OF_MONTH, date.get(2));
+        calendar.set(Calendar.HOUR_OF_DAY, time.get(0));
+        calendar.set(Calendar.MINUTE, time.get(1));
         calendar.set(Calendar.SECOND, 0);
         Intent foreground = new Intent(this, TimedMessageService.class);
         foreground.putExtra("message", message);
         foreground.putExtra("tokens", (ArrayList<String>) getRecipientsTokens());
         foreground.putExtra("time", calendar.getTimeInMillis());
+        Log.d("time11111", calendar.getTimeInMillis()+"");
+        Date date1 = calendar.getTime();
+        Log.d("time11111", date1.toString());
         startForegroundService(foreground);
     }
 
@@ -2362,7 +2381,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     }
                 });
                 Bundle bundle = new Bundle();
-                bundle.putSerializable("message",selectedMessage);
+                bundle.putSerializable("message", selectedMessage);
                 bundle.putString("currentUID", currentUserID);
                 messageInfoFragment.setArguments(bundle);
                 messageInfoFragment.show(getSupportFragmentManager(), "message fragment");
@@ -2380,8 +2399,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             } else if (item.getItemId() == R.id.delete) {
                 onInteractionMessage(selectedMessage.getMessageID(), MessageAction.delete_message);
                 Log.d(CONVERSATION_ACTIVITY, "delete msg");
-            } else if (item.getItemId() == R.id.favorite)
-            {
+            } else if (item.getItemId() == R.id.favorite) {
                 selectedMessage.setStar(!selectedMessage.isStar());
                 updateMessage(selectedMessage);
                 onUnSelectMessages();
@@ -2536,8 +2554,8 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             sendMessage2(message);
         initNewConversation(message);
         showMessageOnScreen(message, message.getMessageAction());
-        saveMessage(message);
         setPreviewMessageType(MessageType.undefined);
+//        saveMessage(message);
     }
 
     private void sendMessage2(@NonNull Message message) {
@@ -2569,6 +2587,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         MessageAction messageAction = MessageAction.values()[action];
         switch (messageAction) {
             case new_message:
+                message.setMessageStatus(MessageStatus.READ.ordinal());
                 chatAdapter.addNewMessage(message);
                 recyclerView.scrollToPosition(chatAdapter.getItemCount() - 1);
                 updateConversation(message);
@@ -2618,23 +2637,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     showMessageOnScreen(message, MessageAction.activity_start.ordinal());
                 }
                 mld.removeObservers(ConversationActivity2.this);
-                model.getNewMessage(currentUserID, conversationID).observe(ConversationActivity2.this, new Observer<Message>() {
-                    @Override
-                    public void onChanged(Message message) {
-                        if (message != null) {
-                            if (!chatAdapter.isMessageExists(message.getMessageID())) {
-                                Log.d(CONVERSATION_ACTIVITY, "loaded new message");
-                                initNewConversation(message);
-                                showMessageOnScreen(message, MessageAction.new_message.ordinal());
-                            } else {
-                                Log.e(CONVERSATION_ACTIVITY, "getNewMessage - msg already exist");
-                            }
-
-                        } else {
-                            Log.e(CONVERSATION_ACTIVITY, "loading new message, msg is null");
-                        }
-                    }
-                });
             }
         });
         LiveData<Conversation> cld = model.getConversation(conversationID);
@@ -2644,35 +2646,36 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Log.d(CONVERSATION_ACTIVITY, "loading conversation object from db");
                 if (conversation != null) {
                     setConversation(conversation);
+                    if (conversation.isTyping())
+                        setActionStatus("typing");
+                    else if (conversation.isRecording())
+                        setActionStatus("recording");
+                    else
+                        setActionStatus("");
                     initConversationFeel();
                 } else {
                     Log.e(CONVERSATION_ACTIVITY, "conversation object from db is null");
                 }
-//                cld.removeObservers(ConversationActivity2.this);
             }
         });
-//        if (conversationType != ConversationType.sms)
-//            model.getNewMessage(currentUserID, conversationID).observe(this, new Observer<Message>() {
-//                @Override
-//                public void onChanged(Message message) {
-//                    if (message != null) {
-//                        if (!chatAdapter.isMessageExists(message.getMessageID())) {
-//                            Log.d(CONVERSATION_ACTIVITY, "loaded new message");
-//                            initNewConversation(message);
-//                            showMessageOnScreen(message, MessageAction.new_message.ordinal());
-//                        }
-//                        else
-//                        {
-//                            Log.e(CONVERSATION_ACTIVITY, "getNewMessage - msg already exist");
-//                        }
-//
-//                    }
-//                    else
-//                    {
-//                        Log.e(CONVERSATION_ACTIVITY, "loading new message, msg is null");
-//                    }
-//                }
-//            });
+        model.getLastUpdatedMessage(conversationID).observe(this, new Observer<Message>() {
+            @Override
+            public void onChanged(Message message) {
+                Log.d(CONVERSATION_ACTIVITY, "getLastUpdateMessage");
+                if (message != null) {
+                    if (!message.getSenderID().equals(currentUserID))
+                        typingIndicator.setText("");
+                    int msgIndex = chatAdapter.findMessageIndex(message.getMessageID());
+                    if (msgIndex != -1) {
+                        chatAdapter.updateMessage(message);
+                    } else {
+                        Log.i(CONVERSATION_ACTIVITY, "updated last message - message doesn't exist " + message.getMessageID() + " content: " + message.getContent());
+                        showMessageOnScreen(message,MessageAction.new_message.ordinal());
+                        saveOrUpdateMessage(message);
+                    }
+                }
+            }
+        });
         LiveData<User> currentUser = userModel.loadUserByID(currentUserID);
         currentUser.observe(this, new Observer<User>() {
             @Override
@@ -2760,16 +2763,14 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         });
     }
 
-    private void initConversationLook(ConversationType conversationType)
-    {
+    private void initConversationLook(ConversationType conversationType) {
         if (conversationType == ConversationType.group) {
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_purple, getTheme()));
             toolbar.setPopupTheme(R.style.group);
-        } else if (conversationType == ConversationType.single){
+        } else if (conversationType == ConversationType.single) {
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light, getTheme()));
             toolbar.setPopupTheme(R.style.single);
-        }else if (conversationType == ConversationType.sms)
-        {
+        } else if (conversationType == ConversationType.sms) {
             toolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_dark, getTheme()));
             toolbar.setPopupTheme(R.style.sms);
         }
@@ -2845,14 +2846,12 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         chatAdapter.updateMessage(message);
     }
 
-    private void saveMessageViews(Message message)
-    {
-        for (User user: recipients) {
+    private void saveMessageViews(Message message) {
+        for (User user : recipients) {
             model.isMessageViewsExists(message.getMessageID(), user.getUserUID()).observe(ConversationActivity2.this, new Observer<Boolean>() {
                 @Override
                 public void onChanged(Boolean aBoolean) {
-                    if (!aBoolean)
-                    {
+                    if (!aBoolean) {
                         MessageViews messageViews = new MessageViews();
                         messageViews.setMessageID(message.getMessageID());
                         messageViews.setConversationID(message.getConversationID());
@@ -2869,33 +2868,40 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    private void saveMessageHistory(MessageHistory messageHistory)
-    {
+    private void saveMessageHistory(MessageHistory messageHistory) {
         Log.d(CONVERSATION_ACTIVITY, "save message history");
         model.saveMessageHistory(messageHistory);
     }
 
-    private void updateMessageHistory(MessageHistory messageHistory)
-    {
+    private void updateMessageHistory(MessageHistory messageHistory) {
         model.updateMessageHistory(messageHistory);
+    }
+
+    private void saveOrUpdateMessage(Message message) {
+        if (message.getMessageType() != MessageType.undefined.ordinal()) {
+            LiveData<Boolean> isMessageExists = model.isMessageExists(message);
+            isMessageExists.observe(this, new Observer<Boolean>() {
+                @Override
+                public void onChanged(Boolean aBoolean) {
+                    isMessageExists.removeObserver(this);
+                    if (aBoolean)
+                    {
+                        Log.d(CONVERSATION_ACTIVITY, "updating message: " + message.getMessageID() + " content" + message.getContent());
+                        updateMessage(message);
+                    }
+                    else
+                    {
+                        Log.d(CONVERSATION_ACTIVITY, "save message id: " + message.getMessageID() + " content" + message.getContent());
+                        saveMessage(message);
+                    }
+                }
+            });
+        }
     }
 
     private void saveMessage(@NonNull Message message) {
         Log.d(CONVERSATION_ACTIVITY, "save message id: " + message.getMessageID());
-        LiveData<Boolean> isMessageExist = model.isMessageExists(message);
-        isMessageExist.observe(ConversationActivity2.this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean aBoolean) {
-                if (!aBoolean) {
-                    Log.d(CONVERSATION_ACTIVITY, "saving msg to db");
-                    model.saveMessage(message);
-                } else {
-                    Log.d(CONVERSATION_ACTIVITY, "message already exists - sending to updateMessage");
-                    updateMessage(message);
-                }
-                isMessageExist.removeObservers(ConversationActivity2.this);
-            }
-        });
+        model.saveMessage(message);
     }
 
     private void deleteMessage(long messageID) {
@@ -2929,6 +2935,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
             Message message = new Message();
             message.setConversationID(conversationID);
             message.setSenderToken(getMyToken());
+            message.setMessageType(MessageType.undefined.ordinal());
             message.setMessageAction(action.ordinal());
             switch (action) {
                 case read: {
@@ -2964,8 +2971,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
-    private void onCreateMessageHistory(Message message)
-    {
+    private void onCreateMessageHistory(Message message) {
         MessageHistory messageHistory = new MessageHistory();
         messageHistory.copyMessage(message);
         messageHistory.setCurrentMessageID(StandardTime.getInstance().getStandardTime());

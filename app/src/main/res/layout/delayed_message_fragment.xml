@@ -13,43 +13,42 @@
         android:background="@color/emoji_white"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:id="@+id/messageLayout"
-            >
-            <ImageButton
-                android:id="@+id/emojiBtn"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="start"
-                android:background="@drawable/circle_blue_no_border"
-                android:contentDescription="@string/open_imaji_keyboard"
-                android:scaleType="fitXY"
-                android:src="@drawable/ic_baseline_tag_faces_24"
-                android:visibility="visible" />
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:id="@+id/messageLayout"-->
+<!--            >-->
+<!--            <ImageButton-->
+<!--                android:id="@+id/emojiBtn"-->
+<!--                android:layout_width="48dp"-->
+<!--                android:layout_height="48dp"-->
+<!--                android:layout_gravity="start"-->
+<!--                android:background="@drawable/circle_blue_no_border"-->
+<!--                android:contentDescription="@string/open_imaji_keyboard"-->
+<!--                android:scaleType="fitXY"-->
+<!--                android:src="@drawable/ic_baseline_tag_faces_24"-->
+<!--                android:visibility="visible" />-->
 
-            <com.vanniktech.emoji.EmojiEditText
-                android:id="@+id/messageText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:autofillHints=""
-                android:focusable="true"
-                android:gravity="center"
-                android:hint="@string/message_hint"
-                android:inputType="textMultiLine|textShortMessage|textNoSuggestions"
-                android:textSize="15sp"
-                android:visibility="visible"
-                android:maxLines="7" />
-        </LinearLayout>
+<!--            <com.vanniktech.emoji.EmojiEditText-->
+<!--                android:id="@+id/messageText"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:autofillHints=""-->
+<!--                android:focusable="true"-->
+<!--                android:gravity="center"-->
+<!--                android:hint="@string/message_hint"-->
+<!--                android:inputType="textMultiLine|textShortMessage|textNoSuggestions"-->
+<!--                android:textSize="15sp"-->
+<!--                android:visibility="visible"-->
+<!--                android:maxLines="7" />-->
+<!--        </LinearLayout>-->
 
         <LinearLayout
             android:id="@+id/root_container123"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@+id/bottomNavigationView"
-            android:layout_below="@+id/messageLayout"
             android:orientation="vertical">
 
         </LinearLayout>
@@ -82,7 +81,7 @@
             android:text="@string/cancel" />
 
         <Button
-            android:id="@+id/sendDelayMessageBtn"
+            android:id="@+id/sendMessageBtn"
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

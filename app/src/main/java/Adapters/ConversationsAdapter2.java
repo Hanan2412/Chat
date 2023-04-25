@@ -227,6 +227,14 @@ public class ConversationsAdapter2 extends RecyclerView.Adapter<ConversationsAda
         {
             holder.lastMessage.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0,0,0);
         }
+        if (conversation.isTyping())
+        {
+            holder.lastMessage.setText(holder.itemView.getContext().getResources().getString(R.string.typing));
+        }
+        if (conversation.isRecording())
+        {
+            holder.lastMessage.setText(holder.itemView.getContext().getResources().getString(R.string.recording));
+        }
         String lastMessageTime = conversation.getLastMessageTimeParse();
         holder.lastMessageTime.setText(lastMessageTime);
         holder.conversationName.setText(conversation.getConversationName());

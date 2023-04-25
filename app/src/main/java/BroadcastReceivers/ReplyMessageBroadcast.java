@@ -1,17 +1,17 @@
 package BroadcastReceivers;
-
 import androidx.core.app.RemoteInput;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import Consts.MessageAction;
+import Consts.MessageStatus;
 import Consts.MessageType;
 import Model.MessageSender;
 import NormalObjects.Message;
@@ -24,6 +24,7 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
     public interface NotificationReplyListener {
         void onReply(int notificationID);
         void onOpenMap(String geoString,int notificationID);
+        void onMute(String conversationID);
     }
 
     private static NotificationReplyListener callback;
@@ -34,30 +35,53 @@ public class ReplyMessageBroadcast extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        int notificationID = intent.getIntExtra("notificationID",-1);
+        String senderName = intent.getStringExtra("senderName");
+        String senderUID = intent.getStringExtra("senderUID");
+        String conversationID = intent.getStringExtra("conversationID");
+        String token = intent.getStringExtra("token");
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if (remoteInput != null) {
-
             String replyText = (String) remoteInput.getCharSequence("key_text_reply");
-            int notificationID = intent.getIntExtra("notificationID",-1);
-            String sender = intent.getStringExtra("sender");
-            String recipient = intent.getStringExtra("recipient");
-            String conversationID = intent.getStringExtra("conversationID");
-            String myName = intent.getStringExtra("MyName");
-            List<String> tokens = intent.getStringArrayListExtra("tokens");
-            CreateMessage(context,replyText,sender,myName,recipient,conversationID,tokens);
+            List<String>tokens = new ArrayList<>();
+            tokens.add(token);
+//            createMessage(context,replyText,sender,senderUID,conversationID,tokens);
+            Message message = createMessage(replyText,senderName, senderUID, conversationID);
+            MessageSender.getInstance().sendMessage(message, tokens);
             callback.onReply(notificationID);
 
         }
         else {
-            if (intent.hasExtra("geoString")) {
-                String geoString = intent.getStringExtra("geoString");
-                int notificationID = intent.getIntExtra("notificationID",-1);
-                callback.onOpenMap(geoString,notificationID);
+            if (intent.getAction().equals("mute"))
+            {
+                callback.onMute(conversationID);
+                callback.onReply(notificationID);
             }
-            callback.onReply(-1);
+            else if (intent.hasExtra("geoString")) {
+                String geoString = intent.getStringExtra("geoString");
+                callback.onOpenMap(geoString,notificationID);
+                callback.onReply(-1);
+            }
+
         }
     }
-    private void CreateMessage(Context context, String replyText, String sender, String myName, String recipient, String conversationID, List<String> recipientsTokens)
+
+    private Message createMessage(String content, String senderName, String senderUID,String conversationID)
+    {
+        Message message = new Message();
+        message.setMessageID(StandardTime.getInstance().getStandardTime());
+        message.setSenderID(senderUID);
+        message.setMessageAction(MessageAction.new_message.ordinal());
+        message.setMessageStatus(MessageStatus.WAITING.ordinal());
+        message.setSendingTime(StandardTime.getInstance().getCurrentTime());
+        message.setConversationID(conversationID);
+        message.setContent(content);
+        message.setSenderName(senderName);
+        message.setMessageType(MessageType.textMessage.ordinal());
+        return message;
+    }
+
+    private void createMessage(Context context, String replyText, String sender, String recipient, String conversationID, String myName,List<String> recipientsTokens)
     {
         TimeZone timeZone = TimeZone.getTimeZone("GMT-4");
         Calendar calendar = Calendar.getInstance(timeZone);
