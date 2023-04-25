@@ -5,24 +5,29 @@
     android:background="@android:color/white"
     android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/name"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:autofillHints=""
-        android:contentDescription="group name"
-        android:gravity="center"
-        android:hint="your group name"
-        android:inputType="text"
-        android:textColorHint="@color/blue"
-        android:textColor="@color/blue"/>
+        android:textColorHint="@color/blue">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:gravity="center"
+            android:inputType="textMultiLine">
+
+        </com.google.android.material.textfield.TextInputEditText>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/done"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="done"
-        android:textColor="@color/emoji_white"/>
+        android:text="@string/done"
+        android:textColor="@color/emoji_white" />
 </LinearLayout>

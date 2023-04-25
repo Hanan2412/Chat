@@ -48,7 +48,6 @@ public class TimePickerFragment extends Fragment {
             @Override
             public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
                 time.clear();
-                time.clear();
                 time.add(hourOfDay);
                 time.add(minute);
                 if (listener!=null)
@@ -71,6 +70,7 @@ public class TimePickerFragment extends Fragment {
             }
         });
         timePicker.setHour(Calendar.getInstance().get(Calendar.HOUR));
+        timePicker.setMinute(Calendar.getInstance().get(Calendar.MINUTE) + 1);
         Calendar calendar = Calendar.getInstance();
         datePicker.updateDate(calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH),calendar.get(Calendar.DAY_OF_MONTH));
         return view;

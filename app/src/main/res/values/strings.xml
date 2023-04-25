@@ -122,5 +122,6 @@
     <string name="views_message">Who viewed and read the Message</string>
     <string name="typing">Typing...</string>
     <string name="message">Message</string>
+    <string name="done">Done</string>
 
 </resources>
