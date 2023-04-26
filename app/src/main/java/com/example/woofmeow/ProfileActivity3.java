@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -35,20 +34,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.imageview.ShapeableImageView;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,13 +51,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import Adapters.GridImageAdapter;
 import Adapters.GroupProfileAdapter;
-import Adapters.ImageAdapterRV;
 import Adapters.ListAdapter2;
 import Backend.ConversationVM;
 import Backend.UserVM;
 import Consts.MessageType;
 import Fragments.BinaryFragment;
+import Fragments.GridFragment;
 import Fragments.ImageFragment;
 import Fragments.ListFragment;
 import Fragments.SingleFieldFragment;
@@ -128,6 +122,8 @@ public class ProfileActivity3 extends AppCompatActivity {
     private ListFragment profileFragment;
     private List<String> profileInfoTitles;
     private List<String> dits;
+    private GridFragment gridFragment;
+    private GridImageAdapter gridImageAdapter;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -144,6 +140,8 @@ public class ProfileActivity3 extends AppCompatActivity {
         userVM = new ViewModelProvider(this).get(UserVM.class);
         conversationVM = new ViewModelProvider(this).get(ConversationVM.class);
 
+        gridFragment = new GridFragment();
+        gridImageAdapter = new GridImageAdapter();
         groupMembers = findViewById(R.id.previewImages);
         groupMembers.setHasFixedSize(true);
         groupMembers.setItemViewCacheSize(20);
@@ -300,6 +298,7 @@ public class ProfileActivity3 extends AppCompatActivity {
                     Log.d(PROFILE_ACTIVITY, "changed to info");
                     getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, infoFragment).commit();
                 } else if (item.getItemId() == R.id.media) {
+                    getSupportFragmentManager().beginTransaction().replace(R.id.placeholder, gridFragment).commit();
                     Log.d(PROFILE_ACTIVITY, "changed to media");
                 } else if (item.getItemId() == R.id.profile) {
                     listAdapter.setItems(dits);
@@ -468,11 +467,18 @@ public class ProfileActivity3 extends AppCompatActivity {
         });
 
 
-        conversationVM.getMediaMessage().observe(this, new Observer<List<Message>>() {
+        conversationVM.getMediaMessages().observe(this, new Observer<List<Message>>() {
             @Override
             public void onChanged(List<Message> messages) {
                 Log.d(PROFILE_ACTIVITY, "media msg");
                 mediaMessages = messages;
+                List<String>mediaPaths = new ArrayList<>();
+                for (Message message: messages)
+                {
+                    mediaPaths.add(message.getFilePath());
+                }
+                gridImageAdapter.setImagePaths(mediaPaths);
+                gridFragment.setImageAdapter(gridImageAdapter);
             }
         });
     }

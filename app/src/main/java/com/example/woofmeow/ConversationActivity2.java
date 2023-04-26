@@ -525,6 +525,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 int index = chatAdapter.findMessageLocation(chatAdapter.getMessages(), 0, chatAdapter.getMessages().size() - 1, msgID);
                 Message message = chatAdapter.getMessage(index);
                 message.setFilePath(path);
+                message.setFileSent(true);
                 sendMessage2(message);
             }
 
@@ -561,6 +562,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                         chatAdapter.notifyItemChanged(index);
                     }
                     onShowError("an error occurred while sending the file");
+                    message.setFileSent(false);
                     sendMessage2(message);
                 }
             }
@@ -1663,6 +1665,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         invalidateOptionsMenu();
     }
 
+    @Override
+    public void onDownloadFile(Message message) {
+        MessageType type = MessageType.values()[message.getMessageType()];
+        switch (type) {
+            case imageMessage://photo from gallery
+                createFileUri(message.getFilePath());
+                Bitmap bitmap = getImageBitmap(fileUri);
+                model.uploadFile(currentUserID, message.getMessageID(), bitmap, ConversationActivity2.this);
+                break;
+            case photoMessage://image from camera
+                model.uploadFile(currentUserID, message.getMessageID(), Bitmap.createScaledBitmap(BitmapFactory.decodeFile(message.getFilePath()), 500, 450, false), ConversationActivity2.this);
+                break;
+            case voiceMessage:
+                createFileUri(message.getFilePath());
+                model.uploadFile(message.getMessageID(), fileUri, ConversationActivity2.this);
+        }
+    }
+
     //saves image to local storage
     @Override
     public String onImageDownloaded(Bitmap bitmap, Message message) {
@@ -2456,7 +2476,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 if (conversationType == ConversationType.single)
                     userModel.updateBlockUser(recipients.get(0).getUserUID());
                 Log.d(CONVERSATION_ACTIVITY, "BLOCK");
-            } else if (item.getItemId() == R.id.searchMessage) {
+            } else if (item.getItemId() == R.id.search) {
                 indicesIndex = 0;
                 indices = null;
                 Animation in = AnimationUtils.loadAnimation(this, R.anim.slide_down);

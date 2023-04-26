@@ -73,7 +73,7 @@ public class ConversationVM extends AndroidViewModel {
         return repository.getMessageHistory(msgHistory);
     }
 
-    public LiveData<List<Message>>getMediaMessage()
+    public LiveData<List<Message>> getMediaMessages()
     {
         return repository.getAllMediaMessages();
     }

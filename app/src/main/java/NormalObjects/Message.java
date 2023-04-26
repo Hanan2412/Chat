@@ -56,6 +56,7 @@ public class Message implements Serializable {
     private String contactName;
     private String contactNumber;
     private String filePath;
+    private boolean fileSent;
 
     @Ignore
     private boolean selected;
@@ -78,6 +79,7 @@ public class Message implements Serializable {
         selected = false;
         nextMessageID = 0;
         lastUpdateTime = 0;
+        fileSent = true;
 //        recipientsIds = new ArrayList<>();
     }
 
@@ -385,6 +387,14 @@ public class Message implements Serializable {
 
     public void setLastUpdateTime(long lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
+    }
+
+    public boolean isFileSent() {
+        return fileSent;
+    }
+
+    public void setFileSent(boolean fileSent) {
+        this.fileSent = fileSent;
     }
 
     @NonNull

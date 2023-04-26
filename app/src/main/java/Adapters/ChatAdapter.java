@@ -84,9 +84,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     public interface MessageInfoListener {
         void onMessageClick(Message message);
-
         void onMessageLongClick(Message message);
-
+        void onDownloadFile(Message message);
         String onImageDownloaded(Bitmap bitmap, Message message);
 
         String onVideoDownloaded(File file, Message message);
@@ -243,6 +242,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.linkMessageLayout.setVisibility(View.GONE);
             holder.specialMsgIndicator.setVisibility(View.GONE);
             holder.playRecordingLayout.setVisibility(View.GONE);
+            holder.showImageProgress.setVisibility(View.VISIBLE);
+            holder.reUpload.setVisibility(View.GONE);
             if (message.getContent() == null || message.getContent().equals(""))
                 holder.message.setVisibility(View.GONE);
             else {
@@ -251,22 +252,24 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
 
             if (message.getFilePath() != null) {
-                holder.imageStatusLayout.setVisibility(View.GONE);
                 if (message.getFilePath().startsWith("content")) {
                     Uri uri = Uri.parse(message.getFilePath());
                     String uriPath = uri.getPath();
                     Picasso.get().load(Uri.parse(message.getFilePath())).resize(300, 300).into(holder.previewImage);
+
                 } else
                     Picasso.get().load(new File(message.getFilePath())).resize(300, 300).into(holder.previewImage);
-            } else {
-                holder.imageStatusLayout.setVisibility(View.VISIBLE);
-                if (holder.reUpload != null)
-                    holder.reUpload.setVisibility(View.VISIBLE);
-                if (holder.reDownload != null)
-                    holder.reDownload.setVisibility(View.VISIBLE);
-                if (holder.refresh != null)
-                    holder.refresh.setVisibility(View.GONE);
-                holder.showImageProgress.setVisibility(View.GONE);
+                if (!message.isFileSent())
+                {
+                    holder.imageStatusLayout.setVisibility(View.VISIBLE);
+                    if (holder.reUpload != null)
+                        holder.reUpload.setVisibility(View.VISIBLE);
+                    if (holder.reDownload != null)
+                        holder.reDownload.setVisibility(View.VISIBLE);
+                    if (holder.refresh != null)
+                        holder.refresh.setVisibility(View.GONE);
+                    holder.showImageProgress.setVisibility(View.GONE);
+                }
             }
         } else if (message.getMessageType() == MessageType.voiceMessage.ordinal()) {
             holder.messageTextLayout.setVisibility(View.GONE);
@@ -694,6 +697,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 @Override
                 public boolean onTouch(View view, MotionEvent motionEvent) {
                     return true;
+                }
+            });
+
+            reUpload.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Message message = messages.get(getAdapterPosition());
+                    message.setFileSent(true);
+                    callback.onDownloadFile(messages.get(getAdapterPosition()));
+                    notifyItemChanged(getAdapterPosition());
                 }
             });
         }

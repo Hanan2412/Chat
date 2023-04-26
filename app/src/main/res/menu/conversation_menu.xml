@@ -4,7 +4,7 @@
     <group
         android:id="@+id/allConversationsOptions">
         <item
-            android:id="@+id/searchMessage"
+            android:id="@+id/search"
             android:icon="@drawable/ic_baseline_search_black"
             android:title="@string/search"
             app:showAsAction="ifRoom" />

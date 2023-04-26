@@ -170,7 +170,6 @@
                             android:layout_height="300dp"
                             android:background="@color/blue"
                             android:contentDescription="the preview of an active message"
-                            android:elevation="8dp"
                             android:padding="3dp"
                             android:src="@drawable/ic_baseline_photo_24"
                             android:visibility="visible" />
@@ -182,7 +181,7 @@
                             android:layout_centerInParent="true"
                             android:gravity="center"
                             android:orientation="horizontal"
-                            android:visibility="visible">
+                            android:visibility="gone">
 
                             <ImageButton
                                 android:id="@+id/reUpload"
@@ -192,7 +191,7 @@
                                 android:contentDescription="upload failed upload"
                                 android:elevation="15dp"
                                 android:src="@drawable/ic_baseline_upload_to_all_24"
-                                android:visibility="visible" />
+                                android:visibility="gone" />
 
                             <ProgressBar
                                 android:id="@+id/imageProgressBar"
