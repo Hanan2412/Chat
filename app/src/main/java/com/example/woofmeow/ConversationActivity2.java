@@ -720,8 +720,6 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 Log.d(CONVERSATION_ACTIVITY, "message wasn't sent");
                 message.setMessageStatus(MessageStatus.WAITING.ordinal());
                 saveOrUpdateMessage(message);
-                if (StandardTime.getInstance().getCurrentTime() - message.getSendingTime() < 4000)
-                    Toast.makeText(ConversationActivity2.this, "message wasn't sent", Toast.LENGTH_SHORT).show();
 //                saveMessageViews(message);
             }
         });
@@ -2657,6 +2655,24 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                     showMessageOnScreen(message, MessageAction.activity_start.ordinal());
                 }
                 mld.removeObservers(ConversationActivity2.this);
+                model.getLastUpdatedMessage(conversationID).observe(ConversationActivity2.this, new Observer<Message>() {
+                    @Override
+                    public void onChanged(Message message) {
+                        Log.d(CONVERSATION_ACTIVITY, "getLastUpdateMessage");
+                        if (message != null) {
+                            if (!message.getSenderID().equals(currentUserID))
+                                typingIndicator.setText("");
+                            int msgIndex = chatAdapter.findMessageIndex(message.getMessageID());
+                            if (msgIndex != -1) {
+                                chatAdapter.updateMessage(message);
+                            } else {
+                                Log.i(CONVERSATION_ACTIVITY, "updated last message - message doesn't exist " + message.getMessageID() + " content: " + message.getContent());
+                                showMessageOnScreen(message,MessageAction.new_message.ordinal());
+                                saveOrUpdateMessage(message);
+                            }
+                        }
+                    }
+                });
             }
         });
         LiveData<Conversation> cld = model.getConversation(conversationID);
@@ -2678,24 +2694,7 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
                 }
             }
         });
-        model.getLastUpdatedMessage(conversationID).observe(this, new Observer<Message>() {
-            @Override
-            public void onChanged(Message message) {
-                Log.d(CONVERSATION_ACTIVITY, "getLastUpdateMessage");
-                if (message != null) {
-                    if (!message.getSenderID().equals(currentUserID))
-                        typingIndicator.setText("");
-                    int msgIndex = chatAdapter.findMessageIndex(message.getMessageID());
-                    if (msgIndex != -1) {
-                        chatAdapter.updateMessage(message);
-                    } else {
-                        Log.i(CONVERSATION_ACTIVITY, "updated last message - message doesn't exist " + message.getMessageID() + " content: " + message.getContent());
-                        showMessageOnScreen(message,MessageAction.new_message.ordinal());
-                        saveOrUpdateMessage(message);
-                    }
-                }
-            }
-        });
+
         LiveData<User> currentUser = userModel.loadUserByID(currentUserID);
         currentUser.observe(this, new Observer<User>() {
             @Override

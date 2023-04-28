@@ -49,7 +49,7 @@
                     android:background="@drawable/outgoing_message_look"
                     android:paddingStart="5dp"
                     android:paddingEnd="5dp"
-                    android:text="sender name"
+                    android:text="@string/sender_name"
                     android:textAlignment="viewStart"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
@@ -74,6 +74,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/outgoing_message_look">
+
+                <ProgressBar
+                    android:id="@+id/filesProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:elevation="20dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:visibility="gone"/>
 
                 <androidx.constraintlayout.widget.Guideline
                     android:id="@+id/indicatorGuideline"
@@ -193,15 +204,6 @@
                                 android:src="@drawable/ic_baseline_upload_to_all_24"
                                 android:visibility="gone" />
 
-                            <ProgressBar
-                                android:id="@+id/imageProgressBar"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:indeterminate="true"
-                                android:indeterminateBehavior="cycle"
-                                android:indeterminateTint="@color/lightestBlue"
-                                android:visibility="visible" />
-
                             <ImageButton
                                 android:id="@+id/refresh"
                                 android:layout_width="50dp"
@@ -235,17 +237,17 @@
                                 android:background="@drawable/circle_blue_no_border"
                                 android:contentDescription="play recording"
                                 android:scaleType="fitXY"
-                                android:src="@drawable/ic_baseline_play_circle_outline_white"/>
+                                android:src="@drawable/ic_baseline_play_circle_outline_white" />
 
-<!--                            <NormalObjects.PlayAudioButton-->
-<!--                                android:id="@+id/play_pause_btn"-->
-<!--                                android:layout_width="64dp"-->
-<!--                                android:layout_height="64dp"-->
-<!--                                android:layout_gravity="center"-->
-<!--                                android:background="@drawable/circle_blue"-->
-<!--                                android:contentDescription="play recording"-->
-<!--                                android:scaleType="fitXY"-->
-<!--                                android:src="@drawable/ic_baseline_play_circle_outline_white" />-->
+                            <!--                            <NormalObjects.PlayAudioButton-->
+                            <!--                                android:id="@+id/play_pause_btn"-->
+                            <!--                                android:layout_width="64dp"-->
+                            <!--                                android:layout_height="64dp"-->
+                            <!--                                android:layout_gravity="center"-->
+                            <!--                                android:background="@drawable/circle_blue"-->
+                            <!--                                android:contentDescription="play recording"-->
+                            <!--                                android:scaleType="fitXY"-->
+                            <!--                                android:src="@drawable/ic_baseline_play_circle_outline_white" />-->
                         </LinearLayout>
 
                         <LinearLayout

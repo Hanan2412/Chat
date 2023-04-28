@@ -78,6 +78,7 @@ import Fragments.TabFragment;
 import NormalObjects.*;
 
 import Retrofit.Server;
+import Time.TimeFormat;
 //import Services.FirebaseMessageService;
 
 import static androidx.fragment.app.FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT;
@@ -127,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements TabFragment.Updat
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+        new TimeFormat().getFormattedTime(System.currentTimeMillis());
         userVM = new ViewModelProvider(MainActivity.this).get(UserVM.class);
         // demo user
         user = new User();

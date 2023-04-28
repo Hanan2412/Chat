@@ -76,7 +76,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     private final int[] colors = {R.color.red, R.color.blue, R.color.green, R.color.yellow, R.color.colorAccent, R.color.colorPrimary};
     private int colorIterator = 0;
     private Map<String, Integer> matchedColors;
-    private AudioPlayer3 audioPlayer;
     private final int PLAY = 0;
     private final int PAUSE = 1;
     private final int STOP = 2;
@@ -84,8 +83,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     public interface MessageInfoListener {
         void onMessageClick(Message message);
+
         void onMessageLongClick(Message message);
+
         void onDownloadFile(Message message);
+
         String onImageDownloaded(Bitmap bitmap, Message message);
 
         String onVideoDownloaded(File file, Message message);
@@ -187,6 +189,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, @SuppressLint("RecyclerView") int position) {
         final Message message = messages.get(position);
+        holder.filesProgressBar.setVisibility(View.GONE);
         long time;
         if (holder.getItemViewType() == Messaging.outgoing.ordinal()) {
             time = message.getMessageID();
@@ -202,9 +205,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
         if (message.isStar()) {
             holder.starMessageIndicator.setVisibility(View.VISIBLE);
-        }
-        else
-        {
+        } else {
             holder.starMessageIndicator.setVisibility(View.GONE);
         }
         holder.rootLayout.setSelected(message.isSelected());
@@ -242,7 +243,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.linkMessageLayout.setVisibility(View.GONE);
             holder.specialMsgIndicator.setVisibility(View.GONE);
             holder.playRecordingLayout.setVisibility(View.GONE);
-            holder.showImageProgress.setVisibility(View.VISIBLE);
+            holder.filesProgressBar.setVisibility(View.VISIBLE);
             holder.reUpload.setVisibility(View.GONE);
             if (message.getContent() == null || message.getContent().equals(""))
                 holder.message.setVisibility(View.GONE);
@@ -259,8 +260,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                 } else
                     Picasso.get().load(new File(message.getFilePath())).resize(300, 300).into(holder.previewImage);
-                if (!message.isFileSent())
-                {
+                if (!message.isFileSent()) {
                     holder.imageStatusLayout.setVisibility(View.VISIBLE);
                     if (holder.reUpload != null)
                         holder.reUpload.setVisibility(View.VISIBLE);
@@ -268,7 +268,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         holder.reDownload.setVisibility(View.VISIBLE);
                     if (holder.refresh != null)
                         holder.refresh.setVisibility(View.GONE);
-                    holder.showImageProgress.setVisibility(View.GONE);
+                    holder.filesProgressBar.setVisibility(View.GONE);
                 }
             }
         } else if (message.getMessageType() == MessageType.voiceMessage.ordinal()) {
@@ -279,82 +279,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.contactLayout.setVisibility(View.GONE);
             holder.linkMessageLayout.setVisibility(View.GONE);
             holder.imageLayout.setVisibility(View.GONE);
-            if (audioPlayer == null)
-            {
-                audioPlayer = new AudioPlayer3();
-                audioPlayer.setListener(new Audio() {
-                    @Override
-                    public void onLoad(long duration) {
-                        holder.voiceSeek.setMax((int)duration);
-                    }
-
-                    @Override
-                    public void onUnLoad() {
-
-                    }
-
-                    @Override
-                    public void onStart() {
-
-                    }
-
-                    @Override
-                    public void onPause() {
-
-                    }
-
-                    @Override
-                    public void onResume(long progress) {
-
-                    }
-
-                    @Override
-                    public void onStopped(String fileName) {
-
-                    }
-
-                    @Override
-                    public void onFinished(long fileDuration) {
-                        audioPlayer.stopPlaying();
-//                        audioPlayer.releasePlayer();
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                holder.recordingTime.setText(holder.itemView.getContext().getResources().getString(R.string.zero_time));
-                                holder.voiceSeek.setProgress(0);
-                                holder.playPauseBtn.nextState();
-
-                            }
-                        });
-                        Thread thread = new Thread()
-                        {
-                            @Override
-                            public void run() {
-                                audioPlayer.releasePlayer();
-                            }
-                        };
-                        thread.start();
-                    }
-
-                    @Override
-                    public void onFailed(String msg) {
-                        Log.e("CHAT_ADAPTER","failed to load voice: " + msg);
-                    }
-
-                    @Override
-                    public void onProgressChange(long progress) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                holder.voiceSeek.setProgress((int)progress);
-                                String time = new TimeFormat().getFormattedTime(progress);
-                                holder.recordingTime.setText(time);
-                            }
-                        });
-
-                    }
-                });
+            holder.filesProgressBar.setVisibility(View.VISIBLE);
+            if (!message.isFileSent()) {
+                holder.filesProgressBar.setVisibility(View.GONE);
             }
+            holder.voiceSeek.setProgress(message.getCurrentPlayTime());
+            String playTime = timeFormat.getFormattedTime(message.getCurrentPlayTime());
+            holder.recordingTime.setText(playTime);
+            Log.d(CHAT_ADAPTER, "voice message update - playTime: " + message.getCurrentPlayTime());
         } else if (message.getMessageType() == MessageType.webMessage.ordinal()) {
             holder.linkMessageLayout.setVisibility(View.VISIBLE);
             holder.contactLayout.setVisibility(View.GONE);
@@ -455,7 +387,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                     holder.refresh.setVisibility(View.VISIBLE);
                     holder.reUpload.setVisibility(View.GONE);
-                    holder.showImageProgress.setVisibility(View.GONE);
+                    holder.filesProgressBar.setVisibility(View.GONE);
                     return false;
                 }
 
@@ -499,13 +431,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             holder.quote.setVisibility(View.VISIBLE);
             holder.quote.setText(message.getQuoteMessage());
             holder.quoteSenderName.setText(message.getSenderName());
-            if (message.getQuoteMessageType() == MessageType.photoMessage.ordinal() || message.getQuoteMessageType() == MessageType.imageMessage.ordinal())
-            {
-                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0,0,0);
-            }
-            else
-            {
-                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,0, 0);
+            if (message.getQuoteMessageType() == MessageType.photoMessage.ordinal() || message.getQuoteMessageType() == MessageType.imageMessage.ordinal()) {
+                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_baseline_insert_photo_white, 0, 0, 0);
+            } else {
+                holder.quote.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
             }
         } else {
             holder.quoteLayout.setVisibility(View.GONE);
@@ -546,12 +475,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         ImageButtonState statusTv;
         SeekBar voiceSeek;
         ImageButton playVideoBtn, reUpload, reDownload, refresh;
-//        NormalObjects.PlayAudioButton playPauseBtn;
+        //        NormalObjects.PlayAudioButton playPauseBtn;
         ImageButtonState playPauseBtn;
-        ProgressBar showImageProgress, linkProgressBar;
+        ProgressBar linkProgressBar, filesProgressBar;
         ShapeableImageView contactImage;
         Button saveContactBtn;//, hidePoll;
         ConstraintLayout rootLayout, mainConstraintLayout;
+        AudioPlayer3 audioPlayer;
 
         //        RadioGroup pollGroup;
         @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
@@ -572,7 +502,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             playPauseBtn = itemView.findViewById(R.id.play_pause_btn);
             videoLayout = itemView.findViewById(R.id.videoLayout);
             playVideoBtn = itemView.findViewById(R.id.playVideoBtn);
-            showImageProgress = itemView.findViewById(R.id.imageProgressBar);
+            filesProgressBar = itemView.findViewById(R.id.filesProgress);
             statusTv = itemView.findViewById(R.id.messageStatus);
             reUpload = itemView.findViewById(R.id.reUpload);
             reDownload = itemView.findViewById(R.id.reDownload);
@@ -593,12 +523,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             rootLayout = itemView.findViewById(R.id.messageLayout);
             mainConstraintLayout = itemView.findViewById(R.id.mainConstraintLayout);
             starMessageIndicator = itemView.findViewById(R.id.starMessage);
-            List<Integer>playAudioImages = new ArrayList<>();
+            audioPlayer = new AudioPlayer3();
+            List<Integer> playAudioImages = new ArrayList<>();
             playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
             playAudioImages.add(R.drawable.ic_baseline_pause_circle_outline_white);
             playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
             playPauseBtn.setImages(playAudioImages);
-            List<Integer>playBtnStates = new ArrayList<>();
+            List<Integer> playBtnStates = new ArrayList<>();
             playBtnStates.add(PAUSE);
             playBtnStates.add(PLAY);
             playBtnStates.add(STOP);
@@ -631,25 +562,18 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                 @Override
                 public void onButtonStateChange(int buttonState) {
-                    if (buttonState == PAUSE)
-                    {
-                        if (audioPlayer.getPlayTime() == 0)
-                        {
+                    if (buttonState == PAUSE) {
+                        if (audioPlayer.getPlayTime() == 0) {
                             playPauseBtn.nextState();
-                        }
-                        else if (audioPlayer!=null)
+                        } else if (audioPlayer != null)
                             audioPlayer.playPause();
-                    }
-                    else if (buttonState == PLAY)
-                    {
+                    } else if (buttonState == PLAY) {
                         if (audioPlayer == null)
                             audioPlayer = new AudioPlayer3();
                         if (audioPlayer.getDataSource() == null)
                             audioPlayer.setDataSource(messages.get(getAdapterPosition()).getFilePath());
                         audioPlayer.playPause();
-                    }
-                    else if (buttonState == STOP)
-                    {
+                    } else if (buttonState == STOP) {
 
                     }
                 }
@@ -659,26 +583,84 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
                 }
             });
-//            hidePoll = itemView.findViewById(R.id.hidePoll);
-//            pollLayout = itemView.findViewById(R.id.pollLayout);
-//            pollVotes = itemView.findViewById(R.id.pollVotes);
-//            pollCreator = itemView.findViewById(R.id.pollCreatorName);
-//            pollGroup = itemView.findViewById(R.id.radioGroup);
-//            hidePoll.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    if (hidePoll.getVisibility() == View.VISIBLE)
-//                    {
-//                        pollLayout.setVisibility(View.GONE);
-//                    }
-//                }
-//            });
-//            pollGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-//                @Override
-//                public void onCheckedChanged(RadioGroup radioGroup, int i) {
-//                    callback.onRadioBtnClick(radioGroup, i);
-//                }
-//            });
+            audioPlayer.setListener(new Audio() {
+                @Override
+                public void onLoad(long duration) {
+                    Log.d(CHAT_ADAPTER, "audio player - on Load, duration: " + duration);
+                    getMessage(getAdapterPosition()).setCurrentPlayTime(0);
+                    notifyItemChanged(getAdapterPosition());
+
+                }
+
+                @Override
+                public void onUnLoad() {
+                    Log.d(CHAT_ADAPTER, "audio player - on unLoad");
+                }
+
+                @Override
+                public void onStart() {
+                    Log.d(CHAT_ADAPTER, "audio player - onStart");
+                }
+
+                @Override
+                public void onPause() {
+                    Log.d(CHAT_ADAPTER, "audio player - onPause");
+                }
+
+                @Override
+                public void onResume(long progress) {
+                    Log.d(CHAT_ADAPTER, "audio player - onResume");
+                }
+
+                @Override
+                public void onStopped(String fileName) {
+                    Log.d(CHAT_ADAPTER, "audio player - onStopped");
+                }
+
+                @Override
+                public void onFinished(long fileDuration) {
+                    Log.d(CHAT_ADAPTER, "audio player - onFinished, fileDuration: " + fileDuration);
+                    audioPlayer.stopPlaying();
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Message message1 = getMessage(getAdapterPosition());
+                            if (message1 != null) {
+                                message1.setCurrentPlayTime(0);
+                                notifyItemChanged(getAdapterPosition());
+                            }
+                            playPauseBtn.nextState();
+
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailed(String msg) {
+                    Log.e("CHAT_ADAPTER", "failed to load voice: " + msg);
+                }
+
+                @Override
+                public void onProgressChange(long progress) {
+                    Log.d(CHAT_ADAPTER, "audio player - onProgressChange: " + progress);
+                    String time = timeFormat.getFormattedTime(progress);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(CHAT_ADAPTER, "recording time: " + recordingTime.getText().toString());
+                            Log.d(CHAT_ADAPTER, "progress: " + progress);
+                            if (!time.equals(recordingTime.getText().toString()))
+                            {
+                                recordingTime.setText(time);
+                                voiceSeek.setProgress((int)progress);
+                                Log.d(CHAT_ADAPTER, "1111111111111111111111111111");
+                            }
+                            Log.d(CHAT_ADAPTER, "vsdasdasdadasdasdasdas");
+
+                        }
+                    });
+                }
+            });
             message.setTextSize(textSize);
             List<Integer> statusStates = new ArrayList<>();
             statusStates.add(MessageStatus.WAITING.ordinal());
@@ -751,7 +733,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     public int findMessageIndex(long msgID) {
         Log.d("CHAT_ADAPTER", "find message index");
-        return findMessage(this.messages, 0, this.messages.size()-1, msgID);
+        return findMessage(this.messages, 0, this.messages.size() - 1, msgID);
     }
 
     public int findMessageLocation(List<Message> messages, int min, int max, long key) {

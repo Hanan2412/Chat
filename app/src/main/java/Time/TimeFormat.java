@@ -2,6 +2,7 @@ package Time;
 
 import java.time.Duration;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 public class TimeFormat {
@@ -51,11 +52,18 @@ public class TimeFormat {
     //transforms long ms value to human readable time
     private String formattedTime(long time)
     {
-        Duration duration = Duration.ofMillis(time);
-        long secs = duration.getSeconds();
-        long hh = secs/3600;
-        long mm = (secs%3600)/60;
-        long ss = secs%60;
-        return String.format(Locale.getDefault(),"%02d:%02d:%02d",hh,mm,ss);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(time);
+        int seconds = calendar.get(Calendar.SECOND);
+        int minute = calendar.get(Calendar.MINUTE);
+        int hour = calendar.get(Calendar.HOUR);
+        String minuteW = minute + "", hourW = hour + "", secondsW = seconds + "";
+        if (minute < 10)
+            minuteW = "0" + minute + "";
+        if (hour < 10)
+            hourW = "0" + hour;
+        if (seconds < 10)
+            secondsW = "0" + seconds;
+        return hourW + ":" + minuteW + ":" + secondsW;
     }
 }

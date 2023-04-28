@@ -55,8 +55,10 @@ public class Message implements Serializable {
     //    message contacts
     private String contactName;
     private String contactNumber;
+
     private String filePath;
     private boolean fileSent;
+    private int currentPlayTime;
 
     @Ignore
     private boolean selected;
@@ -395,6 +397,14 @@ public class Message implements Serializable {
 
     public void setFileSent(boolean fileSent) {
         this.fileSent = fileSent;
+    }
+
+    public int getCurrentPlayTime() {
+        return currentPlayTime;
+    }
+
+    public void setCurrentPlayTime(int currentPlayTime) {
+        this.currentPlayTime = currentPlayTime;
     }
 
     @NonNull
