@@ -229,7 +229,7 @@
                             android:padding="3dp">
 
 
-                            <NormalObjects.ImageButtonState
+                            <NormalObjects.ImageButtonType
                                 android:id="@+id/play_pause_btn"
                                 android:layout_width="64dp"
                                 android:layout_height="64dp"

@@ -6,7 +6,7 @@
     <string name="message_hint">כתוב את הודעתך כאן</string>
     <string name="recording">מקליט</string>
     <string name="record">הקלט</string>
-    <string name="zero_time">00:00</string>
+    <string name="zero_time">00:00:00</string>
     <string name="voice_message">הודעה קולית</string>
     <string name="mute">השתק</string>
     <string name="unmute">בטל השתקה</string>

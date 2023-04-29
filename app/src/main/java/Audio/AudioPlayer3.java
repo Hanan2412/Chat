@@ -33,16 +33,14 @@ public class AudioPlayer3 extends Thread {
     public void onResume() {
         changePausedIndicator(false);
         player.start();
-        if (listener != null)
-        {
+        if (listener != null) {
             listener.onResume(player.getCurrentPosition());
             Log.d(AUDIO_PLAYER3, "onResume was called");
         }
         startThread();
     }
 
-    private void startThread()
-    {
+    private void startThread() {
         Log.d(AUDIO_PLAYER3, "starting timeElapsed thread");
         changePlayingStatus(true);
         Thread timeElapsedThread = new Thread(this);
@@ -72,8 +70,7 @@ public class AudioPlayer3 extends Thread {
 
     private void startPlaying() {
         if (dataSource == null) {
-            if (listener != null)
-            {
+            if (listener != null) {
                 listener.onFailed("dataSource is null, cannot play audio");
                 Log.d(AUDIO_PLAYER3, "onFailed was called");
             }
@@ -81,8 +78,7 @@ public class AudioPlayer3 extends Thread {
             onResume();
         else {
             player.start();
-            if (listener != null)
-            {
+            if (listener != null) {
                 listener.onStart();
                 Log.d(AUDIO_PLAYER3, "onStart was called");
             }
@@ -94,8 +90,7 @@ public class AudioPlayer3 extends Thread {
         changePlayingStatus(false);
         changePausedIndicator(true);
         player.pause();
-        if (listener != null)
-        {
+        if (listener != null) {
             listener.onPause();
             Log.d(AUDIO_PLAYER3, "onPaused was called");
         }
@@ -106,8 +101,7 @@ public class AudioPlayer3 extends Thread {
         changePlayingStatus(false);
         changePausedIndicator(false);
         player.stop();
-        if (listener != null)
-        {
+        if (listener != null) {
             listener.onStopped(dataSource);
             Log.d(AUDIO_PLAYER3, "onStopped was called");
         }
@@ -174,7 +168,7 @@ public class AudioPlayer3 extends Thread {
     }
 
     public void releasePlayer() {
-        if (player!=null) {
+        if (player != null) {
             if (isPlaying())
                 stopPlaying();
             player.release();
@@ -183,8 +177,7 @@ public class AudioPlayer3 extends Thread {
                 Log.d(AUDIO_PLAYER3, "onUnLoad was called");
             }
             dataSource = null;
-        }
-        else Log.d(AUDIO_PLAYER3, "player was null in releasePlayer");
+        } else Log.d(AUDIO_PLAYER3, "player was null in releasePlayer");
     }
 
     public void setDataSource(String dataSource) {
@@ -199,8 +192,7 @@ public class AudioPlayer3 extends Thread {
                         .build());
                 player.prepare();
                 player.setVolume(1.0f, 1.0f);
-                if (listener != null)
-                {
+                if (listener != null) {
                     listener.onLoad(getDuration());
                     Log.d(AUDIO_PLAYER3, "onLoad was called: " + getDuration());
                 }
@@ -227,8 +219,7 @@ public class AudioPlayer3 extends Thread {
                 updatePlayTime();
             } catch (IOException e) {
                 e.printStackTrace();
-                if (listener != null)
-                {
+                if (listener != null) {
                     listener.onFailed("failed preparing audio source");
                     Log.d(AUDIO_PLAYER3, "onFailed was called");
                 }

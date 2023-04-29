@@ -25,7 +25,7 @@ public class ImageButtonPlus extends AppCompatImageButton {
         void onImageChanged(int image);
         void onImageMissing(ButtonType type);
         void onError(String msg);
-        void onButtonStateChange(int buttonState);
+        void onButtonStateChange(int newButtonState);
         void onButtonTypeChange(ButtonType type);
     }
 

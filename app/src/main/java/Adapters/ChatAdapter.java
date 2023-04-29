@@ -60,13 +60,14 @@ import Consts.MessageType;
 import Consts.Messaging;
 import NormalObjects.ImageButtonPlus;
 import NormalObjects.ImageButtonState;
+import NormalObjects.ImageButtonType;
 import NormalObjects.Message;
 import NormalObjects.Web;
 import Time.TimeFormat;
 
 
 @SuppressWarnings("Convert2Lambda")
-public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
+public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder>{
 
     private List<Message> messages = new ArrayList<>();
     private String currentUserUID;
@@ -124,16 +125,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
     }
 
-    public void changeExistingMessage(Message message) {
-        if (messages != null) {
-            int messageIndex = findMessage(messages, 0, messages.size() - 1, message.getMessageID());
-            if (messageIndex != -1) {
-                messages.set(messageIndex, message);
-                notifyItemChanged(messageIndex);
-            } else Log.e(ERROR, "messageIndex is -1");
-        }
-    }
-
     public void updateMessage(Message message) {
         int index = findMessage(messages, 0, messages.size() - 1, message.getMessageID());
         if (index != -1) {
@@ -152,13 +143,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             notifyItemChanged(index);
         } else
             Log.e("MESSAGE_ID ERROR", "didn't find message in messages");
-    }
-
-    public void updateMessageImage(long messageID) {
-        int index = findMessage(messages, 0, messages.size() - 1, messageID);
-        if (index != -1) {
-            notifyItemChanged(index);
-        }
     }
 
     public void setListener(MessageInfoListener listener) {
@@ -468,15 +452,15 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @SuppressWarnings("Convert2Lambda")
     public class ChatViewHolder extends RecyclerView.ViewHolder {
         com.vanniktech.emoji.EmojiTextView message;
-        TextView timeReceived, messageSender, quote, quoteSenderName, linkTitle, linkContent, contactName, contactPhone, recordingTime, pollVotes, pollCreator;
+        TextView timeReceived, messageSender, quote, quoteSenderName, linkTitle, linkContent, contactName, contactPhone, recordingTime;
         ImageView previewImage, linkImage, specialMsgIndicator, starMessageIndicator;
-        LinearLayout playRecordingLayout, videoLayout, imageStatusLayout, quoteLayout, messageTextLayout, linkMessageLayout, innerPaneLayout;//, pollLayout;
+        LinearLayout playRecordingLayout, videoLayout, imageStatusLayout, quoteLayout, messageTextLayout, linkMessageLayout, innerPaneLayout;
         RelativeLayout imageLayout, contactLayout;
         ImageButtonState statusTv;
         SeekBar voiceSeek;
         ImageButton playVideoBtn, reUpload, reDownload, refresh;
         //        NormalObjects.PlayAudioButton playPauseBtn;
-        ImageButtonState playPauseBtn;
+        ImageButtonType playPauseBtn;
         ProgressBar linkProgressBar, filesProgressBar;
         ShapeableImageView contactImage;
         Button saveContactBtn;//, hidePoll;
@@ -524,71 +508,48 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             mainConstraintLayout = itemView.findViewById(R.id.mainConstraintLayout);
             starMessageIndicator = itemView.findViewById(R.id.starMessage);
             audioPlayer = new AudioPlayer3();
-            List<Integer> playAudioImages = new ArrayList<>();
-            playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
-            playAudioImages.add(R.drawable.ic_baseline_pause_circle_outline_white);
-            playAudioImages.add(R.drawable.ic_baseline_play_circle_outline_white);
-            playPauseBtn.setImages(playAudioImages);
-            List<Integer> playBtnStates = new ArrayList<>();
-            playBtnStates.add(PAUSE);
-            playBtnStates.add(PLAY);
-            playBtnStates.add(STOP);
-            playPauseBtn.setBtnStates(playBtnStates);
-            playPauseBtn.setListener(new ImageButtonPlus.ImageButtonListener() {
+            Map<ButtonType, Integer>playPauseBtnTypes = new HashMap<>();
+            playPauseBtnTypes.put(ButtonType.play,R.drawable.ic_baseline_play_circle_outline_white);
+            playPauseBtnTypes.put(ButtonType.pause, R.drawable.ic_baseline_pause_circle_outline_white);
+            playPauseBtn.setButtonTypeImages(playPauseBtnTypes);
+            playPauseBtn.setCurrentButtonType(ButtonType.play);
+            playPauseBtn.setTypeBtnClickListener(new ImageButtonType.onTypeButtonClick() {
                 @Override
-                public void onImageAdded(int image) {
-
+                public void onPress(ButtonType buttonType) {
+                    Log.d(CHAT_ADAPTER, "button type press");
                 }
 
                 @Override
-                public void onImageSet() {
-
-                }
-
-                @Override
-                public void onImageChanged(int image) {
-
-                }
-
-                @Override
-                public void onImageMissing(ButtonType type) {
-
-                }
-
-                @Override
-                public void onError(String msg) {
-                    Log.e(CHAT_ADAPTER, "an error has happened while changing playAudioBtnState");
-                }
-
-                @Override
-                public void onButtonStateChange(int buttonState) {
-                    if (buttonState == PAUSE) {
-                        if (audioPlayer.getPlayTime() == 0) {
-                            playPauseBtn.nextState();
-                        } else if (audioPlayer != null)
-                            audioPlayer.playPause();
-                    } else if (buttonState == PLAY) {
-                        if (audioPlayer == null)
-                            audioPlayer = new AudioPlayer3();
-                        if (audioPlayer.getDataSource() == null)
-                            audioPlayer.setDataSource(messages.get(getAdapterPosition()).getFilePath());
+                public void onRelease(ButtonType buttonType) {
+                    Log.d(CHAT_ADAPTER, "button type release");
+                    if (buttonType == ButtonType.play)
+                    {
+                        Log.d(CHAT_ADAPTER, "audioBtn - playType");
+                        // the player is playing
+                        if (audioPlayer.getPlayTime() == 0)
+                        {
+                            // reload the player
+                            audioPlayer.setDataSource(getMessage(getAdapterPosition()).getFilePath());
+                        }
                         audioPlayer.playPause();
-                    } else if (buttonState == STOP) {
+                        playPauseBtn.setCurrentButtonType(ButtonType.pause);
+                    }
+                    else if (buttonType == ButtonType.pause)
+                    {
+                        Log.d(CHAT_ADAPTER, "audioBtn - pauseType");
+                        audioPlayer.playPause();
+                        playPauseBtn.setCurrentButtonType(ButtonType.play);
 
                     }
-                }
-
-                @Override
-                public void onButtonTypeChange(ButtonType type) {
-
                 }
             });
             audioPlayer.setListener(new Audio() {
                 @Override
                 public void onLoad(long duration) {
                     Log.d(CHAT_ADAPTER, "audio player - on Load, duration: " + duration);
-                    getMessage(getAdapterPosition()).setCurrentPlayTime(0);
-                    notifyItemChanged(getAdapterPosition());
+                    recordingTime.setText(itemView.getContext().getResources().getString(R.string.zero_time));
+                    voiceSeek.setMax((int)duration);
+                    voiceSeek.setProgress(0);
 
                 }
 
@@ -624,13 +585,9 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            Message message1 = getMessage(getAdapterPosition());
-                            if (message1 != null) {
-                                message1.setCurrentPlayTime(0);
-                                notifyItemChanged(getAdapterPosition());
-                            }
-                            playPauseBtn.nextState();
-
+                            recordingTime.setText(itemView.getContext().getResources().getString(R.string.zero_time));
+                            voiceSeek.setProgress(0);
+                            playPauseBtn.setCurrentButtonType(ButtonType.play);
                         }
                     });
                 }
@@ -653,10 +610,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                             {
                                 recordingTime.setText(time);
                                 voiceSeek.setProgress((int)progress);
-                                Log.d(CHAT_ADAPTER, "1111111111111111111111111111");
                             }
-                            Log.d(CHAT_ADAPTER, "vsdasdasdadasdasdasdas");
-
                         }
                     });
                 }
