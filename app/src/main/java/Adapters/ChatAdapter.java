@@ -88,7 +88,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         void onMessageLongClick(Message message);
 
         void onDownloadFile(Message message);
-
+        void onFail(String msg);
         String onImageDownloaded(Bitmap bitmap, Message message);
 
         String onVideoDownloaded(File file, Message message);
@@ -595,6 +595,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 @Override
                 public void onFailed(String msg) {
                     Log.e("CHAT_ADAPTER", "failed to load voice: " + msg);
+                    callback.onFail("failed to play recording");
                 }
 
                 @Override

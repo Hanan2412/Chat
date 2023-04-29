@@ -1681,6 +1681,11 @@ public class ConversationActivity2 extends AppCompatActivity implements ChatAdap
         }
     }
 
+    @Override
+    public void onFail(String msg) {
+        onShowError(msg);
+    }
+
     //saves image to local storage
     @Override
     public String onImageDownloaded(Bitmap bitmap, Message message) {
